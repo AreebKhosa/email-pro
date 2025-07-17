@@ -10,13 +10,30 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus, Mail, Trash, Settings, CheckCircle, XCircle, Flame, FlameKindling } from "lucide-react";
+import { FaGoogle, FaYahoo, FaMicrosoft } from "react-icons/fa";
+import { SiZoho } from "react-icons/si";
 
-const integrationSchema = z.object({
+const providers = [
+  { value: "google", label: "Gmail", icon: FaGoogle, color: "text-red-500" },
+  { value: "outlook", label: "Outlook", icon: FaMicrosoft, color: "text-blue-500" },
+  { value: "yahoo", label: "Yahoo", icon: FaYahoo, color: "text-purple-500" },
+  { value: "zoho", label: "Zoho", icon: SiZoho, color: "text-orange-500" },
+  { value: "custom", label: "Custom SMTP", icon: Mail, color: "text-gray-500" },
+];
+
+const baseSchema = z.object({
   email: z.string().email("Valid email is required"),
+  fromName: z.string().min(1, "From name is required"),
+  provider: z.enum(["google", "outlook", "yahoo", "zoho", "custom"]),
+  connectionType: z.enum(["oauth", "smtp"]),
+});
+
+const smtpSchema = baseSchema.extend({
   smtpHost: z.string().min(1, "SMTP host is required"),
   smtpPort: z.coerce.number().min(1, "SMTP port is required"),
   smtpUsername: z.string().min(1, "SMTP username is required"),
@@ -27,6 +44,22 @@ const integrationSchema = z.object({
   imapPassword: z.string().min(1, "IMAP password is required"),
 });
 
+const oauthSchema = baseSchema.extend({
+  smtpHost: z.string().optional(),
+  smtpPort: z.coerce.number().optional(),
+  smtpUsername: z.string().optional(),
+  smtpPassword: z.string().optional(),
+  imapHost: z.string().optional(),
+  imapPort: z.coerce.number().optional(),
+  imapUsername: z.string().optional(),
+  imapPassword: z.string().optional(),
+});
+
+const integrationSchema = z.discriminatedUnion("connectionType", [
+  smtpSchema.extend({ connectionType: z.literal("smtp") }),
+  oauthSchema.extend({ connectionType: z.literal("oauth") }),
+]);
+
 export default function EmailIntegrations() {
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -36,10 +69,16 @@ export default function EmailIntegrations() {
     retry: false,
   });
 
+  const [selectedProvider, setSelectedProvider] = useState<string>("");
+  const [connectionType, setConnectionType] = useState<"oauth" | "smtp">("oauth");
+
   const form = useForm({
     resolver: zodResolver(integrationSchema),
     defaultValues: {
       email: "",
+      fromName: "",
+      provider: "google" as const,
+      connectionType: "oauth" as const,
       smtpHost: "",
       smtpPort: 587,
       smtpUsername: "",
@@ -51,18 +90,35 @@ export default function EmailIntegrations() {
     },
   });
 
+  const watchedProvider = form.watch("provider");
+  const watchedConnectionType = form.watch("connectionType");
+
   const createIntegrationMutation = useMutation({
     mutationFn: async (data: any) => {
-      await apiRequest("POST", "/api/email-integrations", data);
+      if (data.connectionType === "oauth" && data.provider === "google") {
+        // Initiate Gmail OAuth flow
+        const response = await apiRequest("POST", "/api/email-integrations/gmail-auth-url", {
+          email: data.email,
+          fromName: data.fromName,
+        });
+        const result = await response.json();
+        window.location.href = result.authUrl;
+        return;
+      } else {
+        // Create SMTP integration
+        await apiRequest("POST", "/api/email-integrations", data);
+      }
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Email integration created and verified successfully",
-      });
-      setIsCreateOpen(false);
-      form.reset();
-      queryClient.invalidateQueries({ queryKey: ["/api/email-integrations"] });
+      if (form.getValues("connectionType") === "smtp") {
+        toast({
+          title: "Success",
+          description: "Email integration created and verified successfully",
+        });
+        setIsCreateOpen(false);
+        form.reset();
+        queryClient.invalidateQueries({ queryKey: ["/api/email-integrations"] });
+      }
     },
     onError: (error) => {
       toast({
@@ -164,89 +220,186 @@ export default function EmailIntegrations() {
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  {/* Provider Selection */}
                   <FormField
                     control={form.control}
-                    name="email"
+                    name="provider"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email Address</FormLabel>
-                        <FormControl>
-                          <Input placeholder="your-email@domain.com" {...field} />
-                        </FormControl>
+                        <FormLabel>Email Provider</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select your email provider" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {providers.map((provider) => (
+                              <SelectItem key={provider.value} value={provider.value}>
+                                <div className="flex items-center space-x-2">
+                                  <provider.icon className={`h-4 w-4 ${provider.color}`} />
+                                  <span>{provider.label}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* SMTP Settings */}
-                    <div className="space-y-4">
-                      <h3 className="font-medium text-slate-900">SMTP Settings (Outgoing)</h3>
-                      
-                      <FormField
-                        control={form.control}
-                        name="smtpHost"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>SMTP Host</FormLabel>
-                            <FormControl>
-                              <Input placeholder="smtp.gmail.com" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                  {/* Basic Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Address</FormLabel>
+                          <FormControl>
+                            <Input placeholder="your-email@domain.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                      <FormField
-                        control={form.control}
-                        name="smtpPort"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>SMTP Port</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder="587" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                    <FormField
+                      control={form.control}
+                      name="fromName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>From Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Your Company Name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                      <FormField
-                        control={form.control}
-                        name="smtpUsername"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>SMTP Username</FormLabel>
+                  {/* Connection Type */}
+                  {watchedProvider !== "custom" && (
+                    <FormField
+                      control={form.control}
+                      name="connectionType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Connection Method</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <Input placeholder="your-email@domain.com" {...field} />
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
                             </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                            <SelectContent>
+                              <SelectItem value="oauth">
+                                <div className="flex items-center space-x-2">
+                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                  <span>OAuth (Recommended)</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="smtp">
+                                <div className="flex items-center space-x-2">
+                                  <Settings className="h-4 w-4 text-gray-500" />
+                                  <span>Manual SMTP/IMAP</span>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
-                      <FormField
-                        control={form.control}
-                        name="smtpPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>SMTP Password</FormLabel>
-                            <FormControl>
-                              <Input type="password" placeholder="••••••••" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                  {/* OAuth Connection */}
+                  {watchedConnectionType === "oauth" && watchedProvider === "google" && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <FaGoogle className="h-5 w-5 text-red-500" />
+                        <h3 className="font-medium text-blue-900">Connect with Gmail</h3>
+                      </div>
+                      <p className="text-sm text-blue-700 mb-4">
+                        Click "Connect with Gmail" to authorize EmailReach to send emails through your Gmail account.
+                        This is the most secure and reliable method.
+                      </p>
                     </div>
+                  )}
 
-                    {/* IMAP Settings */}
-                    <div className="space-y-4">
-                      <h3 className="font-medium text-slate-900">IMAP Settings (Incoming)</h3>
-                      
-                      <FormField
-                        control={form.control}
-                        name="imapHost"
+                  {/* SMTP Configuration */}
+                  {(watchedConnectionType === "smtp" || watchedProvider === "custom") && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* SMTP Settings */}
+                      <div className="space-y-4">
+                        <h3 className="font-medium text-slate-900">SMTP Settings (Outgoing)</h3>
+                        
+                        <FormField
+                          control={form.control}
+                          name="smtpHost"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>SMTP Host</FormLabel>
+                              <FormControl>
+                                <Input placeholder="smtp.gmail.com" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="smtpPort"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>SMTP Port</FormLabel>
+                              <FormControl>
+                                <Input type="number" placeholder="587" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="smtpUsername"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>SMTP Username</FormLabel>
+                              <FormControl>
+                                <Input placeholder="your-email@domain.com" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="smtpPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>SMTP Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="••••••••" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* IMAP Settings */}
+                      <div className="space-y-4">
+                        <h3 className="font-medium text-slate-900">IMAP Settings (Incoming)</h3>
+                        
+                        <FormField
+                          control={form.control}
+                          name="imapHost"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>IMAP Host</FormLabel>
@@ -301,35 +454,16 @@ export default function EmailIntegrations() {
                       />
                     </div>
                   </div>
+                  )}
 
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-blue-900 mb-2">Common Email Provider Settings</h4>
-                    <div className="text-sm text-blue-800 space-y-2">
-                      <div>
-                        <strong>Gmail:</strong> SMTP: smtp.gmail.com:587, IMAP: imap.gmail.com:993
-                      </div>
-                      <div>
-                        <strong>Outlook:</strong> SMTP: smtp-mail.outlook.com:587, IMAP: outlook.office365.com:993
-                      </div>
-                      <div>
-                        <strong>Yahoo:</strong> SMTP: smtp.mail.yahoo.com:587, IMAP: imap.mail.yahoo.com:993
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end space-x-4">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setIsCreateOpen(false)}
-                    >
+                  <div className="flex items-center justify-end space-x-3">
+                    <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
                       Cancel
                     </Button>
-                    <Button 
-                      type="submit"
-                      disabled={createIntegrationMutation.isPending}
-                    >
-                      {createIntegrationMutation.isPending ? "Testing Connection..." : "Add Integration"}
+                    <Button type="submit" disabled={createIntegrationMutation.isPending}>
+                      {createIntegrationMutation.isPending ? "Connecting..." : 
+                       watchedConnectionType === "oauth" && watchedProvider === "google" ? "Connect with Gmail" :
+                       "Add Integration"}
                     </Button>
                   </div>
                 </form>

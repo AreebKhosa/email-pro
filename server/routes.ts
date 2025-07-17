@@ -2,9 +2,12 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupGoogleAuth, getGmailAuthUrl } from "./services/googleAuth";
 import { validateEmailIntegration, sendEmail } from "./services/email";
 import { personalizeEmail } from "./services/openai";
 import { createStripeCheckout, handleStripeWebhook } from "./services/stripe";
+import bcrypt from "bcryptjs";
+import passport from "passport";
 import { 
   insertEmailIntegrationSchema,
   insertRecipientListSchema,
@@ -95,17 +98,75 @@ async function checkPlanLimits(userId: string, resource: string, amount: number 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+  setupGoogleAuth();
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      // Handle both Replit OAuth and local authentication
+      const userId = req.user?.claims?.sub || req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "No user ID found" });
+      }
+      
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
+  });
+
+  // Google OAuth routes (only if Google credentials are configured)
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+    app.get('/api/auth/google/callback',
+      passport.authenticate('google', { failureRedirect: '/login' }),
+      (req, res) => {
+        res.redirect('/');
+      }
+    );
+  } else {
+    // Fallback route when Google OAuth is not configured
+    app.get('/api/auth/google', (req, res) => {
+      res.status(501).json({ message: "Google OAuth not configured" });
+    });
+  }
+
+  // Manual login/register routes
+  app.post('/api/auth/register', async (req, res) => {
+    try {
+      const { firstName, lastName, email, password } = req.body;
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      // Create user
+      const user = await storage.createUser({
+        id: Date.now().toString(), // Generate unique ID
+        email,
+        firstName,
+        lastName,
+        password: hashedPassword,
+        emailVerified: false,
+      });
+
+      res.json({ message: "User created successfully", userId: user.id });
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
+    res.json({ message: "Login successful", user: req.user });
   });
 
   // Dashboard stats
@@ -145,9 +206,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Gmail OAuth auth URL endpoint
+  app.post('/api/email-integrations/gmail-auth-url', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims ? req.user.claims.sub : req.user.id;
+      const authUrl = getGmailAuthUrl(userId);
+      res.json({ authUrl });
+    } catch (error) {
+      console.error("Error generating Gmail auth URL:", error);
+      res.status(500).json({ message: "Failed to generate Gmail auth URL" });
+    }
+  });
+
   app.post('/api/email-integrations', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims ? req.user.claims.sub : req.user.id;
       
       // Check plan limits
       const canAdd = await checkPlanLimits(userId, 'emailIntegrations');
@@ -157,14 +230,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const data = insertEmailIntegrationSchema.parse(req.body);
       
-      // Validate email connection
-      const isValid = await validateEmailIntegration(data);
-      if (!isValid) {
-        return res.status(400).json({ message: "Email integration validation failed" });
+      // For SMTP connections, validate the connection
+      if (data.connectionType === 'smtp') {
+        const isValid = await validateEmailIntegration(data);
+        if (!isValid) {
+          return res.status(400).json({ message: "Email integration validation failed" });
+        }
       }
 
       const integration = await storage.createEmailIntegration(userId, data);
-      await storage.updateEmailIntegrationVerification(integration.id, true);
+      
+      // Mark SMTP integrations as verified after successful validation
+      if (data.connectionType === 'smtp') {
+        await storage.updateEmailIntegrationVerification(integration.id, true);
+      }
       
       res.json(integration);
     } catch (error) {

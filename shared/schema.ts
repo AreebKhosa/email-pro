@@ -37,6 +37,8 @@ export const users = pgTable("users", {
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   emailVerified: boolean("email_verified").default(false),
+  password: varchar("password"), // For manual authentication
+  googleId: varchar("google_id"), // For Google OAuth
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -46,14 +48,22 @@ export const emailIntegrations = pgTable("email_integrations", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   email: varchar("email").notNull(),
-  smtpHost: varchar("smtp_host").notNull(),
-  smtpPort: integer("smtp_port").notNull(),
-  smtpUsername: varchar("smtp_username").notNull(),
-  smtpPassword: varchar("smtp_password").notNull(),
-  imapHost: varchar("imap_host").notNull(),
-  imapPort: integer("imap_port").notNull(),
-  imapUsername: varchar("imap_username").notNull(),
-  imapPassword: varchar("imap_password").notNull(),
+  fromName: varchar("from_name").notNull(), // Brand/company name for display
+  provider: varchar("provider").notNull(), // google, yahoo, zoho, outlook, custom
+  connectionType: varchar("connection_type").notNull(), // oauth, smtp
+  // SMTP/IMAP fields (nullable for OAuth connections)
+  smtpHost: varchar("smtp_host"),
+  smtpPort: integer("smtp_port"),
+  smtpUsername: varchar("smtp_username"),
+  smtpPassword: varchar("smtp_password"),
+  imapHost: varchar("imap_host"),
+  imapPort: integer("imap_port"),
+  imapUsername: varchar("imap_username"),
+  imapPassword: varchar("imap_password"),
+  // OAuth fields (nullable for SMTP connections)
+  accessToken: varchar("access_token"),
+  refreshToken: varchar("refresh_token"),
+  tokenExpiresAt: timestamp("token_expires_at"),
   isVerified: boolean("is_verified").default(false),
   warmupEnabled: boolean("warmup_enabled").default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -263,7 +273,13 @@ export const insertEmailIntegrationSchema = createInsertSchema(emailIntegrations
   id: true,
   userId: true,
   isVerified: true,
+  accessToken: true,
+  refreshToken: true,
+  tokenExpiresAt: true,
   createdAt: true,
+}).extend({
+  connectionType: z.enum(["oauth", "smtp"]),
+  provider: z.enum(["google", "yahoo", "zoho", "outlook", "custom"]),
 });
 
 export const insertRecipientListSchema = createInsertSchema(recipientLists).omit({

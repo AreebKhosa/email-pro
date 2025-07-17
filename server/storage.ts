@@ -30,9 +30,13 @@ import { eq, and, desc, sum, count } from "drizzle-orm";
 export interface IStorage {
   // User operations - required for Replit Auth
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
+  createUser(user: UpsertUser): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserPlan(userId: string, plan: string): Promise<User>;
   updateUserStripeInfo(userId: string, customerId: string, subscriptionId?: string): Promise<User>;
+  updateUserGoogleId(userId: string, googleId: string): Promise<User>;
 
   // Email integrations
   createEmailIntegration(userId: string, integration: InsertEmailIntegration): Promise<EmailIntegration>;
@@ -97,6 +101,24 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
+    return user;
+  }
+
+  async createUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .returning();
+    return user;
+  }
+
   async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
@@ -108,6 +130,15 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date(),
         },
       })
+      .returning();
+    return user;
+  }
+
+  async updateUserGoogleId(userId: string, googleId: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ googleId, updatedAt: new Date() })
+      .where(eq(users.id, userId))
       .returning();
     return user;
   }

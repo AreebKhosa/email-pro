@@ -59,18 +59,14 @@ export default function Sidebar() {
         {navigation.map((item) => {
           const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
           return (
-            <Link key={item.name} href={item.href}>
-              <a
-                className={cn(
-                  "flex items-center space-x-3 px-3 py-2 rounded-lg font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-slate-700 hover:bg-slate-100"
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                <span>{item.name}</span>
-              </a>
+            <Link key={item.name} href={item.href} className={cn(
+              "flex items-center space-x-3 px-3 py-2 rounded-lg font-medium transition-colors",
+              isActive
+                ? "bg-primary/10 text-primary"
+                : "text-slate-700 hover:bg-slate-100"
+            )}>
+              <item.icon className="h-5 w-5" />
+              <span>{item.name}</span>
             </Link>
           );
         })}
@@ -79,18 +75,14 @@ export default function Sidebar() {
           {bottomNavigation.map((item) => {
             const isActive = location === item.href;
             return (
-              <Link key={item.name} href={item.href}>
-                <a
-                  className={cn(
-                    "flex items-center space-x-3 px-3 py-2 rounded-lg font-medium transition-colors",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-slate-700 hover:bg-slate-100"
-                  )}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span>{item.name}</span>
-                </a>
+              <Link key={item.name} href={item.href} className={cn(
+                "flex items-center space-x-3 px-3 py-2 rounded-lg font-medium transition-colors",
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-slate-700 hover:bg-slate-100"
+              )}>
+                <item.icon className="h-5 w-5" />
+                <span>{item.name}</span>
               </Link>
             );
           })}
