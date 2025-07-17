@@ -194,6 +194,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User stats for usage tracking
+  app.get('/api/user/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const usage = await storage.getCurrentMonthUsage(userId);
+      const user = await storage.getUser(userId);
+      
+      res.json({
+        deliverabilityChecksUsed: usage?.deliverabilityChecks || 0,
+        recipientCount: usage?.recipientsUploaded || 0,
+        emailsSent: usage?.emailsSent || 0,
+        personalizedEmails: usage?.personalizedEmails || 0,
+        warmupEmails: usage?.warmupEmails || 0,
+        planLimits: planLimits[user?.plan as keyof typeof planLimits] || planLimits.demo,
+      });
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+      res.status(500).json({ message: "Failed to fetch user stats" });
+    }
+  });
+
   // Email integrations
   app.get('/api/email-integrations', isAuthenticated, async (req: any, res) => {
     try {
@@ -319,7 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check plan limits
       const canAdd = await checkPlanLimits(userId, 'recipients', recipientData.length);
       if (!canAdd) {
-        return res.status(403).json({ message: "Plan limit reached for recipients" });
+        return res.status(403).json({ message: "Your uploaded list exceeds your plan limit. Please upgrade your plan to add more recipients." });
       }
 
       const validatedRecipients = recipientData.map((r: any) => 

@@ -14,7 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Users, Upload, Download, Trash, Eye, MoreHorizontal } from "lucide-react";
+import { Plus, Users, Upload, Download, Trash, Eye, MoreHorizontal, TrendingUp, UserCheck, AlertTriangle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 const listSchema = z.object({
   name: z.string().min(1, "List name is required"),
@@ -45,6 +46,16 @@ export default function Recipients() {
   const { data: recipients } = useQuery({
     queryKey: ["/api/recipient-lists", selectedListId, "recipients"],
     enabled: !!selectedListId,
+    retry: false,
+  });
+
+  const { data: userStats } = useQuery({
+    queryKey: ["/api/user/stats"],
+    retry: false,
+  });
+
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
     retry: false,
   });
 
@@ -132,6 +143,22 @@ export default function Recipients() {
         };
       });
 
+      // Check plan limits
+      const currentPlan = user?.plan || 'demo';
+      const planLimits = {
+        demo: { recipients: 300 },
+        starter: { recipients: 5000 },
+        pro: { recipients: 25000 },
+        premium: { recipients: Infinity }
+      };
+      
+      const maxRecipients = planLimits[currentPlan as keyof typeof planLimits]?.recipients || 300;
+      const currentTotal = recipientLists?.reduce((sum: number, list: any) => sum + (list.recipientCount || 0), 0) || 0;
+      
+      if (maxRecipients !== Infinity && currentTotal + recipients.length > maxRecipients) {
+        throw new Error(`Your uploaded list exceeds your plan limit. Please upgrade your plan to add ${recipients.length} more recipients.`);
+      }
+
       await apiRequest("POST", `/api/recipient-lists/${selectedListId}/recipients`, {
         recipients
       });
@@ -192,6 +219,95 @@ export default function Recipients() {
             <h1 className="text-3xl font-bold text-slate-900">Recipients</h1>
             <p className="text-slate-600 mt-1">Manage your recipient lists and contacts</p>
           </div>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Lists</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{recipientLists?.length || 0}</div>
+              <p className="text-xs text-muted-foreground">
+                Active recipient lists
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Recipients</CardTitle>
+              <UserCheck className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {recipientLists?.reduce((sum: number, list: any) => sum + (list.recipientCount || 0), 0) || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Contacts across all lists
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Remaining Recipients</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {(() => {
+                  const currentPlan = user?.plan || 'demo';
+                  const planLimits = {
+                    demo: { recipients: 300 },
+                    starter: { recipients: 5000 },
+                    pro: { recipients: 25000 },
+                    premium: { recipients: Infinity }
+                  };
+                  const maxRecipients = planLimits[currentPlan as keyof typeof planLimits]?.recipients || 300;
+                  const totalRecipients = recipientLists?.reduce((sum: number, list: any) => sum + (list.recipientCount || 0), 0) || 0;
+                  const remaining = maxRecipients === Infinity ? 'Unlimited' : Math.max(0, maxRecipients - totalRecipients);
+                  return typeof remaining === 'number' ? remaining.toLocaleString() : remaining;
+                })()}
+              </div>
+              <div className="mt-2">
+                {(() => {
+                  const currentPlan = user?.plan || 'demo';
+                  const planLimits = {
+                    demo: { recipients: 300 },
+                    starter: { recipients: 5000 },
+                    pro: { recipients: 25000 },
+                    premium: { recipients: Infinity }
+                  };
+                  const maxRecipients = planLimits[currentPlan as keyof typeof planLimits]?.recipients || 300;
+                  const totalRecipients = recipientLists?.reduce((sum: number, list: any) => sum + (list.recipientCount || 0), 0) || 0;
+                  const usagePercentage = maxRecipients === Infinity ? 0 : Math.min(100, (totalRecipients / maxRecipients) * 100);
+                  
+                  if (maxRecipients !== Infinity) {
+                    return (
+                      <>
+                        <Progress value={usagePercentage} className="h-2" />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {usagePercentage.toFixed(1)}% of {maxRecipients.toLocaleString()} used
+                        </p>
+                      </>
+                    );
+                  } else {
+                    return (
+                      <p className="text-xs text-muted-foreground">
+                        Unlimited plan
+                      </p>
+                    );
+                  }
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
           
           <Dialog open={isCreateListOpen} onOpenChange={setIsCreateListOpen}>
             <DialogTrigger asChild>

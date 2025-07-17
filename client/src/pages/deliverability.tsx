@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, CheckCircle, AlertTriangle, XCircle, Trash, RotateCcw, Download } from "lucide-react";
+import { Shield, CheckCircle, AlertTriangle, XCircle, Trash, RotateCcw, Download, TrendingUp, BarChart3 } from "lucide-react";
 
 export default function Deliverability() {
   const { toast } = useToast();
@@ -24,6 +24,16 @@ export default function Deliverability() {
   const { data: recipients } = useQuery({
     queryKey: ["/api/recipient-lists", parseInt(selectedListId), "recipients"],
     enabled: !!selectedListId,
+    retry: false,
+  });
+
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
+    retry: false,
+  });
+
+  const { data: userStats } = useQuery({
+    queryKey: ["/api/user/stats"],
     retry: false,
   });
 
@@ -127,6 +137,115 @@ export default function Deliverability() {
             <h1 className="text-3xl font-bold text-slate-900">Deliverability Checker</h1>
             <p className="text-slate-600 mt-1">Verify email addresses and improve campaign success rates</p>
           </div>
+        </div>
+
+        {/* Usage Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Checks Done</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {(() => {
+                  const planLimits = {
+                    demo: { deliverabilityChecks: 150 },
+                    starter: { deliverabilityChecks: 2500 },
+                    pro: { deliverabilityChecks: 10000 },
+                    premium: { deliverabilityChecks: Infinity }
+                  };
+                  const currentPlan = user?.plan || 'demo';
+                  const maxChecks = planLimits[currentPlan as keyof typeof planLimits]?.deliverabilityChecks || 150;
+                  const checksUsed = userStats?.deliverabilityChecksUsed || 0;
+                  return checksUsed.toLocaleString();
+                })()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Total deliverability checks
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Remaining Checks</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {(() => {
+                  const planLimits = {
+                    demo: { deliverabilityChecks: 150 },
+                    starter: { deliverabilityChecks: 2500 },
+                    pro: { deliverabilityChecks: 10000 },
+                    premium: { deliverabilityChecks: Infinity }
+                  };
+                  const currentPlan = user?.plan || 'demo';
+                  const maxChecks = planLimits[currentPlan as keyof typeof planLimits]?.deliverabilityChecks || 150;
+                  const checksUsed = userStats?.deliverabilityChecksUsed || 0;
+                  const remainingChecks = maxChecks === Infinity ? 'Unlimited' : Math.max(0, maxChecks - checksUsed);
+                  return typeof remainingChecks === 'number' ? remainingChecks.toLocaleString() : remainingChecks;
+                })()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Available checks this month
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Quota</CardTitle>
+              <Shield className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {(() => {
+                  const planLimits = {
+                    demo: { deliverabilityChecks: 150 },
+                    starter: { deliverabilityChecks: 2500 },
+                    pro: { deliverabilityChecks: 10000 },
+                    premium: { deliverabilityChecks: Infinity }
+                  };
+                  const currentPlan = user?.plan || 'demo';
+                  const maxChecks = planLimits[currentPlan as keyof typeof planLimits]?.deliverabilityChecks || 150;
+                  return maxChecks === Infinity ? 'Unlimited' : maxChecks.toLocaleString();
+                })()}
+              </div>
+              <div className="mt-2">
+                {(() => {
+                  const planLimits = {
+                    demo: { deliverabilityChecks: 150 },
+                    starter: { deliverabilityChecks: 2500 },
+                    pro: { deliverabilityChecks: 10000 },
+                    premium: { deliverabilityChecks: Infinity }
+                  };
+                  const currentPlan = user?.plan || 'demo';
+                  const maxChecks = planLimits[currentPlan as keyof typeof planLimits]?.deliverabilityChecks || 150;
+                  const checksUsed = userStats?.deliverabilityChecksUsed || 0;
+                  const usagePercentage = maxChecks === Infinity ? 0 : Math.min(100, (checksUsed / maxChecks) * 100);
+                  
+                  if (maxChecks !== Infinity) {
+                    return (
+                      <>
+                        <Progress value={usagePercentage} className="h-2" />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {usagePercentage.toFixed(1)}% of quota used
+                        </p>
+                      </>
+                    );
+                  } else {
+                    return (
+                      <p className="text-xs text-muted-foreground">
+                        Unlimited plan
+                      </p>
+                    );
+                  }
+                })()}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* List Selection and Quick Actions */}
