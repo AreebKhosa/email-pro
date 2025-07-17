@@ -91,6 +91,7 @@ export default function Recipients() {
       setIsCreateListOpen(false);
       listForm.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
     },
     onError: (error) => {
       toast({
@@ -115,6 +116,8 @@ export default function Recipients() {
       setIsAddRecipientOpen(false);
       recipientForm.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", selectedListId, "recipients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
     },
     onError: (error) => {
       toast({
@@ -170,6 +173,8 @@ export default function Recipients() {
       });
       setIsBulkUploadOpen(false);
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", selectedListId, "recipients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
     },
     onError: (error) => {
       toast({

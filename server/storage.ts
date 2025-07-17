@@ -214,11 +214,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserRecipientLists(userId: string): Promise<RecipientList[]> {
-    return await db
-      .select()
+    const lists = await db
+      .select({
+        id: recipientLists.id,
+        userId: recipientLists.userId,
+        name: recipientLists.name,
+        description: recipientLists.description,
+        createdAt: recipientLists.createdAt,
+        recipientCount: count(recipients.id)
+      })
       .from(recipientLists)
+      .leftJoin(recipients, eq(recipients.listId, recipientLists.id))
       .where(eq(recipientLists.userId, userId))
+      .groupBy(recipientLists.id)
       .orderBy(desc(recipientLists.createdAt));
+    
+    return lists;
   }
 
   async getRecipientList(id: number): Promise<RecipientList | undefined> {

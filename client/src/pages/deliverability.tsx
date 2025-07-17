@@ -49,6 +49,7 @@ export default function Deliverability() {
         description: "Deliverability check completed",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", parseInt(selectedListId), "recipients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
     },
     onError: (error) => {
       toast({
@@ -70,6 +71,7 @@ export default function Deliverability() {
         description: "Email checked successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", parseInt(selectedListId), "recipients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
     },
     onError: (error) => {
       toast({
