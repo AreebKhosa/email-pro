@@ -1,0 +1,134 @@
+# Email SaaS Application
+
+## Overview
+
+This is a comprehensive email marketing SaaS platform built with a full-stack TypeScript architecture. The application provides email campaign management, recipient list handling, email integration, warm-up functionality, deliverability checking, and AI-powered email personalization. It features a modern React frontend with shadcn/ui components and an Express.js backend with PostgreSQL database using Drizzle ORM.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Frontend Architecture
+- **Framework**: React with TypeScript
+- **UI Components**: Radix UI primitives with shadcn/ui design system
+- **Styling**: Tailwind CSS with CSS variables for theming
+- **Routing**: Wouter for client-side routing
+- **State Management**: TanStack Query for server state management
+- **Form Handling**: React Hook Form with Zod validation
+- **Build Tool**: Vite with development optimizations
+
+### Backend Architecture
+- **Runtime**: Node.js with Express.js framework
+- **Language**: TypeScript with ES modules
+- **Database**: PostgreSQL with Drizzle ORM
+- **Authentication**: Replit OAuth integration with session management
+- **Session Storage**: PostgreSQL-backed sessions using connect-pg-simple
+
+### Database Architecture
+- **ORM**: Drizzle with PostgreSQL dialect
+- **Schema Location**: Shared between client and server (`/shared/schema.ts`)
+- **Migrations**: Managed through Drizzle Kit
+- **Connection**: Neon Database serverless with WebSocket support
+
+## Key Components
+
+### Authentication System
+- **Provider**: Replit OAuth with OpenID Connect
+- **Session Management**: Express sessions stored in PostgreSQL
+- **User Model**: Stores profile information, plan details, and Stripe integration
+- **Authorization**: Route-level protection with authentication middleware
+
+### Email Management
+- **SMTP/IMAP Integration**: Multi-account email service configuration
+- **Validation**: Automatic connection testing for email accounts
+- **Warm-up System**: Automated email reputation building
+- **Service Layer**: Nodemailer for SMTP, IMAP library for inbox management
+
+### Campaign System
+- **Campaign Creation**: Email campaigns with recipient list targeting
+- **Follow-up Sequences**: Automated follow-up email chains
+- **Scheduling**: Time-based campaign execution
+- **Tracking**: Email delivery and engagement metrics
+
+### AI Personalization
+- **Provider**: OpenAI GPT-4o integration
+- **Website Scraping**: Automated content extraction for personalization
+- **Template Generation**: AI-powered email content creation
+- **Customization**: Tone, length, and CTA configuration
+
+### Payment Integration
+- **Provider**: Stripe for subscription management
+- **Plan Tiers**: Demo (free), Starter, Pro, Premium with usage limits
+- **Webhooks**: Automated plan updates and billing events
+- **Usage Tracking**: Real-time monitoring of plan limits
+
+## Data Flow
+
+### User Authentication Flow
+1. User initiates login through Replit OAuth
+2. OpenID Connect authentication with Replit
+3. Session creation and user profile synchronization
+4. Persistent session storage in PostgreSQL
+
+### Email Campaign Flow
+1. User creates recipient lists with CSV import capability
+2. Email integration setup with SMTP/IMAP validation
+3. Campaign creation with personalization options
+4. AI-powered content generation using website data
+5. Scheduled or immediate campaign execution
+6. Real-time delivery tracking and analytics
+
+### Plan Management Flow
+1. User selects plan upgrade
+2. Stripe Checkout session creation
+3. Payment processing and webhook handling
+4. Automatic plan activation and limit updates
+5. Usage tracking against plan boundaries
+
+## External Dependencies
+
+### Core Services
+- **Neon Database**: PostgreSQL hosting with serverless architecture
+- **Replit OAuth**: Authentication provider
+- **OpenAI**: AI-powered email personalization
+- **Stripe**: Payment processing and subscription management
+
+### Email Services
+- **SMTP Providers**: Support for major email providers (Gmail, Outlook, custom)
+- **IMAP Access**: Inbox monitoring and email verification
+- **Nodemailer**: Email sending infrastructure
+
+### Development Tools
+- **Replit Integration**: Development environment optimization
+- **Vite Plugins**: Hot module replacement and development tooling
+- **TypeScript**: Full-stack type safety
+
+## Deployment Strategy
+
+### Development Environment
+- **Hot Reloading**: Vite development server with React Fast Refresh
+- **API Development**: Express server with TypeScript compilation
+- **Database**: Replit-provisioned PostgreSQL instance
+- **Environment Variables**: Replit Secrets management
+
+### Production Build
+- **Frontend**: Vite production build with static asset optimization
+- **Backend**: ESBuild compilation for Node.js deployment
+- **Database Migrations**: Drizzle Kit automated schema updates
+- **Static Serving**: Express static file serving for SPA
+
+### Configuration Management
+- **Environment Variables**: Database URLs, API keys, OAuth credentials
+- **Feature Flags**: Plan-based feature availability
+- **CORS**: Configured for Replit domain handling
+- **Session Security**: Secure cookies with domain restrictions
+
+### Monitoring and Analytics
+- **Usage Tracking**: Real-time plan limit monitoring
+- **Error Handling**: Centralized error management with user feedback
+- **Performance**: Query optimization and connection pooling
+- **Logging**: Request/response logging for API endpoints
+
+The application implements a modern SaaS architecture with clear separation of concerns, robust authentication, and scalable data management suitable for email marketing operations.
