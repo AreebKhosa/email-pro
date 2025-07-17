@@ -169,7 +169,31 @@ export default function EmailIntegrations() {
     },
   });
 
-  const onSubmit = (data: any) => {
+  const onSubmit = async (data: any) => {
+    // Handle OAuth flow for Gmail
+    if (data.connectionType === "oauth" && data.provider === "google") {
+      try {
+        const response = await apiRequest("POST", "/api/email-integrations/gmail-auth-url");
+        const result = await response.json();
+        if (result.authUrl) {
+          window.open(result.authUrl, "_blank", "width=500,height=600");
+          setIsCreateOpen(false);
+          toast({
+            title: "Authorization Required",
+            description: "Please complete the Gmail authorization in the popup window.",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to initiate Gmail authorization",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    // Handle SMTP/IMAP integration
     createIntegrationMutation.mutate(data);
   };
 

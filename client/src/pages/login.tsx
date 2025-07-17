@@ -107,8 +107,25 @@ export default function Login() {
     },
   });
 
-  const handleGoogleLogin = () => {
-    window.location.href = "/api/auth/google";
+  const handleGoogleLogin = async () => {
+    try {
+      const response = await fetch('/api/auth/google');
+      if (response.status === 501) {
+        toast({
+          title: "Google OAuth not configured",
+          description: "Please use email/password login or contact support.",
+          variant: "destructive",
+        });
+        return;
+      }
+      window.location.href = "/api/auth/google";
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to initiate Google login",
+        variant: "destructive",
+      });
+    }
   };
 
   const onLogin = (data: LoginForm) => {
