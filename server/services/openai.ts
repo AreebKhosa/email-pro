@@ -101,6 +101,23 @@ export async function personalizeEmail(
     if (error.status === 401) {
       throw new Error('OpenAI API key is invalid. Please check your API key settings.');
     }
+    if (error.status === 429) {
+      // Quota exceeded - return demo email
+      console.log('Using demo mode due to quota limit');
+      return `Hi ${recipient.name || 'there'}!
+
+I hope this email finds you well. I've been looking at ${recipient.companyName || 'your company'} and I'm really impressed with your work${recipient.websiteLink ? `, especially what I saw on your website` : ''}.
+
+I'd love to explore potential ${options.emailType} opportunities between our companies. ${recipient.position ? `Given your role as ${recipient.position}, ` : ''}I believe there could be great synergy.
+
+${options.callToAction}
+
+Best regards,
+[Your Name]
+
+--- 
+Note: This is a demo email generated due to OpenAI quota limits. Please add credits to your OpenAI account for full AI personalization.`;
+    }
     throw new Error(`Failed to personalize email: ${error.message}`);
   }
 }

@@ -623,17 +623,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.updateRecipientPersonalizedEmail(recipientId, personalizedEmail);
 
-      // Update usage - with error handling
-      try {
-        const currentMonth = new Date().toISOString().slice(0, 7);
-        const usage = await storage.getCurrentMonthUsage(userId);
-        await storage.updateUsage(userId, currentMonth, {
-          personalizedEmails: (usage?.personalizedEmails || 0) + 1,
-        });
-        console.log('Updated usage successfully');
-      } catch (usageError) {
-        console.error('Error updating usage (non-critical):', usageError);
-        // Don't fail the request if usage tracking fails
+      // Update usage - with error handling (only if not demo mode)
+      if (!personalizedEmail.includes('demo email generated due to OpenAI quota limits')) {
+        try {
+          const currentMonth = new Date().toISOString().slice(0, 7);
+          const usage = await storage.getCurrentMonthUsage(userId);
+          await storage.updateUsage(userId, currentMonth, {
+            personalizedEmails: (usage?.personalizedEmails || 0) + 1,
+          });
+          console.log('Updated usage successfully');
+        } catch (usageError) {
+          console.error('Error updating usage (non-critical):', usageError);
+          // Don't fail the request if usage tracking fails
+        }
       }
 
       res.json({ personalizedEmail });
@@ -673,15 +675,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           personalizedCount++;
         } catch (error) {
           console.error(`Error personalizing email for recipient ${recipient.id}:`, error);
+          // Skip this recipient in bulk mode if it fails
         }
       }
 
-      // Update usage
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      const usage = await storage.getCurrentMonthUsage(userId);
-      await storage.updateUsage(userId, currentMonth, {
-        personalizedEmails: (usage?.personalizedEmails || 0) + personalizedCount,
-      });
+      // Update usage (only count non-demo emails)
+      try {
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const usage = await storage.getCurrentMonthUsage(userId);
+        await storage.updateUsage(userId, currentMonth, {
+          personalizedEmails: (usage?.personalizedEmails || 0) + personalizedCount,
+        });
+      } catch (usageError) {
+        console.error('Error updating bulk usage (non-critical):', usageError);
+      }
 
       res.json({ personalizedCount });
     } catch (error) {
