@@ -332,12 +332,12 @@ export class DatabaseStorage implements IStorage {
       // Update recipient counts for all lists for this user using a more efficient approach
       await db.execute(sql`
         UPDATE recipient_lists 
-        SET "recipientCount" = (
+        SET recipient_count = (
           SELECT COUNT(*) 
           FROM recipients 
-          WHERE recipients."listId" = recipient_lists.id
+          WHERE recipients.list_id = recipient_lists.id
         ) 
-        WHERE recipient_lists."userId" = ${userId}
+        WHERE recipient_lists.user_id = ${userId}
       `);
     } catch (error) {
       console.error("Error updating recipient counts:", error);
@@ -385,14 +385,14 @@ export class DatabaseStorage implements IStorage {
       try {
         const result = await db.execute(sql`
           DELETE FROM recipients 
-          WHERE "listId" = ${listId} AND "deliverabilityStatus" = 'invalid'
+          WHERE list_id = ${listId} AND deliverability_status = 'invalid'
         `);
         
         // Update count with raw SQL
         await db.execute(sql`
           UPDATE recipient_lists 
-          SET "recipientCount" = (
-            SELECT COUNT(*) FROM recipients WHERE "listId" = ${listId}
+          SET recipient_count = (
+            SELECT COUNT(*) FROM recipients WHERE list_id = ${listId}
           ) 
           WHERE id = ${listId}
         `);
