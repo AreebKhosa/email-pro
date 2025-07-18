@@ -259,6 +259,11 @@ export class DatabaseStorage implements IStorage {
     return newRecipient;
   }
 
+  // Alias for addRecipient
+  async createRecipient(recipient: InsertRecipient): Promise<Recipient> {
+    return this.addRecipient(recipient);
+  }
+
   async addRecipients(recipientData: InsertRecipient[]): Promise<Recipient[]> {
     return await db
       .insert(recipients)

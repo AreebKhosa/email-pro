@@ -726,6 +726,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update recipient list with personalized emails
+  app.post('/api/recipient-lists/:targetListId/update-with-personalized', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const targetListId = parseInt(req.params.targetListId);
+      const { sourceListId } = req.body;
+
+      // Get personalized recipients from source list
+      const sourceRecipients = await storage.getListRecipients(sourceListId);
+      const personalizedRecipients = sourceRecipients.filter(r => r.personalizedEmail);
+
+      if (personalizedRecipients.length === 0) {
+        return res.status(400).json({ message: "No personalized emails found in source list" });
+      }
+
+      // Check if target list exists and belongs to user
+      const targetList = await storage.getRecipientList(targetListId);
+      if (!targetList || targetList.userId !== userId) {
+        return res.status(404).json({ message: "Target list not found" });
+      }
+
+      // Get existing recipients in target list
+      const existingRecipients = await storage.getListRecipients(targetListId);
+      
+      let updatedCount = 0;
+      let addedCount = 0;
+
+      for (const personalizedRecipient of personalizedRecipients) {
+        // Check if recipient with same email already exists in target list
+        const existingRecipient = existingRecipients.find(r => r.email === personalizedRecipient.email);
+        
+        if (existingRecipient) {
+          // Update existing recipient with personalized email
+          await storage.updateRecipientPersonalizedEmail(existingRecipient.id, personalizedRecipient.personalizedEmail);
+          updatedCount++;
+        } else {
+          // Add new recipient to target list
+          await storage.createRecipient({
+            listId: targetListId,
+            name: personalizedRecipient.name,
+            email: personalizedRecipient.email,
+            companyName: personalizedRecipient.companyName,
+            position: personalizedRecipient.position,
+            websiteLink: personalizedRecipient.websiteLink,
+            personalizedEmail: personalizedRecipient.personalizedEmail,
+          });
+          addedCount++;
+        }
+      }
+
+      res.json({ 
+        message: `Updated ${updatedCount} existing recipients and added ${addedCount} new recipients with personalized emails`,
+        updatedCount,
+        addedCount
+      });
+    } catch (error) {
+      console.error("Error updating recipient list:", error);
+      res.status(500).json({ message: "Failed to update recipient list" });
+    }
+  });
+
   // Campaigns
   app.get('/api/campaigns', isAuthenticated, async (req: any, res) => {
     try {

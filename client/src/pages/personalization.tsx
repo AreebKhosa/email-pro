@@ -49,7 +49,9 @@ export default function Personalization() {
   const [isPersonalizeOpen, setIsPersonalizeOpen] = useState(false);
   const [previewEmail, setPreviewEmail] = useState<string>("");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [showAddToListDialog, setShowAddToListDialog] = useState(false);
+  const [showUpdateListDialog, setShowUpdateListDialog] = useState(false);
+  const [showCreateListDialog, setShowCreateListDialog] = useState(false);
+  const [selectedTargetListId, setSelectedTargetListId] = useState<string>("");
   const [newListName, setNewListName] = useState("");
 
   const { data: recipientLists } = useQuery({
@@ -154,6 +156,31 @@ export default function Personalization() {
     },
   });
 
+  const updateListMutation = useMutation({
+    mutationFn: async (targetListId: string) => {
+      const response = await apiRequest("POST", `/api/recipient-lists/${targetListId}/update-with-personalized`, {
+        sourceListId: parseInt(selectedListId)
+      });
+      return response.json();
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "Success",
+        description: result.message,
+      });
+      setShowUpdateListDialog(false);
+      setSelectedTargetListId("");
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const createListMutation = useMutation({
     mutationFn: async (name: string) => {
       const personalizedRecipients = recipients?.filter((r: any) => r.personalizedEmail) || [];
@@ -185,7 +212,7 @@ export default function Personalization() {
         title: "Success",
         description: "Personalized recipients added to new list successfully",
       });
-      setShowAddToListDialog(false);
+      setShowCreateListDialog(false);
       setNewListName("");
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists"] });
     },
@@ -200,6 +227,18 @@ export default function Personalization() {
 
   const onSubmit = (data: any) => {
     personalizeListMutation.mutate(data);
+  };
+
+  const handleUpdateList = () => {
+    if (!selectedTargetListId) {
+      toast({
+        title: "Error",
+        description: "Please select a list to update",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateListMutation.mutate(selectedTargetListId);
   };
 
   const handleCreateList = () => {
@@ -345,11 +384,11 @@ export default function Personalization() {
                       </Button>
                       <Button
                         size="sm"
-                        onClick={() => setShowAddToListDialog(true)}
+                        onClick={() => setShowUpdateListDialog(true)}
                         disabled={!recipients || recipients.length === 0 || personalizedCount === 0}
                       >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add to List
+                        <Users className="h-4 w-4 mr-2" />
+                        Update List
                       </Button>
                     </div>
                   </div>
@@ -582,11 +621,75 @@ export default function Personalization() {
           </DialogContent>
         </Dialog>
 
-        {/* Add to List Dialog */}
-        <Dialog open={showAddToListDialog} onOpenChange={setShowAddToListDialog}>
+        {/* Update List Dialog */}
+        <Dialog open={showUpdateListDialog} onOpenChange={setShowUpdateListDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Personalized Recipients to New List</DialogTitle>
+              <DialogTitle>Update List with Personalized Emails</DialogTitle>
+              <DialogDescription>
+                Add {personalizedCount} personalized emails from "{selectedList?.name}" to an existing recipient list. Existing recipients with the same email will have their personalized email updated.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Select Target List</label>
+                <Select value={selectedTargetListId} onValueChange={setSelectedTargetListId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a list to update" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recipientLists?.filter((list: any) => list.id.toString() !== selectedListId).map((list: any) => (
+                      <SelectItem key={list.id} value={list.id.toString()}>
+                        {list.name} ({list.recipientCount || 0} recipients)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">
+                <strong>What will happen:</strong>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li>Recipients with matching emails will get updated personalized emails</li>
+                  <li>New recipients will be added to the target list</li>
+                  <li>Original recipient data will be preserved</li>
+                </ul>
+              </div>
+              <div className="flex justify-between space-x-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowUpdateListDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setShowUpdateListDialog(false);
+                      setNewListName(`${selectedList?.name} - Personalized`);
+                      setShowCreateListDialog(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Instead
+                  </Button>
+                  <Button 
+                    onClick={handleUpdateList}
+                    disabled={updateListMutation.isPending || !selectedTargetListId}
+                  >
+                    {updateListMutation.isPending ? "Updating..." : "Update List"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create New List Dialog */}
+        <Dialog open={showCreateListDialog} onOpenChange={setShowCreateListDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New List with Personalized Emails</DialogTitle>
               <DialogDescription>
                 Create a new recipient list with {personalizedCount} personalized recipients from "{selectedList?.name}".
               </DialogDescription>
@@ -601,7 +704,10 @@ export default function Personalization() {
                 />
               </div>
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowAddToListDialog(false)}>
+                <Button variant="outline" onClick={() => {
+                  setNewListName("");
+                  setShowCreateListDialog(false);
+                }}>
                   Cancel
                 </Button>
                 <Button 
