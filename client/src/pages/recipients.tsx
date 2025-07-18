@@ -152,7 +152,7 @@ export default function Recipients() {
         };
       });
 
-      // Check plan limits
+      // Check plan limits using cumulative upload count instead of current recipients
       const currentPlan = user?.plan || 'demo';
       const planLimits = {
         demo: { recipients: 300 },
@@ -162,9 +162,9 @@ export default function Recipients() {
       };
       
       const maxRecipients = planLimits[currentPlan as keyof typeof planLimits]?.recipients || 300;
-      const currentTotal = recipientLists?.reduce((sum: number, list: any) => sum + (list.recipientCount || 0), 0) || 0;
+      const totalUploaded = userStats?.recipientCount || 0; // Use cumulative upload count
       
-      if (maxRecipients !== Infinity && currentTotal + recipients.length > maxRecipients) {
+      if (maxRecipients !== Infinity && totalUploaded + recipients.length > maxRecipients) {
         throw new Error(`Your uploaded list exceeds your plan limit. Please upgrade your plan to add ${recipients.length} more recipients.`);
       }
 
