@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, Zap, TrendingUp, Mail, Target, Clock, CheckCircle, XCircle, Info, Play, Pause } from "lucide-react";
+import { AlertCircle, Zap, TrendingUp, Mail, Target, Clock, CheckCircle, XCircle, Info, Play, Pause, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -97,7 +97,7 @@ export default function WarmUp() {
 
   const toggleWarmupMutation = useMutation({
     mutationFn: async ({ integrationId, enabled }: { integrationId: number; enabled: boolean }) => {
-      await apiRequest("PUT", `/api/email-integrations/${integrationId}/warmup`, { enabled });
+      await apiRequest("POST", `/api/email-integrations/${integrationId}/toggle-warmup`, { enabled });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/email-integrations"] });
@@ -214,6 +214,37 @@ export default function WarmUp() {
       toast({
         title: "Error",
         description: error.message || "Failed to simulate warmup",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetSimulationMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/warmup/reset-simulation");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/warmup/stats"] });
+      toast({
+        title: "Success",
+        description: "Simulation data refreshed successfully",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset simulation",
         variant: "destructive",
       });
     },
@@ -343,6 +374,16 @@ export default function WarmUp() {
                 >
                   <Target className="w-4 h-4" />
                   {simulateWarmupMutation.isPending ? "Simulating..." : "Simulate Demo"}
+                </Button>
+
+                <Button
+                  onClick={() => resetSimulationMutation.mutate()}
+                  disabled={resetSimulationMutation.isPending || activeIntegrations.length === 0}
+                  variant="outline"
+                  className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  {resetSimulationMutation.isPending ? "Refreshing..." : "Refresh Demo"}
                 </Button>
 
                 <Button

@@ -564,6 +564,31 @@ export class WarmupService {
       throw error;
     }
   }
+
+  // Clear warmup data for an integration
+  async clearWarmupData(integrationId: number) {
+    try {
+      // Delete existing warmup stats
+      await db
+        .delete(warmupStats)
+        .where(eq(warmupStats.emailIntegrationId, integrationId));
+
+      // Delete existing warmup progress
+      await db
+        .delete(warmupProgress)
+        .where(eq(warmupProgress.emailIntegrationId, integrationId));
+
+      // Delete existing warmup emails
+      await db
+        .delete(warmupEmails)
+        .where(eq(warmupEmails.fromIntegrationId, integrationId));
+
+      console.log(`Cleared warmup data for integration ${integrationId}`);
+    } catch (error) {
+      console.error("Error clearing warmup data:", error);
+      throw error;
+    }
+  }
 }
 
 export const warmupService = new WarmupService();

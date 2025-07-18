@@ -940,6 +940,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reset/refresh simulation data
+  app.post('/api/warmup/reset-simulation', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Get user's email integrations with warmup enabled
+      const integrations = await storage.getUserEmailIntegrations(userId);
+      const warmupIntegrations = integrations.filter(i => i.warmupEnabled);
+      
+      if (warmupIntegrations.length === 0) {
+        return res.status(400).json({ message: "No email integrations with warmup enabled" });
+      }
+      
+      // Clear existing simulation data and regenerate
+      for (const integration of warmupIntegrations) {
+        await warmupService.clearWarmupData(integration.id);
+        await warmupService.simulateWarmupActivity(integration.id);
+      }
+      
+      res.json({ message: "Warmup simulation data refreshed", integrationsProcessed: warmupIntegrations.length });
+    } catch (error) {
+      console.error("Error resetting simulation:", error);
+      res.status(500).json({ message: "Failed to reset simulation" });
+    }
+  });
+
   app.post('/api/warmup/action/:emailId', isAuthenticated, async (req: any, res) => {
     try {
       const { emailId } = req.params;
