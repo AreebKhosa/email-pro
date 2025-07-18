@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Shield, CheckCircle, AlertTriangle, XCircle, Trash, RotateCcw, Download, TrendingUp, BarChart3, FileDown, PieChart } from "lucide-react";
-import { PieChart as RechartsPieChart, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+// Simple chart visualization without external dependencies
 
 export default function Deliverability() {
   const { toast } = useToast();
@@ -466,25 +466,36 @@ export default function Deliverability() {
                   </div>
                 </div>
 
-                {/* Chart */}
-                <div className="h-64 flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={[
-                        { name: 'Valid', value: validationStats.valid || 0, fill: '#10b981' },
-                        { name: 'Risky', value: validationStats.risky || 0, fill: '#f59e0b' },
-                        { name: 'Invalid', value: validationStats.invalid || 0, fill: '#ef4444' },
-                        { name: 'Pending', value: validationStats.pending || 0, fill: '#6b7280' },
-                      ]}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="value" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                {/* Simple Chart Visualization */}
+                <div className="h-64 flex flex-col justify-between p-4 bg-slate-50 rounded-lg">
+                  <h4 className="text-sm font-medium text-slate-700 mb-4">Email Status Distribution</h4>
+                  <div className="flex-1 flex items-end justify-between gap-2">
+                    {[
+                      { label: 'Valid', value: validationStats.valid || 0, color: 'bg-green-500', bgColor: 'bg-green-100' },
+                      { label: 'Risky', value: validationStats.risky || 0, color: 'bg-yellow-500', bgColor: 'bg-yellow-100' },
+                      { label: 'Invalid', value: validationStats.invalid || 0, color: 'bg-red-500', bgColor: 'bg-red-100' },
+                      { label: 'Pending', value: validationStats.pending || 0, color: 'bg-slate-500', bgColor: 'bg-slate-100' },
+                    ].map((item, index) => {
+                      const total = (validationStats.valid || 0) + (validationStats.risky || 0) + (validationStats.invalid || 0) + (validationStats.pending || 0);
+                      const percentage = total > 0 ? (item.value / total) * 100 : 0;
+                      const height = Math.max(percentage * 1.5, 8); // Minimum height of 8px
+                      
+                      return (
+                        <div key={index} className="flex-1 flex flex-col items-center">
+                          <div className={`w-full ${item.bgColor} rounded-t flex items-end justify-center`} style={{ height: '150px' }}>
+                            <div 
+                              className={`w-3/4 ${item.color} rounded-t transition-all duration-500`}
+                              style={{ height: `${height}px` }}
+                            />
+                          </div>
+                          <div className="mt-2 text-center">
+                            <div className="text-xs font-medium text-slate-700">{item.label}</div>
+                            <div className="text-xs text-slate-500">{item.value}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </CardContent>
