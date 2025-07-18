@@ -47,10 +47,13 @@ Preferred communication style: Simple, everyday language.
 - **Service Layer**: Nodemailer for SMTP, IMAP library for inbox management
 
 ### Campaign System
-- **Campaign Creation**: Email campaigns with recipient list targeting
-- **Follow-up Sequences**: Automated follow-up email chains
-- **Scheduling**: Time-based campaign execution
+- **4-Step Campaign Creation**: Full-page wizard flow (Campaign Info → Recipients → Content → Sending Settings)
+- **Email Rotation**: Multi-account email distribution for upgraded plans
+- **Follow-up Sequences**: Automated follow-up email chains with condition-based triggers
+- **AI Enhancement**: OpenAI-powered email content improvement
+- **Scheduling**: Time-based campaign execution with configurable sending windows
 - **Tracking**: Email delivery and engagement metrics
+- **Plan-Based Features**: Different capabilities based on subscription tier
 
 ### AI Personalization
 - **Provider**: OpenAI GPT-4o integration
@@ -79,6 +82,16 @@ Preferred communication style: Simple, everyday language.
 - **Export Functionality**: CSV download with all personalized emails
 - **Website Validation**: Recipients without websites show "No Website" status
 - **Plan-Based Limits**: Demo (30), Starter (1000), Pro (1000), Premium (1000) personalizations
+
+### Advanced Email Rotation System
+- **Multi-Account Sending**: Upgraded plans can rotate emails across multiple verified email accounts
+- **Configurable Rotation**: Users set emails per account before switching (default: 30 emails)
+- **Timing Controls**: Customizable delay between email sends (1-60 minutes)
+- **Daily Limits**: Plan-based sending limits with automatic daily scheduling
+- **Time Windows**: Configurable sending hours (e.g., 8 AM to 5 PM)
+- **Smart Distribution**: Automatic calculation of email distribution across accounts and days
+- **Completion Estimates**: Real-time estimation of campaign completion time
+- **Account Validation**: Verification that all rotation accounts are properly configured
 
 ## Data Flow
 

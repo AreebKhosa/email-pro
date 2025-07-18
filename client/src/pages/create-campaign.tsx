@@ -53,6 +53,8 @@ interface CampaignData {
   timeWindowEnd: string;
   rotateEmails: boolean;
   emailIntegrationIds: number[];
+  emailsPerAccount: number;
+  emailDelay: number;
   followUpEnabled: boolean;
   followUpSubject: string;
   followUpBody: string;
@@ -91,6 +93,8 @@ export default function CreateCampaign() {
     timeWindowEnd: '17:00',
     rotateEmails: false,
     emailIntegrationIds: [],
+    emailsPerAccount: 30,
+    emailDelay: 5,
     followUpEnabled: false,
     followUpSubject: '',
     followUpBody: '',
@@ -207,19 +211,22 @@ export default function CreateCampaign() {
       return;
     }
 
-    // For now, use the first selected email integration for the campaign
-    // TODO: Implement proper multiple email rotation in the backend
+    // Prepare campaign payload with email rotation support
     const campaignPayload = {
       name: campaignData.name,
       recipientListId: campaignData.recipientListId,
-      emailIntegrationId: campaignData.emailIntegrationIds[0], // Use first selected email
+      emailIntegrationId: campaignData.emailIntegrationIds[0], // Primary email for the campaign
       subject: campaignData.subject,
       body: campaignData.body,
+      // Email rotation settings
+      emailRotationEnabled: campaignData.rotateEmails,
+      emailRotationIds: campaignData.emailIntegrationIds,
+      emailsPerAccount: campaignData.emailsPerAccount,
+      emailDelay: campaignData.emailDelay,
       dailyLimit: campaignData.dailyLimit,
       timeWindowStart: campaignData.timeWindowStart,
       timeWindowEnd: campaignData.timeWindowEnd,
-      rotateEmails: campaignData.rotateEmails,
-      selectedEmailIds: campaignData.emailIntegrationIds, // Pass all selected emails for rotation
+      // Follow-up settings
       followUpEnabled: campaignData.followUpEnabled,
       followUpSubject: campaignData.followUpSubject,
       followUpBody: campaignData.followUpBody,
@@ -494,21 +501,58 @@ export default function CreateCampaign() {
                 </div>
 
                 {planLimits.emailAccounts > 1 && (
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="rotate-emails"
-                        checked={campaignData.rotateEmails}
-                        onCheckedChange={(checked) => setCampaignData(prev => ({ ...prev, rotateEmails: checked as boolean }))}
-                      />
-                      <Label htmlFor="rotate-emails" className="flex items-center gap-2">
-                        <RotateCw className="w-4 h-4" />
-                        Rotate between sending emails
-                      </Label>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="rotate-emails"
+                          checked={campaignData.rotateEmails}
+                          onCheckedChange={(checked) => setCampaignData(prev => ({ ...prev, rotateEmails: checked as boolean }))}
+                        />
+                        <Label htmlFor="rotate-emails" className="flex items-center gap-2">
+                          <RotateCw className="w-4 h-4" />
+                          Rotate between sending emails
+                        </Label>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1 ml-6">
+                        Distribute emails across selected accounts for better deliverability
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-500 mt-1 ml-6">
-                      Distribute emails across selected accounts for better deliverability
-                    </p>
+                    
+                    {campaignData.rotateEmails && (
+                      <div className="ml-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-sm font-medium">Emails per Account</Label>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                              Number of emails to send from each account before switching
+                            </p>
+                            <Input
+                              type="number"
+                              value={campaignData.emailsPerAccount}
+                              onChange={(e) => setCampaignData(prev => ({ ...prev, emailsPerAccount: parseInt(e.target.value) || 30 }))}
+                              min="1"
+                              max="100"
+                              className="w-full"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium">Delay Between Emails (minutes)</Label>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                              Time to wait between sending each email
+                            </p>
+                            <Input
+                              type="number"
+                              value={campaignData.emailDelay}
+                              onChange={(e) => setCampaignData(prev => ({ ...prev, emailDelay: parseInt(e.target.value) || 5 }))}
+                              min="1"
+                              max="60"
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -589,6 +633,12 @@ export default function CreateCampaign() {
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     <strong>Campaign Summary:</strong> This campaign will send {selectedRecipientList?.recipientCount || 0} emails using {campaignData.emailIntegrationIds.length} email account(s) at a rate of {campaignData.dailyLimit} emails per day between {campaignData.timeWindowStart} and {campaignData.timeWindowEnd}.
+                    {campaignData.rotateEmails && (
+                      <> Email rotation is enabled with {campaignData.emailsPerAccount} emails per account and {campaignData.emailDelay} minute(s) delay between sends.</>
+                    )}
+                    {campaignData.followUpEnabled && (
+                      <> Follow-up emails will be sent after {campaignData.followUpDays} days for recipients who haven't {campaignData.followUpCondition === 'not_opened' ? 'opened' : 'replied to'} the email.</>
+                    )}
                   </AlertDescription>
                 </Alert>
               </div>

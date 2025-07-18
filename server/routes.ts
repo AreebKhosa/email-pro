@@ -821,7 +821,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       
       // Extract the required fields for the campaign schema
-      const { name, recipientListId, emailIntegrationId, subject, body, ...extraFields } = req.body;
+      const { 
+        name, 
+        recipientListId, 
+        emailIntegrationId, 
+        subject, 
+        body, 
+        emailRotationEnabled,
+        emailRotationIds,
+        emailsPerAccount,
+        emailDelay,
+        dailyLimit,
+        timeWindowStart,
+        timeWindowEnd,
+        ...extraFields 
+      } = req.body;
       
       // Validate required fields
       if (!name || !recipientListId || !emailIntegrationId || !subject || !body) {
@@ -834,6 +848,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emailIntegrationId,
         subject,
         body,
+        emailRotationEnabled: emailRotationEnabled || false,
+        emailRotationIds: emailRotationIds || [],
+        emailsPerAccount: emailsPerAccount || 30,
+        emailDelay: emailDelay || 5,
+        dailyLimit: dailyLimit || 50,
+        timeWindowStart: timeWindowStart || "08:00",
+        timeWindowEnd: timeWindowEnd || "17:00",
         scheduledAt: extraFields.scheduledAt || null,
         status: extraFields.status || "draft"
       };

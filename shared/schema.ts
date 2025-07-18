@@ -104,6 +104,15 @@ export const campaigns = pgTable("campaigns", {
   body: text("body").notNull(),
   status: varchar("status").notNull().default("draft"), // draft, scheduled, sending, completed, paused
   scheduledAt: timestamp("scheduled_at"),
+  // Email rotation settings
+  emailRotationEnabled: boolean("email_rotation_enabled").default(false),
+  emailRotationIds: jsonb("email_rotation_ids").$type<number[]>().default([]),
+  emailsPerAccount: integer("emails_per_account").default(30),
+  emailDelay: integer("email_delay").default(5), // delay in minutes between emails
+  dailyLimit: integer("daily_limit").default(50),
+  timeWindowStart: varchar("time_window_start").default("08:00"),
+  timeWindowEnd: varchar("time_window_end").default("17:00"),
+  // Tracking
   sentCount: integer("sent_count").default(0),
   deliveredCount: integer("delivered_count").default(0),
   openedCount: integer("opened_count").default(0),
