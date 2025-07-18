@@ -24,7 +24,7 @@ const planLimits = {
     recipientsPerMonth: 300,
     emailIntegrations: 1,
     deliverabilityChecks: 150,
-    personalizedEmails: 100,
+    personalizedEmails: 30,
     followUps: 0,
     campaigns: 3,
     warmupEmails: 0,
@@ -34,7 +34,7 @@ const planLimits = {
     recipientsPerMonth: 6000,
     emailIntegrations: 4,
     deliverabilityChecks: 2000,
-    personalizedEmails: 2000,
+    personalizedEmails: 1000,
     followUps: 1,
     campaigns: Infinity,
     warmupEmails: 2500,
@@ -44,7 +44,7 @@ const planLimits = {
     recipientsPerMonth: 25000,
     emailIntegrations: 20,
     deliverabilityChecks: 10000,
-    personalizedEmails: 5000,
+    personalizedEmails: 1000,
     followUps: 1,
     campaigns: Infinity,
     warmupEmails: Infinity,
@@ -54,7 +54,7 @@ const planLimits = {
     recipientsPerMonth: Infinity,
     emailIntegrations: Infinity,
     deliverabilityChecks: Infinity,
-    personalizedEmails: Infinity,
+    personalizedEmails: 1000,
     followUps: 2,
     campaigns: Infinity,
     warmupEmails: Infinity,
@@ -623,19 +623,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.updateRecipientPersonalizedEmail(recipientId, personalizedEmail);
 
-      // Update usage - with error handling (only if not demo mode)
-      if (!personalizedEmail.includes('demo email generated due to OpenAI quota limits')) {
-        try {
-          const currentMonth = new Date().toISOString().slice(0, 7);
-          const usage = await storage.getCurrentMonthUsage(userId);
-          await storage.updateUsage(userId, currentMonth, {
-            personalizedEmails: (usage?.personalizedEmails || 0) + 1,
-          });
-          console.log('Updated usage successfully');
-        } catch (usageError) {
-          console.error('Error updating usage (non-critical):', usageError);
-          // Don't fail the request if usage tracking fails
-        }
+      // Update usage - track all personalized emails (including demo emails)
+      try {
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const usage = await storage.getCurrentMonthUsage(userId);
+        await storage.updateUsage(userId, currentMonth, {
+          personalizedEmails: (usage?.personalizedEmails || 0) + 1,
+        });
+        console.log('Updated usage successfully');
+      } catch (usageError) {
+        console.error('Error updating usage (non-critical):', usageError);
+        // Don't fail the request if usage tracking fails
       }
 
       res.json({ personalizedEmail });
@@ -679,7 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Update usage (only count non-demo emails)
+      // Update usage - track all personalized emails (including demo emails)
       try {
         const currentMonth = new Date().toISOString().slice(0, 7);
         const usage = await storage.getCurrentMonthUsage(userId);

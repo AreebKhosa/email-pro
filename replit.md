@@ -78,7 +78,7 @@ Preferred communication style: Simple, everyday language.
 - **Settings Configuration**: Required personalization settings (email type, tone, CTA, character limits)
 - **Export Functionality**: CSV download with all personalized emails
 - **Website Validation**: Recipients without websites show "No Website" status
-- **Plan-Based Limits**: Demo (10), Starter (100), Pro (500), Premium (2000) personalizations
+- **Plan-Based Limits**: Demo (30), Starter (1000), Pro (1000), Premium (1000) personalizations
 
 ## Data Flow
 

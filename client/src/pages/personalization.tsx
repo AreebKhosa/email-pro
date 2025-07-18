@@ -272,10 +272,10 @@ export default function Personalization() {
 
   // Calculate personalization quota
   const planLimits: Record<string, number> = {
-    demo: 100,
-    starter: 2000,
-    pro: 5000,
-    premium: 999999, // Unlimited (large number)
+    demo: 30,
+    starter: 1000,
+    pro: 1000,
+    premium: 1000,
   };
 
   const currentPlan = userStats?.plan || 'demo';
