@@ -282,7 +282,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(recipients.createdAt));
   }
 
-  async getRecentRecipients(userId: string, limit: number = 50): Promise<Recipient[]> {
+  async getRecentRecipients(userId: string, limit: number = 5): Promise<Recipient[]> {
     return await db
       .select({
         id: recipients.id,
