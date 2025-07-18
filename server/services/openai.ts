@@ -98,7 +98,10 @@ export async function personalizeEmail(
     return personalizedEmail;
   } catch (error) {
     console.error('Error personalizing email with OpenAI:', error);
-    throw new Error('Failed to personalize email');
+    if (error.status === 401) {
+      throw new Error('OpenAI API key is invalid. Please check your API key settings.');
+    }
+    throw new Error(`Failed to personalize email: ${error.message}`);
   }
 }
 

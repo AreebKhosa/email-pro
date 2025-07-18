@@ -18,7 +18,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Bot, Wand2, Globe, Clock, Target, MoreHorizontal, Eye, Sparkles, Download, Zap, Users, AlertCircle } from "lucide-react";
+import { Bot, Wand2, Globe, Clock, Target, MoreHorizontal, Eye, Sparkles, Download, Zap, Users, AlertCircle, Plus } from "lucide-react";
 
 const personalizationSchema = z.object({
   emailType: z.string().min(1, "Email type is required"),
@@ -49,6 +49,8 @@ export default function Personalization() {
   const [isPersonalizeOpen, setIsPersonalizeOpen] = useState(false);
   const [previewEmail, setPreviewEmail] = useState<string>("");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [showAddToListDialog, setShowAddToListDialog] = useState(false);
+  const [newListName, setNewListName] = useState("");
 
   const { data: recipientLists } = useQuery({
     queryKey: ["/api/recipient-lists"],
@@ -152,8 +154,64 @@ export default function Personalization() {
     },
   });
 
+  const createListMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const personalizedRecipients = recipients?.filter((r: any) => r.personalizedEmail) || [];
+      const listData = {
+        name,
+        description: `Personalized list created from ${selectedList?.name}`,
+      };
+      
+      const response = await apiRequest("POST", "/api/recipient-lists", listData);
+      const newList = await response.json();
+      
+      // Add personalized recipients to the new list
+      for (const recipient of personalizedRecipients) {
+        await apiRequest("POST", "/api/recipients", {
+          listId: newList.id,
+          name: recipient.name,
+          email: recipient.email,
+          companyName: recipient.companyName,
+          position: recipient.position,
+          websiteLink: recipient.websiteLink,
+          personalizedEmail: recipient.personalizedEmail,
+        });
+      }
+      
+      return newList;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Personalized recipients added to new list successfully",
+      });
+      setShowAddToListDialog(false);
+      setNewListName("");
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: any) => {
     personalizeListMutation.mutate(data);
+  };
+
+  const handleCreateList = () => {
+    if (!newListName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a list name",
+        variant: "destructive",
+      });
+      return;
+    }
+    createListMutation.mutate(newListName);
   };
 
   const handlePersonalizeSingle = (recipientId: number) => {
@@ -280,10 +338,18 @@ export default function Personalization() {
                         size="sm"
                         variant="outline"
                         onClick={() => exportMutation.mutate()}
-                        disabled={!recipients || recipients.length === 0}
+                        disabled={!recipients || recipients.length === 0 || personalizedCount === 0}
                       >
                         <Download className="h-4 w-4 mr-2" />
-                        Export
+                        Export Personalized
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => setShowAddToListDialog(true)}
+                        disabled={!recipients || recipients.length === 0 || personalizedCount === 0}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add to List
                       </Button>
                     </div>
                   </div>
@@ -511,6 +577,39 @@ export default function Personalization() {
             <div className="mt-4">
               <div className="bg-slate-50 p-4 rounded-lg max-h-96 overflow-y-auto">
                 <pre className="whitespace-pre-wrap text-sm">{previewEmail}</pre>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add to List Dialog */}
+        <Dialog open={showAddToListDialog} onOpenChange={setShowAddToListDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Personalized Recipients to New List</DialogTitle>
+              <DialogDescription>
+                Create a new recipient list with {personalizedCount} personalized recipients from "{selectedList?.name}".
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">List Name</label>
+                <Input
+                  value={newListName}
+                  onChange={(e) => setNewListName(e.target.value)}
+                  placeholder="Enter new list name"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowAddToListDialog(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleCreateList}
+                  disabled={createListMutation.isPending || !newListName.trim()}
+                >
+                  {createListMutation.isPending ? "Creating..." : "Create List"}
+                </Button>
               </div>
             </div>
           </DialogContent>
