@@ -583,7 +583,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Email personalization
+  // Email personalization - single recipient
   app.post('/api/recipients/:id/personalize', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -596,10 +596,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Plan limit reached for email personalization" });
       }
 
-      const recipients = await storage.getListRecipients(recipientId);
-      const recipient = recipients.find(r => r.id === recipientId);
+      // Get recipient directly
+      const recipient = await storage.getRecipient(recipientId);
       if (!recipient) {
         return res.status(404).json({ message: "Recipient not found" });
+      }
+
+      if (!recipient.websiteLink) {
+        return res.status(400).json({ message: "Recipient has no website" });
       }
 
       const personalizedEmail = await personalizeEmail(recipient, {
@@ -632,30 +636,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { emailType, tone, maxCharacters, callToAction } = req.body;
 
       const recipients = await storage.getListRecipients(listId);
+      const unPersonalizedRecipients = recipients.filter(r => r.websiteLink && !r.personalizedEmail);
       
       // Check plan limits
-      const canPersonalize = await checkPlanLimits(userId, 'personalization', recipients.length);
+      const canPersonalize = await checkPlanLimits(userId, 'personalization', unPersonalizedRecipients.length);
       if (!canPersonalize) {
         return res.status(403).json({ message: "Plan limit reached for email personalization" });
       }
 
       let personalizedCount = 0;
 
-      for (const recipient of recipients) {
-        if (recipient.websiteLink) {
-          try {
-            const personalizedEmail = await personalizeEmail(recipient, {
-              emailType,
-              tone,
-              maxCharacters,
-              callToAction,
-            });
+      for (const recipient of unPersonalizedRecipients) {
+        try {
+          const personalizedEmail = await personalizeEmail(recipient, {
+            emailType,
+            tone,
+            maxCharacters,
+            callToAction,
+          });
 
-            await storage.updateRecipientPersonalizedEmail(recipient.id, personalizedEmail);
-            personalizedCount++;
-          } catch (error) {
-            console.error(`Error personalizing email for recipient ${recipient.id}:`, error);
-          }
+          await storage.updateRecipientPersonalizedEmail(recipient.id, personalizedEmail);
+          personalizedCount++;
+        } catch (error) {
+          console.error(`Error personalizing email for recipient ${recipient.id}:`, error);
         }
       }
 
@@ -670,6 +673,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error personalizing emails:", error);
       res.status(500).json({ message: "Failed to personalize emails" });
+    }
+  });
+
+  // Export recipient list with personalized emails
+  app.get('/api/recipient-lists/:id/export', isAuthenticated, async (req: any, res) => {
+    try {
+      const listId = parseInt(req.params.id);
+      const recipients = await storage.getListRecipients(listId);
+      
+      // Create CSV content
+      const headers = ['Name', 'Email', 'Website', 'Personalized Email'];
+      const csvRows = [
+        headers.join(','),
+        ...recipients.map(recipient => [
+          `"${recipient.name || ''}"`,
+          `"${recipient.email || ''}"`,
+          `"${recipient.websiteLink || ''}"`,
+          `"${recipient.personalizedEmail || (recipient.websiteLink ? 'Not generated' : 'No website')}"`
+        ].join(','))
+      ];
+      
+      const csvContent = csvRows.join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=personalized-emails-${listId}.csv`);
+      res.send(csvContent);
+    } catch (error) {
+      console.error("Error exporting recipient list:", error);
+      res.status(500).json({ message: "Failed to export recipient list" });
     }
   });
 
