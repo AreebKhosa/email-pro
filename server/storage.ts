@@ -56,6 +56,7 @@ export interface IStorage {
   addRecipients(recipients: InsertRecipient[]): Promise<Recipient[]>;
   getRecipient(id: number): Promise<Recipient | undefined>;
   getListRecipients(listId: number): Promise<Recipient[]>;
+  getRecentRecipients(userId: string, limit?: number): Promise<Recipient[]>;
   updateRecipientDeliverability(id: number, status: string): Promise<Recipient>;
   updateRecipientPersonalizedEmail(id: number, personalizedEmail: string): Promise<Recipient>;
   deleteRecipient(id: number): Promise<void>;
@@ -278,6 +279,29 @@ export class DatabaseStorage implements IStorage {
       .from(recipients)
       .where(eq(recipients.listId, listId))
       .orderBy(desc(recipients.createdAt));
+  }
+
+  async getRecentRecipients(userId: string, limit: number = 50): Promise<Recipient[]> {
+    return await db
+      .select({
+        id: recipients.id,
+        listId: recipients.listId,
+        name: recipients.name,
+        lastName: recipients.lastName,
+        email: recipients.email,
+        companyName: recipients.companyName,
+        position: recipients.position,
+        websiteLink: recipients.websiteLink,
+        deliverabilityStatus: recipients.deliverabilityStatus,
+        personalizedEmail: recipients.personalizedEmail,
+        createdAt: recipients.createdAt,
+        listName: recipientLists.name,
+      })
+      .from(recipients)
+      .leftJoin(recipientLists, eq(recipients.listId, recipientLists.id))
+      .where(eq(recipientLists.userId, userId))
+      .orderBy(desc(recipients.createdAt))
+      .limit(limit);
   }
 
   async updateRecipientDeliverability(id: number, status: string): Promise<Recipient> {

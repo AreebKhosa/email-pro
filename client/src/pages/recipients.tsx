@@ -49,6 +49,12 @@ export default function Recipients() {
     retry: false,
   });
 
+  const { data: recentRecipients } = useQuery({
+    queryKey: ["/api/recipients/recent"],
+    enabled: !selectedListId,
+    retry: false,
+  });
+
   const { data: userStats } = useQuery({
     queryKey: ["/api/user/stats"],
     retry: false,
@@ -180,6 +186,50 @@ export default function Recipients() {
       toast({
         title: "Error",
         description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteRecipientMutation = useMutation({
+    mutationFn: async (recipientId: number) => {
+      const response = await apiRequest("DELETE", `/api/recipients/${recipientId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", selectedListId, "recipients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/recipients/recent"] });
+      toast({
+        title: "Recipient deleted",
+        description: "The recipient has been removed from the list",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete recipient",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteListMutation = useMutation({
+    mutationFn: async (listId: number) => {
+      const response = await apiRequest("DELETE", `/api/recipient-lists/${listId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists"] });
+      setSelectedListId(null);
+      toast({
+        title: "List deleted",
+        description: "The recipient list and all its recipients have been deleted",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete recipient list",
         variant: "destructive",
       });
     },
@@ -402,15 +452,31 @@ export default function Recipients() {
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <div>
+                          <div className="flex-1">
                             <h3 className="font-medium text-slate-900">{list.name}</h3>
                             {list.description && (
                               <p className="text-sm text-slate-500 mt-1">{list.description}</p>
                             )}
                           </div>
-                          <Badge variant="secondary">
-                            {list.recipientCount || 0}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">
+                              {list.recipientCount || 0}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm('Are you sure you want to delete this list and all its recipients?')) {
+                                  deleteListMutation.mutate(list.id);
+                                }
+                              }}
+                              disabled={deleteListMutation.isPending}
+                              className="text-red-600 hover:bg-red-50 h-8 w-8 p-0"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </button>
                     ))}
@@ -662,14 +728,14 @@ export default function Recipients() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-2">
-                                <Button variant="ghost" size="sm">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="text-red-600 hover:bg-red-50"
+                                  onClick={() => deleteRecipientMutation.mutate(recipient.id)}
+                                  disabled={deleteRecipientMutation.isPending}
+                                >
                                   <Trash className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </div>
                             </TableCell>
@@ -695,10 +761,91 @@ export default function Recipients() {
                     </div>
                   )
                 ) : (
-                  <div className="text-center py-12">
-                    <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-slate-900 mb-2">Select a recipient list</h3>
-                    <p className="text-slate-600">Choose a list from the sidebar to view and manage recipients</p>
+                  <div>
+                    {recentRecipients && recentRecipients.length > 0 ? (
+                      <div>
+                        <div className="mb-4">
+                          <h3 className="text-lg font-medium text-slate-900 mb-2">Recently Uploaded Recipients</h3>
+                          <p className="text-slate-600">Your latest uploaded contacts across all lists</p>
+                        </div>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Company</TableHead>
+                              <TableHead>Email</TableHead>
+                              <TableHead>List</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {recentRecipients.map((recipient: any) => (
+                              <TableRow key={recipient.id}>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium text-slate-900">
+                                      {recipient.name} {recipient.lastName}
+                                    </p>
+                                    {recipient.position && (
+                                      <p className="text-sm text-slate-500">{recipient.position}</p>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {recipient.companyName || '-'}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {recipient.email}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  <Badge variant="outline">{recipient.listName}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {recipient.deliverabilityStatus ? (
+                                    <Badge 
+                                      variant={
+                                        recipient.deliverabilityStatus === 'valid' ? 'default' :
+                                        recipient.deliverabilityStatus === 'risky' ? 'secondary' :
+                                        'destructive'
+                                      }
+                                      className={
+                                        recipient.deliverabilityStatus === 'valid' ? 'bg-green-100 text-green-800' :
+                                        recipient.deliverabilityStatus === 'risky' ? 'bg-yellow-100 text-yellow-800' :
+                                        'bg-red-100 text-red-800'
+                                      }
+                                    >
+                                      {recipient.deliverabilityStatus}
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline">Unchecked</Badge>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      className="text-red-600 hover:bg-red-50"
+                                      onClick={() => deleteRecipientMutation.mutate(recipient.id)}
+                                      disabled={deleteRecipientMutation.isPending}
+                                    >
+                                      <Trash className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-slate-900 mb-2">Select a recipient list</h3>
+                        <p className="text-slate-600">Choose a list from the sidebar to view and manage recipients</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

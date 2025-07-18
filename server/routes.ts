@@ -532,6 +532,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete recipient list
+  app.delete('/api/recipient-lists/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const listId = parseInt(req.params.id);
+      
+      // First delete all recipients in the list
+      const recipients = await storage.getListRecipients(listId);
+      for (const recipient of recipients) {
+        await storage.deleteRecipient(recipient.id);
+      }
+      
+      // Then delete the list
+      await storage.deleteRecipientList(listId);
+      res.json({ message: "Recipient list deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting recipient list:", error);
+      res.status(500).json({ message: "Failed to delete recipient list" });
+    }
+  });
+
+  // Get recently uploaded recipients (last 50 across all lists)
+  app.get('/api/recipients/recent', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const recentRecipients = await storage.getRecentRecipients(userId, 50);
+      res.json(recentRecipients);
+    } catch (error) {
+      console.error("Error fetching recent recipients:", error);
+      res.status(500).json({ message: "Failed to fetch recent recipients" });
+    }
+  });
+
   // Get validation stats for a list
   app.get('/api/recipient-lists/:id/validation-stats', isAuthenticated, async (req: any, res) => {
     try {
