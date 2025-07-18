@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, Zap, TrendingUp, Mail, Target, Clock, CheckCircle, XCircle, Info, Play, Pause, RefreshCw } from "lucide-react";
+import { AlertCircle, Zap, TrendingUp, Mail, Clock, CheckCircle, XCircle, Info, Play, Pause } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -188,70 +188,6 @@ export default function WarmUp() {
     },
   });
 
-  const simulateWarmupMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("POST", "/api/warmup/simulate");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/warmup/stats"] });
-      toast({
-        title: "Success",
-        description: "Demo warmup data generated successfully",
-      });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: error.message || "Failed to simulate warmup",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const resetSimulationMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("POST", "/api/warmup/reset-simulation");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/warmup/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/email-integrations"] });
-      queryClient.refetchQueries({ queryKey: ["/api/warmup/stats"] });
-      toast({
-        title: "Success",
-        description: "Simulation data refreshed successfully! New data generated.",
-      });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: error.message || "Failed to reset simulation",
-        variant: "destructive",
-      });
-    },
-  });
-
   const handleDismissInstructions = () => {
     dismissInstructions("warmup");
     setShowInstructions(false);
@@ -369,26 +305,6 @@ export default function WarmUp() {
 
               <div className="flex gap-4">
                 <Button
-                  onClick={() => simulateWarmupMutation.mutate()}
-                  disabled={simulateWarmupMutation.isPending || emailIntegrations?.length === 0}
-                  variant="outline"
-                  className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
-                >
-                  <Target className="w-4 h-4" />
-                  {simulateWarmupMutation.isPending ? "Simulating..." : "Simulate Demo"}
-                </Button>
-
-                <Button
-                  onClick={() => resetSimulationMutation.mutate()}
-                  disabled={resetSimulationMutation.isPending || emailIntegrations?.length === 0}
-                  variant="outline"
-                  className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
-                >
-                  <RefreshCw className={`w-4 h-4 ${resetSimulationMutation.isPending ? 'animate-spin' : ''}`} />
-                  {resetSimulationMutation.isPending ? "Refreshing..." : "Refresh Demo"}
-                </Button>
-
-                <Button
                   onClick={() => sendWarmupMutation.mutate()}
                   disabled={sendWarmupMutation.isPending || activeIntegrations.length < 2}
                   className="flex items-center gap-2"
@@ -401,9 +317,7 @@ export default function WarmUp() {
                   <Alert className="flex-1">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      You need at least 2 active email accounts to start warmup. 
-                      <br />
-                      <span className="text-blue-600 font-medium">Try "Simulate Demo" to see how warmup works!</span>
+                      You need at least 2 active email accounts to start warmup.
                     </AlertDescription>
                   </Alert>
                 )}
