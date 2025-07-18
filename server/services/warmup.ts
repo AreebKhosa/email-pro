@@ -443,6 +443,127 @@ export class WarmupService {
       .set(updates)
       .where(eq(warmupEmails.id, emailId));
   }
+
+  // Simulate warmup activity for demo purposes
+  async simulateWarmupActivity(integrationId: number) {
+    try {
+      // Initialize warmup progress if not exists
+      const existingProgress = await db
+        .select()
+        .from(warmupProgress)
+        .where(eq(warmupProgress.emailIntegrationId, integrationId))
+        .limit(1);
+
+      if (existingProgress.length === 0) {
+        await this.initializeWarmupProgress(integrationId);
+      }
+
+      // Generate realistic warmup data for the past few days
+      const today = new Date();
+      const daysToSimulate = 7; // Simulate the last 7 days
+      
+      for (let i = daysToSimulate; i >= 0; i--) {
+        const simulationDate = new Date(today);
+        simulationDate.setDate(today.getDate() - i);
+        
+        // Calculate target emails for this day (gradual increase)
+        const dayOfWarmup = daysToSimulate - i + 1;
+        const targetEmails = Math.min(5 + (dayOfWarmup * 3), 50);
+        
+        // Generate realistic statistics
+        const emailsSent = Math.floor(targetEmails * (0.8 + Math.random() * 0.2));
+        const emailsOpened = Math.floor(emailsSent * (0.15 + Math.random() * 0.25)); // 15-40% open rate
+        const emailsReplied = Math.floor(emailsOpened * (0.05 + Math.random() * 0.15)); // 5-20% reply rate
+        const emailsSpam = Math.floor(emailsSent * (Math.random() * 0.02)); // 0-2% spam rate
+        const emailsBounced = Math.floor(emailsSent * (Math.random() * 0.01)); // 0-1% bounce rate
+        
+        // Calculate rates
+        const openRate = emailsSent > 0 ? (emailsOpened / emailsSent) * 100 : 0;
+        const replyRate = emailsOpened > 0 ? (emailsReplied / emailsOpened) * 100 : 0;
+        const spamRate = emailsSent > 0 ? (emailsSpam / emailsSent) * 100 : 0;
+        const bounceRate = emailsSent > 0 ? (emailsBounced / emailsSent) * 100 : 0;
+        
+        // Calculate warmup score (higher is better)
+        const warmupScore = Math.min(100, Math.max(0, 
+          70 + (openRate * 0.5) + (replyRate * 1.5) - (spamRate * 10) - (bounceRate * 5)
+        ));
+
+        // Check if stats already exist for this date
+        const existingStats = await db
+          .select()
+          .from(warmupStats)
+          .where(
+            and(
+              eq(warmupStats.emailIntegrationId, integrationId),
+              sql`DATE(${warmupStats.date}) = DATE(${simulationDate})`
+            )
+          )
+          .limit(1);
+
+        if (existingStats.length === 0) {
+          // Insert new stats
+          await db.insert(warmupStats).values({
+            emailIntegrationId: integrationId,
+            date: simulationDate,
+            emailsSent,
+            emailsOpened,
+            emailsReplied,
+            emailsSpam,
+            emailsBounced,
+            warmupScore,
+            openRate,
+            replyRate,
+            spamRate,
+            bounceRate,
+          });
+        } else {
+          // Update existing stats
+          await db
+            .update(warmupStats)
+            .set({
+              emailsSent,
+              emailsOpened,
+              emailsReplied,
+              emailsSpam,
+              emailsBounced,
+              warmupScore,
+              openRate,
+              replyRate,
+              spamRate,
+              bounceRate,
+            })
+            .where(eq(warmupStats.id, existingStats[0].id));
+        }
+
+        // Update progress for this day
+        const progressDay = await db
+          .select()
+          .from(warmupProgress)
+          .where(
+            and(
+              eq(warmupProgress.emailIntegrationId, integrationId),
+              eq(warmupProgress.day, dayOfWarmup)
+            )
+          )
+          .limit(1);
+
+        if (progressDay.length > 0) {
+          await db
+            .update(warmupProgress)
+            .set({
+              actualEmailsSent: emailsSent,
+              isCompleted: emailsSent >= targetEmails,
+            })
+            .where(eq(warmupProgress.id, progressDay[0].id));
+        }
+      }
+
+      console.log(`Simulated warmup activity for integration ${integrationId}`);
+    } catch (error) {
+      console.error("Error simulating warmup activity:", error);
+      throw error;
+    }
+  }
 }
 
 export const warmupService = new WarmupService();

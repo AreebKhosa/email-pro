@@ -188,6 +188,37 @@ export default function WarmUp() {
     },
   });
 
+  const simulateWarmupMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/warmup/simulate");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/warmup/stats"] });
+      toast({
+        title: "Success",
+        description: "Demo warmup data generated successfully",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to simulate warmup",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDismissInstructions = () => {
     dismissInstructions("warmup");
     setShowInstructions(false);
@@ -305,6 +336,16 @@ export default function WarmUp() {
 
               <div className="flex gap-4">
                 <Button
+                  onClick={() => simulateWarmupMutation.mutate()}
+                  disabled={simulateWarmupMutation.isPending || activeIntegrations.length === 0}
+                  variant="outline"
+                  className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+                >
+                  <Target className="w-4 h-4" />
+                  {simulateWarmupMutation.isPending ? "Simulating..." : "Simulate Demo"}
+                </Button>
+
+                <Button
                   onClick={() => sendWarmupMutation.mutate()}
                   disabled={sendWarmupMutation.isPending || activeIntegrations.length < 2}
                   className="flex items-center gap-2"
@@ -317,7 +358,9 @@ export default function WarmUp() {
                   <Alert className="flex-1">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      You need at least 2 active email accounts to start warmup
+                      You need at least 2 active email accounts to start warmup. 
+                      <br />
+                      <span className="text-blue-600 font-medium">Try "Simulate Demo" to see how warmup works!</span>
                     </AlertDescription>
                   </Alert>
                 )}
