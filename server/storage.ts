@@ -328,22 +328,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAllRecipientCounts(userId: string): Promise<void> {
-    // Update recipient counts for all lists for this user
-    const lists = await db
-      .select({ id: recipientLists.id })
-      .from(recipientLists)
-      .where(eq(recipientLists.userId, userId));
+    try {
+      // Update recipient counts for all lists for this user using a more efficient approach
+      await db.execute(sql`
+        UPDATE recipient_lists 
+        SET recipient_count = (
+          SELECT COUNT(*) 
+          FROM recipients 
+          WHERE recipients.list_id = recipient_lists.id
+        ) 
+        WHERE recipient_lists.user_id = ${userId}
+      `);
+    } catch (error) {
+      console.error("Error updating recipient counts:", error);
+      // Fallback to individual updates if bulk update fails
+      const lists = await db
+        .select({ id: recipientLists.id })
+        .from(recipientLists)
+        .where(eq(recipientLists.userId, userId));
 
-    for (const list of lists) {
-      const countResult = await db
-        .select({ count: count() })
-        .from(recipients)
-        .where(eq(recipients.listId, list.id));
+      for (const list of lists) {
+        const countResult = await db
+          .select({ count: count() })
+          .from(recipients)
+          .where(eq(recipients.listId, list.id));
 
-      await db
-        .update(recipientLists)
-        .set({ recipientCount: Number(countResult[0]?.count || 0) })
-        .where(eq(recipientLists.id, list.id));
+        await db
+          .update(recipientLists)
+          .set({ recipientCount: Number(countResult[0]?.count || 0) })
+          .where(eq(recipientLists.id, list.id));
+      }
     }
   }
 
