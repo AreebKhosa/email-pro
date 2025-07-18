@@ -6,6 +6,7 @@ import { setupGoogleAuth, getGmailAuthUrl } from "./services/googleAuth";
 import { validateEmailIntegration, sendEmail } from "./services/email";
 import { personalizeEmail } from "./services/openai";
 import { createStripeCheckout, handleStripeWebhook } from "./services/stripe";
+import { emailValidationService, type EmailValidationResult } from "./services/emailValidation";
 import bcrypt from "bcryptjs";
 import passport from "passport";
 import { 
@@ -375,11 +376,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Plan limit reached for deliverability checks" });
       }
 
-      // Simple email validation (in real app, use email validation service)
-      const recipient = await storage.getListRecipients(recipientId);
-      const status = Math.random() > 0.8 ? 'invalid' : Math.random() > 0.9 ? 'risky' : 'valid';
+      // Enhanced email validation with Python service
+      const recipient = await storage.getRecipient(recipientId);
       
-      await storage.updateRecipientDeliverability(recipientId, status);
+      if (!recipient) {
+        return res.status(404).json({ message: "Recipient not found" });
+      }
+
+      try {
+        const validationResult = await emailValidationService.validateEmail(recipient.email);
+        const status = emailValidationService.getDeliverabilityStatus(validationResult);
+        
+        await storage.updateRecipientDeliverability(recipientId, status);
+        
+        res.json({ 
+          status,
+          details: validationResult,
+          reason: emailValidationService.getValidationReason(validationResult)
+        });
+      } catch (error) {
+        console.error("Email validation error:", error);
+        // Fallback to basic validation
+        const status = 'risky'; // Conservative fallback
+        await storage.updateRecipientDeliverability(recipientId, status);
+        res.json({ 
+          status,
+          reason: 'Validation service unavailable - marked as risky'
+        });
+      }
 
       // Update usage
       const currentMonth = new Date().toISOString().slice(0, 7);
@@ -409,11 +433,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const results = { valid: 0, risky: 0, invalid: 0 };
-
-      for (const recipient of recipients) {
-        const status = Math.random() > 0.8 ? 'invalid' : Math.random() > 0.9 ? 'risky' : 'valid';
-        await storage.updateRecipientDeliverability(recipient.id, status);
-        results[status as keyof typeof results]++;
+      
+      // Extract emails for bulk validation
+      const emails = recipients.map(r => r.email);
+      
+      try {
+        const validationResults = await emailValidationService.validateEmails(emails);
+        
+        for (let i = 0; i < recipients.length; i++) {
+          const recipient = recipients[i];
+          const validationResult = validationResults[i];
+          const status = emailValidationService.getDeliverabilityStatus(validationResult);
+          
+          await storage.updateRecipientDeliverability(recipient.id, status);
+          results[status as keyof typeof results]++;
+        }
+      } catch (error) {
+        console.error("Bulk email validation error:", error);
+        // Fallback to conservative marking
+        for (const recipient of recipients) {
+          const status = 'risky'; // Conservative fallback
+          await storage.updateRecipientDeliverability(recipient.id, status);
+          results[status as keyof typeof results]++;
+        }
       }
 
       // Update usage

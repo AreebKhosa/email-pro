@@ -15,6 +15,7 @@ export default function Deliverability() {
   const { toast } = useToast();
   const [selectedListId, setSelectedListId] = useState<string>("");
   const [checkResults, setCheckResults] = useState<any>(null);
+  const [validationDetails, setValidationDetails] = useState<any>(null);
 
   const { data: recipientLists } = useQuery({
     queryKey: ["/api/recipient-lists"],
@@ -65,11 +66,14 @@ export default function Deliverability() {
       const response = await apiRequest("POST", `/api/recipients/${recipientId}/check-deliverability`);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Success",
         description: "Email checked successfully",
       });
+      if (data.details) {
+        setValidationDetails(data);
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", parseInt(selectedListId), "recipients"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
     },
@@ -477,6 +481,108 @@ export default function Deliverability() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Validation Details Modal */}
+        {validationDetails && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Email Validation Details
+              </CardTitle>
+              <CardDescription>
+                Comprehensive validation results for {validationDetails.details?.email}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Validation Checks */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold">Validation Checks</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span>Syntax Check</span>
+                      {validationDetails.details?.checks?.syntax ? (
+                        <Badge variant="default" className="bg-green-500">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Passed
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive">
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Failed
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>DNS/MX Check</span>
+                      {validationDetails.details?.checks?.dns ? (
+                        <Badge variant="default" className="bg-green-500">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Passed
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive">
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Failed
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>SMTP Check</span>
+                      {validationDetails.details?.checks?.smtp ? (
+                        <Badge variant="default" className="bg-green-500">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Passed
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          Failed
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Technical Details */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold">Technical Details</h4>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-medium">Status:</span> {validationDetails.status}
+                    </div>
+                    <div>
+                      <span className="font-medium">Reason:</span> {validationDetails.reason}
+                    </div>
+                    {validationDetails.details?.mx_records && validationDetails.details.mx_records.length > 0 && (
+                      <div>
+                        <span className="font-medium">MX Records:</span>
+                        <ul className="mt-1 ml-4">
+                          {validationDetails.details.mx_records.map((mx: any, idx: number) => (
+                            <li key={idx} className="text-xs text-muted-foreground">
+                              Priority {mx.priority}: {mx.exchange}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {validationDetails.details?.smtp?.mx_server && (
+                      <div>
+                        <span className="font-medium">SMTP Server:</span> {validationDetails.details.smtp.mx_server}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t">
+                <Button variant="outline" onClick={() => setValidationDetails(null)}>
+                  Close Details
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </Layout>
   );

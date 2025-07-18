@@ -54,6 +54,7 @@ export interface IStorage {
   // Recipients
   addRecipient(recipient: InsertRecipient): Promise<Recipient>;
   addRecipients(recipients: InsertRecipient[]): Promise<Recipient[]>;
+  getRecipient(id: number): Promise<Recipient | undefined>;
   getListRecipients(listId: number): Promise<Recipient[]>;
   updateRecipientDeliverability(id: number, status: string): Promise<Recipient>;
   updateRecipientPersonalizedEmail(id: number, personalizedEmail: string): Promise<Recipient>;
@@ -258,6 +259,14 @@ export class DatabaseStorage implements IStorage {
       .insert(recipients)
       .values(recipientData)
       .returning();
+  }
+
+  async getRecipient(id: number): Promise<Recipient | undefined> {
+    const [recipient] = await db
+      .select()
+      .from(recipients)
+      .where(eq(recipients.id, id));
+    return recipient;
   }
 
   async getListRecipients(listId: number): Promise<Recipient[]> {
