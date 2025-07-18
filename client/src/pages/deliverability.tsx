@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, CheckCircle, AlertTriangle, XCircle, Trash, RotateCcw, Download, TrendingUp, BarChart3 } from "lucide-react";
+import { Shield, CheckCircle, AlertTriangle, XCircle, Trash, RotateCcw, Download, TrendingUp, BarChart3, FileDown, PieChart } from "lucide-react";
+import { PieChart as RechartsPieChart, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 
 export default function Deliverability() {
   const { toast } = useToast();
@@ -35,6 +36,13 @@ export default function Deliverability() {
 
   const { data: userStats } = useQuery({
     queryKey: ["/api/user/stats"],
+    retry: false,
+  });
+
+  // Get validation stats for selected list
+  const { data: validationStats } = useQuery({
+    queryKey: ["/api/recipient-lists", parseInt(selectedListId), "validation-stats"],
+    enabled: !!selectedListId,
     retry: false,
   });
 
@@ -94,6 +102,71 @@ export default function Deliverability() {
 
   const handleCheckSingle = (recipientId: number) => {
     checkSingleEmailMutation.mutate(recipientId);
+  };
+
+  // Remove invalid emails mutation
+  const removeInvalidMutation = useMutation({
+    mutationFn: async (listId: string) => {
+      const response = await apiRequest("POST", `/api/recipient-lists/${listId}/remove-invalid`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", parseInt(selectedListId), "recipients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", parseInt(selectedListId), "validation-stats"] });
+      toast({
+        title: "Invalid emails removed",
+        description: `${data.removedCount} invalid emails were removed from the list`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to remove invalid emails",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete recipient mutation
+  const deleteRecipientMutation = useMutation({
+    mutationFn: async (recipientId: number) => {
+      const response = await apiRequest("DELETE", `/api/recipients/${recipientId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", parseInt(selectedListId), "recipients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", parseInt(selectedListId), "validation-stats"] });
+      toast({
+        title: "Recipient deleted",
+        description: "The recipient has been removed from the list",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete recipient",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle export clean list
+  const handleExportClean = () => {
+    if (selectedListId) {
+      window.open(`/api/recipient-lists/${selectedListId}/export-clean`, '_blank');
+    }
+  };
+
+  // Handle remove invalid emails
+  const handleRemoveInvalid = () => {
+    if (selectedListId) {
+      removeInvalidMutation.mutate(selectedListId);
+    }
+  };
+
+  // Handle delete recipient
+  const handleDeleteRecipient = (recipientId: number) => {
+    deleteRecipientMutation.mutate(recipientId);
   };
 
   const getStatusIcon = (status: string) => {
@@ -359,6 +432,65 @@ export default function Deliverability() {
           </div>
         )}
 
+        {/* Validation Stats Chart */}
+        {validationStats && selectedListId && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PieChart className="h-5 w-5" />
+                Validation Breakdown
+              </CardTitle>
+              <CardDescription>
+                Visual breakdown of email validation results
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="text-2xl font-bold text-green-600">{validationStats.valid || 0}</div>
+                    <div className="text-sm text-green-700">Valid Emails</div>
+                  </div>
+                  <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <div className="text-2xl font-bold text-yellow-600">{validationStats.risky || 0}</div>
+                    <div className="text-sm text-yellow-700">Risky Emails</div>
+                  </div>
+                  <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                    <div className="text-2xl font-bold text-red-600">{validationStats.invalid || 0}</div>
+                    <div className="text-sm text-red-700">Invalid Emails</div>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="text-2xl font-bold text-slate-600">{validationStats.pending || 0}</div>
+                    <div className="text-sm text-slate-700">Not Checked</div>
+                  </div>
+                </div>
+
+                {/* Chart */}
+                <div className="h-64 flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { name: 'Valid', value: validationStats.valid || 0, fill: '#10b981' },
+                        { name: 'Risky', value: validationStats.risky || 0, fill: '#f59e0b' },
+                        { name: 'Invalid', value: validationStats.invalid || 0, fill: '#ef4444' },
+                        { name: 'Pending', value: validationStats.pending || 0, fill: '#6b7280' },
+                      ]}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Recipients Table */}
         {selectedListId && (
           <Card>
@@ -369,13 +501,23 @@ export default function Deliverability() {
                   <CardDescription>View and manage deliverability status for each email</CardDescription>
                 </div>
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleExportClean}
+                    disabled={!validationStats || validationStats.valid === 0}
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
                     Export Clean List
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleRemoveInvalid}
+                    disabled={removeInvalidMutation.isPending || !validationStats || validationStats.invalid === 0}
+                  >
                     <Trash className="h-4 w-4 mr-2" />
-                    Remove Invalid
+                    {removeInvalidMutation.isPending ? "Removing..." : "Remove Invalid"}
                   </Button>
                 </div>
               </div>
@@ -427,11 +569,15 @@ export default function Deliverability() {
                             >
                               <RotateCcw className="h-4 w-4" />
                             </Button>
-                            {recipient.deliverabilityStatus === 'invalid' && (
-                              <Button variant="ghost" size="sm" className="text-red-600">
-                                <Trash className="h-4 w-4" />
-                              </Button>
-                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-600 hover:bg-red-50"
+                              onClick={() => handleDeleteRecipient(recipient.id)}
+                              disabled={deleteRecipientMutation.isPending}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>

@@ -478,6 +478,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Remove invalid emails from list
+  app.post('/api/recipient-lists/:id/remove-invalid', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const listId = parseInt(req.params.id);
+      
+      const removedCount = await storage.removeInvalidRecipients(listId);
+      
+      res.json({ removedCount });
+    } catch (error) {
+      console.error("Error removing invalid recipients:", error);
+      res.status(500).json({ message: "Failed to remove invalid recipients" });
+    }
+  });
+
+  // Export clean list (valid emails only)
+  app.get('/api/recipient-lists/:id/export-clean', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const listId = parseInt(req.params.id);
+      
+      const cleanRecipients = await storage.getCleanRecipients(listId);
+      
+      // Generate CSV
+      const csvHeader = 'Name,Last Name,Email,Company,Position\n';
+      const csvRows = cleanRecipients.map(r => 
+        `"${r.name || ''}","${r.lastName || ''}","${r.email}","${r.companyName || ''}","${r.position || ''}"`
+      ).join('\n');
+      
+      const csvContent = csvHeader + csvRows;
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="clean-list-${Date.now()}.csv"`);
+      res.send(csvContent);
+    } catch (error) {
+      console.error("Error exporting clean list:", error);
+      res.status(500).json({ message: "Failed to export clean list" });
+    }
+  });
+
+  // Delete recipient
+  app.delete('/api/recipients/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const recipientId = parseInt(req.params.id);
+      
+      await storage.deleteRecipient(recipientId);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting recipient:", error);
+      res.status(500).json({ message: "Failed to delete recipient" });
+    }
+  });
+
+  // Get validation stats for a list
+  app.get('/api/recipient-lists/:id/validation-stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const listId = parseInt(req.params.id);
+      
+      const stats = await storage.getValidationStats(listId);
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting validation stats:", error);
+      res.status(500).json({ message: "Failed to get validation stats" });
+    }
+  });
+
   // Email personalization
   app.post('/api/recipients/:id/personalize', isAuthenticated, async (req: any, res) => {
     try {

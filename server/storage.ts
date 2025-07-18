@@ -59,6 +59,9 @@ export interface IStorage {
   updateRecipientDeliverability(id: number, status: string): Promise<Recipient>;
   updateRecipientPersonalizedEmail(id: number, personalizedEmail: string): Promise<Recipient>;
   deleteRecipient(id: number): Promise<void>;
+  removeInvalidRecipients(listId: number): Promise<number>;
+  getCleanRecipients(listId: number): Promise<Recipient[]>;
+  getValidationStats(listId: number): Promise<any>;
 
   // Campaigns
   createCampaign(userId: string, campaign: InsertCampaign): Promise<Campaign>;
@@ -297,6 +300,42 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRecipient(id: number): Promise<void> {
     await db.delete(recipients).where(eq(recipients.id, id));
+  }
+
+  async removeInvalidRecipients(listId: number): Promise<number> {
+    const result = await db
+      .delete(recipients)
+      .where(and(eq(recipients.listId, listId), eq(recipients.deliverabilityStatus, 'invalid')));
+    
+    return result.rowCount || 0;
+  }
+
+  async getCleanRecipients(listId: number): Promise<Recipient[]> {
+    return await db
+      .select()
+      .from(recipients)
+      .where(and(eq(recipients.listId, listId), eq(recipients.deliverabilityStatus, 'valid')));
+  }
+
+  async getValidationStats(listId: number): Promise<any> {
+    const stats = await db
+      .select({
+        status: recipients.deliverabilityStatus,
+        count: count()
+      })
+      .from(recipients)
+      .where(eq(recipients.listId, listId))
+      .groupBy(recipients.deliverabilityStatus);
+
+    const result = { valid: 0, risky: 0, invalid: 0, pending: 0 };
+    
+    stats.forEach((stat: any) => {
+      if (stat.status && result.hasOwnProperty(stat.status)) {
+        result[stat.status as keyof typeof result] = Number(stat.count);
+      }
+    });
+
+    return result;
   }
 
   // Campaigns
