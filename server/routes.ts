@@ -389,6 +389,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         await storage.updateRecipientDeliverability(recipientId, status);
         
+        // Update usage
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const usage = await storage.getCurrentMonthUsage(userId);
+        await storage.updateUsage(userId, currentMonth, {
+          deliverabilityChecks: (usage?.deliverabilityChecks || 0) + 1,
+        });
+        
         res.json({ 
           status,
           details: validationResult,
@@ -397,22 +404,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Email validation error:", error);
         // Fallback to basic validation
-        const status = 'risky'; // Conservative fallback
-        await storage.updateRecipientDeliverability(recipientId, status);
+        const fallbackStatus = 'risky'; // Conservative fallback
+        await storage.updateRecipientDeliverability(recipientId, fallbackStatus);
+        
+        // Update usage
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const usage = await storage.getCurrentMonthUsage(userId);
+        await storage.updateUsage(userId, currentMonth, {
+          deliverabilityChecks: (usage?.deliverabilityChecks || 0) + 1,
+        });
+        
         res.json({ 
-          status,
+          status: fallbackStatus,
           reason: 'Validation service unavailable - marked as risky'
         });
       }
-
-      // Update usage
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      const usage = await storage.getCurrentMonthUsage(userId);
-      await storage.updateUsage(userId, currentMonth, {
-        deliverabilityChecks: (usage?.deliverabilityChecks || 0) + 1,
-      });
-
-      res.json({ status });
     } catch (error) {
       console.error("Error checking deliverability:", error);
       res.status(500).json({ message: "Failed to check deliverability" });
