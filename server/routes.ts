@@ -590,6 +590,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const recipientId = parseInt(req.params.id);
       const { emailType, tone, maxCharacters, callToAction } = req.body;
 
+      console.log('Personalizing recipient:', { recipientId, userId, emailType, tone });
+
       // Check plan limits
       const canPersonalize = await checkPlanLimits(userId, 'personalization');
       if (!canPersonalize) {
@@ -599,33 +601,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get recipient directly
       const recipient = await storage.getRecipient(recipientId);
       if (!recipient) {
+        console.error('Recipient not found:', recipientId);
         return res.status(404).json({ message: "Recipient not found" });
       }
 
       if (!recipient.websiteLink) {
+        console.error('Recipient has no website:', recipient);
         return res.status(400).json({ message: "Recipient has no website" });
       }
+
+      console.log('Found recipient with website:', { id: recipient.id, website: recipient.websiteLink });
 
       const personalizedEmail = await personalizeEmail(recipient, {
         emailType,
         tone,
-        maxCharacters,
+        maxCharacters: parseInt(maxCharacters.toString()),
         callToAction,
       });
 
+      console.log('Generated personalized email, length:', personalizedEmail.length);
+
       await storage.updateRecipientPersonalizedEmail(recipientId, personalizedEmail);
 
-      // Update usage
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      const usage = await storage.getCurrentMonthUsage(userId);
-      await storage.updateUsage(userId, currentMonth, {
-        personalizedEmails: (usage?.personalizedEmails || 0) + 1,
-      });
+      // Update usage - with error handling
+      try {
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const usage = await storage.getCurrentMonthUsage(userId);
+        await storage.updateUsage(userId, currentMonth, {
+          personalizedEmails: (usage?.personalizedEmails || 0) + 1,
+        });
+        console.log('Updated usage successfully');
+      } catch (usageError) {
+        console.error('Error updating usage (non-critical):', usageError);
+        // Don't fail the request if usage tracking fails
+      }
 
       res.json({ personalizedEmail });
     } catch (error) {
       console.error("Error personalizing email:", error);
-      res.status(500).json({ message: "Failed to personalize email" });
+      res.status(500).json({ message: `Failed to personalize email: ${error.message}` });
     }
   });
 

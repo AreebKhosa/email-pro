@@ -175,10 +175,10 @@ export default function Personalization() {
 
   // Calculate personalization quota
   const planLimits: Record<string, number> = {
-    demo: 10,
-    starter: 100,
-    pro: 500,
-    premium: 2000,
+    demo: 100,
+    starter: 2000,
+    pro: 5000,
+    premium: 999999, // Unlimited (large number)
   };
 
   const currentPlan = userStats?.plan || 'demo';
@@ -221,7 +221,7 @@ export default function Personalization() {
                 </div>
               </div>
               <Badge className="bg-purple-100 text-purple-800">
-                {remaining} remaining
+                {currentPlan === 'premium' ? 'Unlimited' : `${remaining} remaining`}
               </Badge>
             </div>
           </CardHeader>
@@ -229,9 +229,9 @@ export default function Personalization() {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-600">Used: {used}</span>
-                <span className="text-slate-600">Total: {quota}</span>
+                <span className="text-slate-600">Total: {currentPlan === 'premium' ? 'Unlimited' : quota}</span>
               </div>
-              <Progress value={quotaPercentage} className="h-2" />
+              <Progress value={currentPlan === 'premium' ? 0 : quotaPercentage} className="h-2" />
               {remaining <= 10 && (
                 <div className="flex items-center space-x-2 text-amber-700 bg-amber-50 p-3 rounded-lg">
                   <AlertCircle className="h-4 w-4" />
