@@ -444,10 +444,10 @@ export default function Personalization() {
                       <TableCell className="font-medium">{recipient.name}</TableCell>
                       <TableCell>{recipient.email}</TableCell>
                       <TableCell>
-                        {recipient.website ? (
+                        {recipient.websiteLink ? (
                           <div className="flex items-center space-x-2">
                             <Globe className="h-4 w-4 text-green-600" />
-                            <span className="text-sm">{new URL(recipient.website).hostname}</span>
+                            <span className="text-sm">{new URL(recipient.websiteLink).hostname}</span>
                           </div>
                         ) : (
                           <Badge variant="outline">No website</Badge>
@@ -459,7 +459,7 @@ export default function Personalization() {
                             <Sparkles className="h-3 w-3 mr-1" />
                             Generated
                           </Badge>
-                        ) : recipient.website ? (
+                        ) : recipient.websiteLink ? (
                           <Badge variant="outline">Not generated</Badge>
                         ) : (
                           <Badge variant="outline">No website</Badge>
@@ -482,7 +482,7 @@ export default function Personalization() {
                                 View Email
                               </DropdownMenuItem>
                             )}
-                            {recipient.website && (
+                            {recipient.websiteLink && (
                               <DropdownMenuItem 
                                 onClick={() => handlePersonalizeSingle(recipient.id)}
                                 disabled={personalizeSingleMutation.isPending || remaining <= 0}

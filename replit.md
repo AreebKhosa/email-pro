@@ -71,6 +71,15 @@ Preferred communication style: Simple, everyday language.
 - **Setup Guides**: Each provider includes links to official documentation for SMTP/IMAP setup
 - **Reset Capability**: Users can reset instruction visibility through the useInstructions hook
 
+### Enhanced Personalization System
+- **Quota Tracking**: Visual cards showing remaining/used personalization quotas per plan
+- **Individual Personalization**: Single recipient personalization via action menu
+- **Bulk Processing**: "Personalize All" functionality with progress tracking
+- **Settings Configuration**: Required personalization settings (email type, tone, CTA, character limits)
+- **Export Functionality**: CSV download with all personalized emails
+- **Website Validation**: Recipients without websites show "No Website" status
+- **Plan-Based Limits**: Demo (10), Starter (100), Pro (500), Premium (2000) personalizations
+
 ## Data Flow
 
 ### User Authentication Flow
