@@ -225,9 +225,11 @@ export default function WarmUp() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/warmup/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-integrations"] });
+      queryClient.refetchQueries({ queryKey: ["/api/warmup/stats"] });
       toast({
         title: "Success",
-        description: "Simulation data refreshed successfully",
+        description: "Simulation data refreshed successfully! New data generated.",
       });
     },
     onError: (error) => {
@@ -368,7 +370,7 @@ export default function WarmUp() {
               <div className="flex gap-4">
                 <Button
                   onClick={() => simulateWarmupMutation.mutate()}
-                  disabled={simulateWarmupMutation.isPending || activeIntegrations.length === 0}
+                  disabled={simulateWarmupMutation.isPending || emailIntegrations?.length === 0}
                   variant="outline"
                   className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
                 >
@@ -378,11 +380,11 @@ export default function WarmUp() {
 
                 <Button
                   onClick={() => resetSimulationMutation.mutate()}
-                  disabled={resetSimulationMutation.isPending || activeIntegrations.length === 0}
+                  disabled={resetSimulationMutation.isPending || emailIntegrations?.length === 0}
                   variant="outline"
                   className="flex items-center gap-2 border-green-500 text-green-600 hover:bg-green-50"
                 >
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw className={`w-4 h-4 ${resetSimulationMutation.isPending ? 'animate-spin' : ''}`} />
                   {resetSimulationMutation.isPending ? "Refreshing..." : "Refresh Demo"}
                 </Button>
 
