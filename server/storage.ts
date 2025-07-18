@@ -328,37 +328,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAllRecipientCounts(userId: string): Promise<void> {
-    try {
-      // Update recipient counts for all lists for this user using a more efficient approach
-      await db.execute(sql`
-        UPDATE recipient_lists 
-        SET recipient_count = (
-          SELECT COUNT(*) 
-          FROM recipients 
-          WHERE recipients.list_id = recipient_lists.id
-        ) 
-        WHERE recipient_lists.user_id = ${userId}
-      `);
-    } catch (error) {
-      console.error("Error updating recipient counts:", error);
-      // Fallback to individual updates if bulk update fails
-      const lists = await db
-        .select({ id: recipientLists.id })
-        .from(recipientLists)
-        .where(eq(recipientLists.userId, userId));
-
-      for (const list of lists) {
-        const countResult = await db
-          .select({ count: count() })
-          .from(recipients)
-          .where(eq(recipients.listId, list.id));
-
-        await db
-          .update(recipientLists)
-          .set({ recipientCount: Number(countResult[0]?.count || 0) })
-          .where(eq(recipientLists.id, list.id));
-      }
-    }
+    // No-op: recipient counts are calculated dynamically, not stored
+    // This method exists for compatibility but doesn't need to do anything
+    // since the recipient count is computed on-demand via SQL COUNT queries
   }
 
   async removeInvalidRecipients(listId: number): Promise<number> {
@@ -388,14 +360,7 @@ export class DatabaseStorage implements IStorage {
           WHERE list_id = ${listId} AND deliverability_status = 'invalid'
         `);
         
-        // Update count with raw SQL
-        await db.execute(sql`
-          UPDATE recipient_lists 
-          SET recipient_count = (
-            SELECT COUNT(*) FROM recipients WHERE list_id = ${listId}
-          ) 
-          WHERE id = ${listId}
-        `);
+        // Counts are calculated dynamically, no need to update stored counts
         
         return result.rowCount || 0;
       } catch (fallbackError) {
