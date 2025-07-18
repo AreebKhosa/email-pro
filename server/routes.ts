@@ -525,7 +525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.deleteRecipient(recipientId);
       
-      // Update recipient counts for all lists
+      // Update recipient counts for all lists (but don't decrease upload usage)
       const userId = req.user.claims.sub;
       await storage.updateAllRecipientCounts(userId);
       

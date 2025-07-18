@@ -362,22 +362,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async removeInvalidRecipients(listId: number): Promise<number> {
-    const result = await db
-      .delete(recipients)
-      .where(and(eq(recipients.listId, listId), eq(recipients.deliverabilityStatus, 'invalid')));
-    
-    // Update the recipient count for this list
-    const countResult = await db
-      .select({ count: count() })
-      .from(recipients)
-      .where(eq(recipients.listId, listId));
+    try {
+      const result = await db
+        .delete(recipients)
+        .where(and(eq(recipients.listId, listId), eq(recipients.deliverabilityStatus, 'invalid')));
+      
+      // Update the recipient count for this list
+      const countResult = await db
+        .select({ count: count() })
+        .from(recipients)
+        .where(eq(recipients.listId, listId));
 
-    await db
-      .update(recipientLists)
-      .set({ recipientCount: Number(countResult[0]?.count || 0) })
-      .where(eq(recipientLists.id, listId));
-    
-    return result.rowCount || 0;
+      await db
+        .update(recipientLists)
+        .set({ recipientCount: Number(countResult[0]?.count || 0) })
+        .where(eq(recipientLists.id, listId));
+      
+      return result.rowCount || 0;
+    } catch (error) {
+      console.error("Error in removeInvalidRecipients:", error);
+      // Fallback with raw SQL if Drizzle fails
+      try {
+        const result = await db.execute(sql`
+          DELETE FROM recipients 
+          WHERE "listId" = ${listId} AND "deliverabilityStatus" = 'invalid'
+        `);
+        
+        // Update count with raw SQL
+        await db.execute(sql`
+          UPDATE recipient_lists 
+          SET "recipientCount" = (
+            SELECT COUNT(*) FROM recipients WHERE "listId" = ${listId}
+          ) 
+          WHERE id = ${listId}
+        `);
+        
+        return result.rowCount || 0;
+      } catch (fallbackError) {
+        console.error("Fallback removeInvalidRecipients failed:", fallbackError);
+        throw fallbackError;
+      }
+    }
   }
 
   async getCleanRecipients(listId: number): Promise<Recipient[]> {
