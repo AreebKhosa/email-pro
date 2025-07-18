@@ -4,8 +4,13 @@ import type { InsertEmailIntegration } from '@shared/schema';
 
 export async function validateEmailIntegration(config: InsertEmailIntegration): Promise<boolean> {
   try {
+    console.log('Validating email integration for:', config.email);
+    console.log('SMTP Host:', config.smtpHost, 'Port:', config.smtpPort);
+    console.log('Username:', config.smtpUsername);
+    console.log('Password length:', config.smtpPassword?.length);
+    
     // Test SMTP connection
-    const smtpTransporter = nodemailer.createTransporter({
+    const smtpTransporter = nodemailer.createTransport({
       host: config.smtpHost,
       port: config.smtpPort,
       secure: config.smtpPort === 465,
@@ -13,10 +18,22 @@ export async function validateEmailIntegration(config: InsertEmailIntegration): 
         user: config.smtpUsername,
         pass: config.smtpPassword,
       },
+      // Add timeout and additional settings for Gmail
+      connectionTimeout: 10000,
+      greetingTimeout: 5000,
+      socketTimeout: 10000,
+      // Gmail specific settings
+      requireTLS: true,
+      tls: {
+        rejectUnauthorized: false
+      }
     });
 
+    console.log('Testing SMTP connection...');
     await smtpTransporter.verify();
 
+    console.log('SMTP connection successful, testing IMAP...');
+    
     // Test IMAP connection
     return new Promise((resolve) => {
       const imap = new Imap({
@@ -25,15 +42,21 @@ export async function validateEmailIntegration(config: InsertEmailIntegration): 
         host: config.imapHost,
         port: config.imapPort,
         tls: true,
+        tlsOptions: { 
+          rejectUnauthorized: false 
+        },
+        connTimeout: 10000,
+        authTimeout: 5000,
       });
 
       imap.once('ready', () => {
+        console.log('IMAP connection successful');
         imap.end();
         resolve(true);
       });
 
       imap.once('error', (err) => {
-        console.error('IMAP connection error:', err);
+        console.error('IMAP connection error:', err.message);
         resolve(false);
       });
 

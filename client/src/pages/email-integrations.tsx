@@ -172,6 +172,8 @@ export default function EmailIntegrations() {
   });
 
   const onSubmit = async (data: any) => {
+    console.log('Form submission data:', data);
+    
     // Handle OAuth flow for Gmail
     if (data.connectionType === "oauth" && data.provider === "google") {
       try {
@@ -262,11 +264,33 @@ export default function EmailIntegrations() {
                         <FormLabel>Email Provider</FormLabel>
                         <Select onValueChange={(value) => {
                           field.onChange(value);
-                          // Set connection type based on provider
+                          // Set connection type and defaults based on provider
                           if (value === "google") {
                             form.setValue("connectionType", "oauth");
+                            // Set Gmail SMTP/IMAP defaults for manual setup
+                            form.setValue("smtpHost", "smtp.gmail.com");
+                            form.setValue("smtpPort", 587);
+                            form.setValue("imapHost", "imap.gmail.com");
+                            form.setValue("imapPort", 993);
                           } else {
                             form.setValue("connectionType", "smtp");
+                            // Set defaults for other providers
+                            if (value === "outlook") {
+                              form.setValue("smtpHost", "smtp-mail.outlook.com");
+                              form.setValue("smtpPort", 587);
+                              form.setValue("imapHost", "outlook.office365.com");
+                              form.setValue("imapPort", 993);
+                            } else if (value === "yahoo") {
+                              form.setValue("smtpHost", "smtp.mail.yahoo.com");
+                              form.setValue("smtpPort", 587);
+                              form.setValue("imapHost", "imap.mail.yahoo.com");
+                              form.setValue("imapPort", 993);
+                            } else if (value === "zoho") {
+                              form.setValue("smtpHost", "smtp.zoho.com");
+                              form.setValue("smtpPort", 587);
+                              form.setValue("imapHost", "imap.zoho.com");
+                              form.setValue("imapPort", 993);
+                            }
                           }
                         }} defaultValue={field.value}>
                           <FormControl>
@@ -652,8 +676,10 @@ export default function EmailIntegrations() {
           <CardContent className="text-blue-800">
             <div className="space-y-3">
               <div>
-                <strong>Gmail Users:</strong> You'll need to generate an App Password instead of using your regular password. 
-                Go to Google Account settings → Security → App passwords.
+                <strong>Gmail Users:</strong> You need an App Password (16 characters like "iyugpyatfbwcjiod"). 
+                Go to Google Account → Security → 2-Step Verification → App passwords → Generate password.
+                <br />
+                <em>Use smtp.gmail.com:587 for SMTP and imap.gmail.com:993 for IMAP</em>
               </div>
               <div>
                 <strong>Outlook Users:</strong> Make sure IMAP is enabled in your Outlook settings and use your full email address as the username.
