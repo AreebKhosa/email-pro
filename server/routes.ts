@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupGoogleAuth, getGmailAuthUrl } from "./services/googleAuth";
 import { validateEmailIntegration, sendEmail } from "./services/email";
-import { personalizeEmail } from "./services/openai";
+import { personalizeEmail, enhanceEmailContent } from "./services/openai";
 import { createStripeCheckout, handleStripeWebhook } from "./services/stripe";
 import { emailValidationService, type EmailValidationResult } from "./services/emailValidation";
 import { warmupService } from "./services/warmup";
@@ -783,6 +783,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating recipient list:", error);
       res.status(500).json({ message: "Failed to update recipient list" });
+    }
+  });
+
+  // AI email enhancement
+  app.post('/api/ai/enhance-email', isAuthenticated, async (req: any, res) => {
+    try {
+      const { body } = req.body;
+      
+      if (!body || body.trim() === '') {
+        return res.status(400).json({ message: "Email body is required" });
+      }
+
+      const enhancedBody = await enhanceEmailContent(body);
+      
+      res.json({ enhancedBody });
+    } catch (error) {
+      console.error("Error enhancing email:", error);
+      res.status(500).json({ message: "Failed to enhance email content" });
     }
   });
 

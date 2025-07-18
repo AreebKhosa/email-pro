@@ -9,6 +9,7 @@ import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Campaigns from "@/pages/campaigns";
+import CreateCampaign from "@/pages/create-campaign";
 import Recipients from "@/pages/recipients";
 import EmailIntegrations from "@/pages/email-integrations";
 import WarmUp from "@/pages/warm-up";
@@ -31,6 +32,7 @@ function Router() {
         <>
           <Route path="/" component={Dashboard} />
           <Route path="/campaigns" component={Campaigns} />
+          <Route path="/campaigns/create" component={CreateCampaign} />
           <Route path="/recipients" component={Recipients} />
           <Route path="/email-integrations" component={EmailIntegrations} />
           <Route path="/warm-up" component={WarmUp} />

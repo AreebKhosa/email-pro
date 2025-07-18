@@ -168,3 +168,50 @@ export async function generateEmailContent(
     throw new Error('Failed to generate email content');
   }
 }
+
+export async function enhanceEmailContent(emailBody: string): Promise<string> {
+  const prompt = `
+    Enhance and improve the following email content:
+    
+    "${emailBody}"
+    
+    Please:
+    1. Improve the clarity and flow
+    2. Make it more engaging and professional
+    3. Enhance the persuasive elements
+    4. Maintain the original intent and tone
+    5. Keep the same approximate length
+    6. Ensure it's grammatically correct and well-structured
+    
+    Return only the enhanced email content without any additional commentary.
+  `;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert email copywriter and editor. Your job is to enhance email content to make it more professional, engaging, and effective while maintaining the original intent."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      max_tokens: 1500,
+    });
+
+    const enhancedContent = response.choices[0]?.message?.content || emailBody;
+    return enhancedContent;
+  } catch (error) {
+    console.error('Error enhancing email content:', error);
+    if (error.status === 401) {
+      throw new Error('OpenAI API key is invalid. Please check your API key settings.');
+    }
+    if (error.status === 429) {
+      throw new Error('OpenAI quota exceeded. Please upgrade your OpenAI plan.');
+    }
+    throw new Error('Failed to enhance email content');
+  }
+}
