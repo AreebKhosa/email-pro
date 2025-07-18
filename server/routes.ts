@@ -819,7 +819,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/campaigns', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const data = insertCampaignSchema.parse(req.body);
+      
+      // Extract the required fields for the campaign schema
+      const { name, recipientListId, emailIntegrationId, subject, body, ...extraFields } = req.body;
+      
+      // Validate required fields
+      if (!name || !recipientListId || !emailIntegrationId || !subject || !body) {
+        return res.status(400).json({ message: "Missing required fields: name, recipientListId, emailIntegrationId, subject, body" });
+      }
+      
+      const campaignData = {
+        name,
+        recipientListId,
+        emailIntegrationId,
+        subject,
+        body,
+        scheduledAt: extraFields.scheduledAt || null,
+        status: extraFields.status || "draft"
+      };
+      
+      const validatedData = insertCampaignSchema.parse(campaignData);
       
       // Check plan limits for campaign count
       const user = await storage.getUser(userId);
@@ -830,7 +849,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Plan limit reached for campaigns" });
       }
 
-      const campaign = await storage.createCampaign(userId, data);
+      const campaign = await storage.createCampaign(userId, validatedData);
+      
+      // Create follow-up if enabled
+      if (extraFields.followUpEnabled && extraFields.followUpSubject && extraFields.followUpBody) {
+        try {
+          const followUpData = {
+            campaignId: campaign.id,
+            subject: extraFields.followUpSubject,
+            body: extraFields.followUpBody,
+            delayDays: extraFields.followUpDays || 3,
+          };
+          await storage.addFollowUp(followUpData);
+        } catch (followUpError) {
+          console.error("Error creating follow-up:", followUpError);
+          // Don't fail the campaign creation if follow-up fails
+        }
+      }
+      
       res.json(campaign);
     } catch (error) {
       console.error("Error creating campaign:", error);

@@ -207,7 +207,27 @@ export default function CreateCampaign() {
       return;
     }
 
-    createCampaignMutation.mutate(campaignData);
+    // For now, use the first selected email integration for the campaign
+    // TODO: Implement proper multiple email rotation in the backend
+    const campaignPayload = {
+      name: campaignData.name,
+      recipientListId: campaignData.recipientListId,
+      emailIntegrationId: campaignData.emailIntegrationIds[0], // Use first selected email
+      subject: campaignData.subject,
+      body: campaignData.body,
+      dailyLimit: campaignData.dailyLimit,
+      timeWindowStart: campaignData.timeWindowStart,
+      timeWindowEnd: campaignData.timeWindowEnd,
+      rotateEmails: campaignData.rotateEmails,
+      selectedEmailIds: campaignData.emailIntegrationIds, // Pass all selected emails for rotation
+      followUpEnabled: campaignData.followUpEnabled,
+      followUpSubject: campaignData.followUpSubject,
+      followUpBody: campaignData.followUpBody,
+      followUpCondition: campaignData.followUpCondition,
+      followUpDays: campaignData.followUpDays,
+    };
+
+    createCampaignMutation.mutate(campaignPayload);
   };
 
   const canProceed = () => {
