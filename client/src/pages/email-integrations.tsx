@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import Layout from "@/components/Layout";
+import InstructionBox from "@/components/InstructionBox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -11,10 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Mail, Trash, Settings, CheckCircle, XCircle, Flame, FlameKindling } from "lucide-react";
+import { Plus, Mail, Trash, Settings, CheckCircle, XCircle, Flame, FlameKindling, Info, ExternalLink } from "lucide-react";
 import { FaGoogle, FaYahoo, FaMicrosoft } from "react-icons/fa";
 import { SiZoho } from "react-icons/si";
 
@@ -220,6 +222,13 @@ export default function EmailIntegrations() {
   return (
     <Layout>
       <div className="space-y-8">
+        {/* Instruction Box */}
+        <InstructionBox
+          id="email-integrations-intro"
+          title="Getting Started with Email Integrations"
+          content="Connect your email accounts to send campaigns. Gmail users can use secure OAuth authentication, while other providers require SMTP/IMAP credentials from your email settings."
+        />
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -251,7 +260,15 @@ export default function EmailIntegrations() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Email Provider</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={(value) => {
+                          field.onChange(value);
+                          // Set connection type based on provider
+                          if (value === "google") {
+                            form.setValue("connectionType", "oauth");
+                          } else {
+                            form.setValue("connectionType", "smtp");
+                          }
+                        }} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select your email provider" />
@@ -304,8 +321,8 @@ export default function EmailIntegrations() {
                     />
                   </div>
 
-                  {/* Connection Type */}
-                  {watchedProvider !== "custom" && (
+                  {/* Connection Type - Only show for Gmail */}
+                  {watchedProvider === "google" && (
                     <FormField
                       control={form.control}
                       name="connectionType"
@@ -351,6 +368,48 @@ export default function EmailIntegrations() {
                         This is the most secure and reliable method.
                       </p>
                     </div>
+                  )}
+
+                  {/* Provider-specific instructions */}
+                  {watchedProvider && watchedProvider !== "google" && watchedConnectionType === "smtp" && (
+                    <Alert className="border-amber-200 bg-amber-50">
+                      <Info className="h-4 w-4 text-amber-600" />
+                      <AlertDescription className="text-amber-800">
+                        {watchedProvider === "outlook" && (
+                          <>
+                            <strong>Outlook/Hotmail Setup:</strong> Enable "SMTP authentication" in your Outlook settings. 
+                            Use SMTP: smtp-mail.outlook.com:587, IMAP: outlook.office365.com:993.
+                            <a href="https://support.microsoft.com/en-us/office/pop-imap-and-smtp-settings-8361e398-8af4-4e97-b147-6c6c4ac95353" target="_blank" rel="noopener noreferrer" className="ml-2 text-amber-700 hover:text-amber-900 inline-flex items-center">
+                              View Guide <ExternalLink className="h-3 w-3 ml-1" />
+                            </a>
+                          </>
+                        )}
+                        {watchedProvider === "yahoo" && (
+                          <>
+                            <strong>Yahoo Setup:</strong> Generate an "App Password" in Yahoo Security settings. 
+                            Use SMTP: smtp.mail.yahoo.com:587, IMAP: imap.mail.yahoo.com:993.
+                            <a href="https://help.yahoo.com/kb/generate-third-party-passwords-sln15241.html" target="_blank" rel="noopener noreferrer" className="ml-2 text-amber-700 hover:text-amber-900 inline-flex items-center">
+                              View Guide <ExternalLink className="h-3 w-3 ml-1" />
+                            </a>
+                          </>
+                        )}
+                        {watchedProvider === "zoho" && (
+                          <>
+                            <strong>Zoho Setup:</strong> Use your regular Zoho password or generate an App-specific password. 
+                            Use SMTP: smtp.zoho.com:587, IMAP: imap.zoho.com:993.
+                            <a href="https://www.zoho.com/mail/help/admins/pop-imap-settings.html" target="_blank" rel="noopener noreferrer" className="ml-2 text-amber-700 hover:text-amber-900 inline-flex items-center">
+                              View Guide <ExternalLink className="h-3 w-3 ml-1" />
+                            </a>
+                          </>
+                        )}
+                        {watchedProvider === "custom" && (
+                          <>
+                            <strong>Custom SMTP Setup:</strong> Contact your email provider for SMTP/IMAP settings. 
+                            You'll need the server addresses, ports, and authentication details.
+                          </>
+                        )}
+                      </AlertDescription>
+                    </Alert>
                   )}
 
                   {/* SMTP Configuration */}

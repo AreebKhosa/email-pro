@@ -64,6 +64,13 @@ Preferred communication style: Simple, everyday language.
 - **Webhooks**: Automated plan updates and billing events
 - **Usage Tracking**: Real-time monitoring of plan limits
 
+### Instruction Boxes System
+- **Persistent Dismissal**: Instruction boxes show only on first visit to each page
+- **localStorage Storage**: Dismissed instructions are stored locally and won't reappear
+- **Provider-Specific Instructions**: Email integration forms show OAuth for Gmail, SMTP/IMAP instructions for other providers
+- **Setup Guides**: Each provider includes links to official documentation for SMTP/IMAP setup
+- **Reset Capability**: Users can reset instruction visibility through the useInstructions hook
+
 ## Data Flow
 
 ### User Authentication Flow

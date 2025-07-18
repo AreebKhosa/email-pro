@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import Layout from "@/components/Layout";
+import InstructionBox from "@/components/InstructionBox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -114,6 +115,13 @@ export default function Campaigns() {
   return (
     <Layout>
       <div className="space-y-8">
+        {/* Instruction Box */}
+        <InstructionBox
+          id="campaigns-intro"
+          title="Creating Your First Campaign"
+          content="Before creating campaigns, make sure you have: 1) Added recipient lists, 2) Set up email integrations, and 3) Verified your email accounts. You can schedule campaigns or send them immediately."
+        />
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
