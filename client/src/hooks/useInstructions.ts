@@ -34,9 +34,19 @@ export function useInstructions() {
     localStorage.removeItem('dismissedInstructions');
   };
 
+  const shouldShowInstructions = (pageId: string) => {
+    return !dismissedInstructions.has(pageId);
+  };
+
+  const dismissInstructions = (pageId: string) => {
+    dismissInstruction(pageId);
+  };
+
   return {
     dismissInstruction,
     isInstructionDismissed,
     resetInstructions,
+    shouldShowInstructions,
+    dismissInstructions,
   };
 }

@@ -88,9 +88,10 @@ export default function WarmUp() {
     retry: false,
   });
 
-  const { data: warmupStats, isLoading: statsLoading } = useQuery({
+  const { data: warmupStats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ["/api/warmup/stats"],
     retry: false,
+    enabled: isAuthenticated,
   });
 
   const toggleWarmupMutation = useMutation({
@@ -275,7 +276,7 @@ export default function WarmUp() {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + stat.todayStats.emailsSent, 0) || 0}
+                    {warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + (stat.todayStats?.emailsSent || 0), 0) || 0}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-300">
                     Emails Sent Today
@@ -283,7 +284,7 @@ export default function WarmUp() {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-yellow-600">
-                    {warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + stat.todayStats.emailsOpened, 0) || 0}
+                    {warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + (stat.todayStats?.emailsOpened || 0), 0) || 0}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-300">
                     Emails Opened Today
@@ -291,7 +292,7 @@ export default function WarmUp() {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-red-600">
-                    {warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + stat.todayStats.emailsSpam, 0) || 0}
+                    {warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + (stat.todayStats?.emailsSpam || 0), 0) || 0}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-300">
                     Spam Reports Today
@@ -374,6 +375,22 @@ export default function WarmUp() {
             </CardContent>
           </Card>
 
+          {statsError && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Warmup Statistics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Unable to load warmup statistics. Please check that you have warmup enabled for your email accounts.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          )}
+
           {warmupStats && warmupStats.length > 0 && (
             <Card>
               <CardHeader>
@@ -387,29 +404,29 @@ export default function WarmUp() {
                         <div>
                           <h3 className="font-medium text-lg">{stat.integration.email}</h3>
                           <div className="text-sm text-gray-600 dark:text-gray-300">
-                            Warmup Score: {Math.round(stat.todayStats.warmupScore || 0)}/100
+                            Warmup Score: {Math.round(stat.todayStats?.warmupScore || 0)}/100
                           </div>
                         </div>
-                        <Badge variant={stat.todayStats.warmupScore >= 80 ? "default" : "secondary"}>
-                          {stat.todayStats.warmupScore >= 80 ? "Excellent" : "Building"}
+                        <Badge variant={(stat.todayStats?.warmupScore || 0) >= 80 ? "default" : "secondary"}>
+                          {(stat.todayStats?.warmupScore || 0) >= 80 ? "Excellent" : "Building"}
                         </Badge>
                       </div>
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                         <div className="text-center">
-                          <div className="text-lg font-bold">{stat.todayStats.emailsSent}</div>
+                          <div className="text-lg font-bold">{stat.todayStats?.emailsSent || 0}</div>
                           <div className="text-xs text-gray-600 dark:text-gray-300">Sent Today</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-lg font-bold text-green-600">{stat.todayStats.openRate.toFixed(1)}%</div>
+                          <div className="text-lg font-bold text-green-600">{(stat.todayStats?.openRate || 0).toFixed(1)}%</div>
                           <div className="text-xs text-gray-600 dark:text-gray-300">Open Rate</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-lg font-bold text-blue-600">{stat.todayStats.replyRate.toFixed(1)}%</div>
+                          <div className="text-lg font-bold text-blue-600">{(stat.todayStats?.replyRate || 0).toFixed(1)}%</div>
                           <div className="text-xs text-gray-600 dark:text-gray-300">Reply Rate</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-lg font-bold text-red-600">{stat.todayStats.spamRate.toFixed(1)}%</div>
+                          <div className="text-lg font-bold text-red-600">{(stat.todayStats?.spamRate || 0).toFixed(1)}%</div>
                           <div className="text-xs text-gray-600 dark:text-gray-300">Spam Rate</div>
                         </div>
                       </div>
@@ -417,9 +434,9 @@ export default function WarmUp() {
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-sm">
                           <span>Warmup Progress</span>
-                          <span>{Math.round(stat.todayStats.warmupScore || 0)}/100</span>
+                          <span>{Math.round(stat.todayStats?.warmupScore || 0)}/100</span>
                         </div>
-                        <Progress value={stat.todayStats.warmupScore || 0} className="h-2" />
+                        <Progress value={stat.todayStats?.warmupScore || 0} className="h-2" />
                       </div>
 
                       {stat.progress && stat.progress.length > 0 && (
@@ -450,19 +467,19 @@ export default function WarmUp() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div>
                             <div className="font-medium">Total Sent</div>
-                            <div>{stat.overallStats.totalSent}</div>
+                            <div>{stat.overallStats?.totalSent || 0}</div>
                           </div>
                           <div>
                             <div className="font-medium">Avg Open Rate</div>
-                            <div>{stat.overallStats.avgOpenRate.toFixed(1)}%</div>
+                            <div>{(stat.overallStats?.avgOpenRate || 0).toFixed(1)}%</div>
                           </div>
                           <div>
                             <div className="font-medium">Avg Reply Rate</div>
-                            <div>{stat.overallStats.avgReplyRate.toFixed(1)}%</div>
+                            <div>{(stat.overallStats?.avgReplyRate || 0).toFixed(1)}%</div>
                           </div>
                           <div>
                             <div className="font-medium">Avg Spam Rate</div>
-                            <div>{stat.overallStats.avgSpamRate.toFixed(1)}%</div>
+                            <div>{(stat.overallStats?.avgSpamRate || 0).toFixed(1)}%</div>
                           </div>
                         </div>
                       </div>
