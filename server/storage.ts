@@ -335,14 +335,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(recipientLists.userId, userId));
 
     for (const list of lists) {
-      const count = await db
-        .select({ count: sql<number>`count(*)` })
+      const countResult = await db
+        .select({ count: count() })
         .from(recipients)
         .where(eq(recipients.listId, list.id));
 
       await db
         .update(recipientLists)
-        .set({ recipientCount: count[0]?.count || 0 })
+        .set({ recipientCount: Number(countResult[0]?.count || 0) })
         .where(eq(recipientLists.id, list.id));
     }
   }
