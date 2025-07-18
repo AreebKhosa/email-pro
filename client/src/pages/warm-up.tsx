@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, Zap, TrendingUp, Mail, Clock, CheckCircle, XCircle, Info, Play, Pause } from "lucide-react";
+import { AlertCircle, Zap, TrendingUp, Mail, Clock, CheckCircle, XCircle, Info, Play, Pause, Target } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
