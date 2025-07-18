@@ -25,7 +25,7 @@ import {
   type UsageTracking,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sum, count } from "drizzle-orm";
+import { eq, and, desc, sum, count, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations - required for Replit Auth
@@ -60,6 +60,7 @@ export interface IStorage {
   updateRecipientDeliverability(id: number, status: string): Promise<Recipient>;
   updateRecipientPersonalizedEmail(id: number, personalizedEmail: string): Promise<Recipient>;
   deleteRecipient(id: number): Promise<void>;
+  updateAllRecipientCounts(userId: string): Promise<void>;
   removeInvalidRecipients(listId: number): Promise<number>;
   getCleanRecipients(listId: number): Promise<Recipient[]>;
   getValidationStats(listId: number): Promise<any>;
@@ -324,6 +325,26 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRecipient(id: number): Promise<void> {
     await db.delete(recipients).where(eq(recipients.id, id));
+  }
+
+  async updateAllRecipientCounts(userId: string): Promise<void> {
+    // Update recipient counts for all lists for this user
+    const lists = await db
+      .select({ id: recipientLists.id })
+      .from(recipientLists)
+      .where(eq(recipientLists.userId, userId));
+
+    for (const list of lists) {
+      const count = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(recipients)
+        .where(eq(recipients.listId, list.id));
+
+      await db
+        .update(recipientLists)
+        .set({ recipientCount: count[0]?.count || 0 })
+        .where(eq(recipientLists.id, list.id));
+    }
   }
 
   async removeInvalidRecipients(listId: number): Promise<number> {

@@ -197,8 +197,13 @@ export default function Recipients() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", selectedListId, "recipients"] });
+      // Invalidate all relevant queries to update counts and lists
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists"] });
       queryClient.invalidateQueries({ queryKey: ["/api/recipients/recent"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      if (selectedListId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", selectedListId, "recipients"] });
+      }
       toast({
         title: "Recipient deleted",
         description: "The recipient has been removed from the list",

@@ -525,6 +525,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.deleteRecipient(recipientId);
       
+      // Update recipient counts for all lists
+      const userId = req.user.claims.sub;
+      await storage.updateAllRecipientCounts(userId);
+      
       res.json({ success: true });
     } catch (error) {
       console.error("Error deleting recipient:", error);
@@ -553,11 +557,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get recently uploaded recipients (last 50 across all lists)
+  // Get recently uploaded recipients (last 5 across all lists)
   app.get('/api/recipients/recent', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const recentRecipients = await storage.getRecentRecipients(userId, 50);
+      const recentRecipients = await storage.getRecentRecipients(userId, 5);
       res.json(recentRecipients);
     } catch (error) {
       console.error("Error fetching recent recipients:", error);

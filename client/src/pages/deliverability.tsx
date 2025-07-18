@@ -134,6 +134,10 @@ export default function Deliverability() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate all relevant queries to update counts and lists
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/recipients/recent"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", parseInt(selectedListId), "recipients"] });
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", parseInt(selectedListId), "validation-stats"] });
       toast({
