@@ -7,6 +7,8 @@ import {
   followUps,
   campaignEmails,
   warmupEmails,
+  warmupStats,
+  warmupProgress,
   usageTracking,
   type User,
   type UpsertUser,
@@ -22,6 +24,8 @@ import {
   type InsertFollowUp,
   type CampaignEmail,
   type WarmupEmail,
+  type WarmupStats,
+  type WarmupProgress,
   type UsageTracking,
 } from "@shared/schema";
 import { db } from "./db";
@@ -86,6 +90,8 @@ export interface IStorage {
   // Warm-up
   createWarmupEmail(email: Omit<WarmupEmail, 'id' | 'sentAt'>): Promise<WarmupEmail>;
   getWarmupStats(integrationId: number): Promise<{ sent: number; received: number; opened: number; replied: number }>;
+  getWarmupProgress(integrationId: number): Promise<WarmupProgress[]>;
+  getTodayWarmupStats(integrationId: number): Promise<WarmupStats | undefined>;
 
   // Usage tracking
   getCurrentMonthUsage(userId: string): Promise<UsageTracking | undefined>;
@@ -557,6 +563,30 @@ export class DatabaseStorage implements IStorage {
       opened: openedStats.count,
       replied: repliedStats.count,
     };
+  }
+
+  async getWarmupProgress(integrationId: number): Promise<WarmupProgress[]> {
+    return await db
+      .select()
+      .from(warmupProgress)
+      .where(eq(warmupProgress.emailIntegrationId, integrationId))
+      .orderBy(warmupProgress.day);
+  }
+
+  async getTodayWarmupStats(integrationId: number): Promise<WarmupStats | undefined> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [stats] = await db
+      .select()
+      .from(warmupStats)
+      .where(
+        and(
+          eq(warmupStats.emailIntegrationId, integrationId),
+          sql`DATE(${warmupStats.date}) = DATE(${today})`
+        )
+      );
+    return stats;
   }
 
   // Usage tracking

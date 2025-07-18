@@ -7,6 +7,7 @@ import { validateEmailIntegration, sendEmail } from "./services/email";
 import { personalizeEmail } from "./services/openai";
 import { createStripeCheckout, handleStripeWebhook } from "./services/stripe";
 import { emailValidationService, type EmailValidationResult } from "./services/emailValidation";
+import { warmupService } from "./services/warmup";
 import bcrypt from "bcryptjs";
 import passport from "passport";
 import { 
@@ -867,6 +868,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error handling Stripe webhook:", error);
       res.status(500).json({ message: "Webhook error" });
+    }
+  });
+
+  // Warmup API routes
+  app.get('/api/warmup/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const stats = await warmupService.getWarmupStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting warmup stats:", error);
+      res.status(500).json({ message: "Failed to get warmup stats" });
+    }
+  });
+
+  app.post('/api/warmup/initialize/:integrationId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { integrationId } = req.params;
+      const userId = req.user.claims.sub;
+
+      // Verify the integration belongs to the user
+      const integration = await storage.getUserEmailIntegrations(userId);
+      const userIntegration = integration.find(i => i.id === parseInt(integrationId));
+      
+      if (!userIntegration) {
+        return res.status(404).json({ message: "Integration not found" });
+      }
+
+      await warmupService.initializeWarmupProgress(parseInt(integrationId));
+      res.json({ message: "Warmup initialized successfully" });
+    } catch (error) {
+      console.error("Error initializing warmup:", error);
+      res.status(500).json({ message: "Failed to initialize warmup" });
+    }
+  });
+
+  app.post('/api/warmup/send', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await warmupService.sendWarmupEmails(userId);
+      res.json({ message: "Warmup emails sent successfully" });
+    } catch (error) {
+      console.error("Error sending warmup emails:", error);
+      res.status(500).json({ message: "Failed to send warmup emails" });
+    }
+  });
+
+  app.post('/api/warmup/action/:emailId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { emailId } = req.params;
+      const { action, replyBody } = req.body;
+
+      if (!['open', 'reply', 'spam'].includes(action)) {
+        return res.status(400).json({ message: "Invalid action" });
+      }
+
+      await warmupService.processWarmupEmailAction(parseInt(emailId), action, replyBody);
+      res.json({ message: "Action processed successfully" });
+    } catch (error) {
+      console.error("Error processing warmup action:", error);
+      res.status(500).json({ message: "Failed to process action" });
     }
   });
 

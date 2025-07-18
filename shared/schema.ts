@@ -146,10 +146,40 @@ export const warmupEmails = pgTable("warmup_emails", {
   toIntegrationId: integer("to_integration_id").notNull().references(() => emailIntegrations.id),
   subject: varchar("subject").notNull(),
   body: text("body").notNull(),
-  status: varchar("status").notNull().default("sent"), // sent, delivered, opened, replied
+  status: varchar("status").notNull().default("sent"), // sent, delivered, opened, replied, spam
   sentAt: timestamp("sent_at").defaultNow(),
   openedAt: timestamp("opened_at"),
   repliedAt: timestamp("replied_at"),
+  isSpam: boolean("is_spam").default(false),
+  replyBody: text("reply_body"),
+});
+
+// Warm-up statistics for each email integration
+export const warmupStats = pgTable("warmup_stats", {
+  id: serial("id").primaryKey(),
+  emailIntegrationId: integer("email_integration_id").notNull().references(() => emailIntegrations.id),
+  date: timestamp("date").notNull().defaultNow(),
+  emailsSent: integer("emails_sent").default(0),
+  emailsOpened: integer("emails_opened").default(0),
+  emailsReplied: integer("emails_replied").default(0),
+  emailsSpam: integer("emails_spam").default(0),
+  emailsBounced: integer("emails_bounced").default(0),
+  warmupScore: real("warmup_score").default(0), // 0-100 score
+  spamRate: real("spam_rate").default(0), // percentage
+  openRate: real("open_rate").default(0), // percentage
+  replyRate: real("reply_rate").default(0), // percentage
+  bounceRate: real("bounce_rate").default(0), // percentage
+});
+
+// Warm-up progress tracking
+export const warmupProgress = pgTable("warmup_progress", {
+  id: serial("id").primaryKey(),
+  emailIntegrationId: integer("email_integration_id").notNull().references(() => emailIntegrations.id),
+  day: integer("day").notNull(), // Day number in warmup process (1-15)
+  targetEmailsPerDay: integer("target_emails_per_day").notNull(),
+  actualEmailsSent: integer("actual_emails_sent").default(0),
+  isCompleted: boolean("is_completed").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Usage tracking
@@ -182,6 +212,8 @@ export const emailIntegrationsRelations = relations(emailIntegrations, ({ one, m
   campaigns: many(campaigns),
   warmupEmailsFrom: many(warmupEmails, { relationName: "fromIntegration" }),
   warmupEmailsTo: many(warmupEmails, { relationName: "toIntegration" }),
+  warmupStats: many(warmupStats),
+  warmupProgress: many(warmupProgress),
 }));
 
 export const recipientListsRelations = relations(recipientLists, ({ one, many }) => ({
@@ -254,6 +286,20 @@ export const warmupEmailsRelations = relations(warmupEmails, ({ one }) => ({
   }),
 }));
 
+export const warmupStatsRelations = relations(warmupStats, ({ one }) => ({
+  emailIntegration: one(emailIntegrations, {
+    fields: [warmupStats.emailIntegrationId],
+    references: [emailIntegrations.id],
+  }),
+}));
+
+export const warmupProgressRelations = relations(warmupProgress, ({ one }) => ({
+  emailIntegration: one(emailIntegrations, {
+    fields: [warmupProgress.emailIntegrationId],
+    references: [emailIntegrations.id],
+  }),
+}));
+
 export const usageTrackingRelations = relations(usageTracking, ({ one }) => ({
   user: one(users, {
     fields: [usageTracking.userId],
@@ -311,6 +357,16 @@ export const insertFollowUpSchema = createInsertSchema(followUps).omit({
   createdAt: true,
 });
 
+export const insertWarmupStatsSchema = createInsertSchema(warmupStats).omit({
+  id: true,
+  date: true,
+});
+
+export const insertWarmupProgressSchema = createInsertSchema(warmupProgress).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -326,4 +382,9 @@ export type FollowUp = typeof followUps.$inferSelect;
 export type InsertFollowUp = z.infer<typeof insertFollowUpSchema>;
 export type CampaignEmail = typeof campaignEmails.$inferSelect;
 export type WarmupEmail = typeof warmupEmails.$inferSelect;
+export type InsertWarmupEmail = typeof warmupEmails.$inferInsert;
+export type WarmupStats = typeof warmupStats.$inferSelect;
+export type InsertWarmupStats = z.infer<typeof insertWarmupStatsSchema>;
+export type WarmupProgress = typeof warmupProgress.$inferSelect;
+export type InsertWarmupProgress = z.infer<typeof insertWarmupProgressSchema>;
 export type UsageTracking = typeof usageTracking.$inferSelect;
