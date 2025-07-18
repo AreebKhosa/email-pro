@@ -37,6 +37,8 @@ export default function Recipients() {
   const [isAddRecipientOpen, setIsAddRecipientOpen] = useState(false);
   const [selectedListId, setSelectedListId] = useState<number | null>(null);
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
+  const [selectedRecipient, setSelectedRecipient] = useState<any>(null);
+  const [isRecipientDetailsOpen, setIsRecipientDetailsOpen] = useState(false);
 
   const { data: recipientLists, isLoading } = useQuery({
     queryKey: ["/api/recipient-lists"],
@@ -736,6 +738,16 @@ export default function Recipients() {
                                 <Button 
                                   variant="ghost" 
                                   size="sm"
+                                  onClick={() => {
+                                    setSelectedRecipient(recipient);
+                                    setIsRecipientDetailsOpen(true);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
                                   className="text-red-600 hover:bg-red-50"
                                   onClick={() => deleteRecipientMutation.mutate(recipient.id)}
                                   disabled={deleteRecipientMutation.isPending}
@@ -831,6 +843,16 @@ export default function Recipients() {
                                     <Button 
                                       variant="ghost" 
                                       size="sm"
+                                      onClick={() => {
+                                        setSelectedRecipient(recipient);
+                                        setIsRecipientDetailsOpen(true);
+                                      }}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
                                       className="text-red-600 hover:bg-red-50"
                                       onClick={() => deleteRecipientMutation.mutate(recipient.id)}
                                       disabled={deleteRecipientMutation.isPending}
@@ -857,6 +879,132 @@ export default function Recipients() {
             </Card>
           </div>
         </div>
+
+        {/* Recipient Details Dialog */}
+        <Dialog open={isRecipientDetailsOpen} onOpenChange={setIsRecipientDetailsOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Recipient Details</DialogTitle>
+              <DialogDescription>
+                Complete information for this recipient
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedRecipient && (
+              <div className="space-y-6">
+                {/* Personal Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-slate-900">Personal Information</h4>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Name:</span>
+                        <span className="font-medium">
+                          {selectedRecipient.name} {selectedRecipient.lastName || ''}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Email:</span>
+                        <span className="font-mono text-sm">{selectedRecipient.email}</span>
+                      </div>
+                      {selectedRecipient.position && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Position:</span>
+                          <span>{selectedRecipient.position}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-slate-900">Company Information</h4>
+                    <div className="space-y-1 text-sm">
+                      {selectedRecipient.companyName && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Company:</span>
+                          <span>{selectedRecipient.companyName}</span>
+                        </div>
+                      )}
+                      {selectedRecipient.websiteLink && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-500">Website:</span>
+                          <a 
+                            href={selectedRecipient.websiteLink} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline text-sm"
+                          >
+                            {new URL(selectedRecipient.websiteLink).hostname}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status Information */}
+                <div className="space-y-2">
+                  <h4 className="font-medium text-slate-900">Status & Metadata</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Deliverability Status:</span>
+                      <div>
+                        {selectedRecipient.deliverabilityStatus ? (
+                          <Badge 
+                            variant={
+                              selectedRecipient.deliverabilityStatus === 'valid' ? 'default' :
+                              selectedRecipient.deliverabilityStatus === 'risky' ? 'secondary' :
+                              'destructive'
+                            }
+                            className={
+                              selectedRecipient.deliverabilityStatus === 'valid' ? 'bg-green-100 text-green-800' :
+                              selectedRecipient.deliverabilityStatus === 'risky' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }
+                          >
+                            {selectedRecipient.deliverabilityStatus}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">Not checked</Badge>
+                        )}
+                      </div>
+                    </div>
+                    {selectedRecipient.listName && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">List:</span>
+                        <Badge variant="outline">{selectedRecipient.listName}</Badge>
+                      </div>
+                    )}
+                    {selectedRecipient.createdAt && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Added:</span>
+                        <span>{new Date(selectedRecipient.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Personalized Email */}
+                {selectedRecipient.personalizedEmail && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-slate-900">Personalized Email</h4>
+                    <div className="bg-slate-50 p-4 rounded-lg max-h-48 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap text-sm text-slate-700">
+                        {selectedRecipient.personalizedEmail}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end">
+                  <Button onClick={() => setIsRecipientDetailsOpen(false)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
