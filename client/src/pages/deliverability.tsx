@@ -58,6 +58,7 @@ export default function Deliverability() {
         description: "Deliverability check completed",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", parseInt(selectedListId), "recipients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", parseInt(selectedListId), "validation-stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
     },
     onError: (error) => {
@@ -83,6 +84,7 @@ export default function Deliverability() {
         setValidationDetails(data);
       }
       queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", parseInt(selectedListId), "recipients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/recipient-lists", parseInt(selectedListId), "validation-stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
     },
     onError: (error) => {
@@ -159,9 +161,33 @@ export default function Deliverability() {
   });
 
   // Handle export clean list
-  const handleExportClean = () => {
+  const handleExportClean = async () => {
     if (selectedListId) {
-      window.open(`/api/recipient-lists/${selectedListId}/export-clean`, '_blank');
+      try {
+        const response = await fetch(`/api/recipient-lists/${selectedListId}/export-clean`);
+        if (!response.ok) throw new Error('Failed to export');
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `clean-list-${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Export successful",
+          description: "Clean list exported successfully",
+        });
+      } catch (error) {
+        toast({
+          title: "Export failed",
+          description: "Failed to export clean list",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -210,10 +236,10 @@ export default function Deliverability() {
   };
 
   const checkedRecipients = recipients?.filter((r: any) => r.deliverabilityStatus) || [];
-  const validCount = checkedRecipients.filter((r: any) => r.deliverabilityStatus === 'valid').length;
-  const riskyCount = checkedRecipients.filter((r: any) => r.deliverabilityStatus === 'risky').length;
-  const invalidCount = checkedRecipients.filter((r: any) => r.deliverabilityStatus === 'invalid').length;
-  const totalChecked = checkedRecipients.length;
+  const validCount = validationStats?.valid || checkedRecipients.filter((r: any) => r.deliverabilityStatus === 'valid').length;
+  const riskyCount = validationStats?.risky || checkedRecipients.filter((r: any) => r.deliverabilityStatus === 'risky').length;
+  const invalidCount = validationStats?.invalid || checkedRecipients.filter((r: any) => r.deliverabilityStatus === 'invalid').length;
+  const totalChecked = validCount + riskyCount + invalidCount;
 
   return (
     <Layout>
@@ -479,12 +505,12 @@ export default function Deliverability() {
                   <h4 className="text-sm font-medium text-slate-700 mb-4">Email Status Distribution</h4>
                   <div className="flex-1 flex items-end justify-between gap-2">
                     {[
-                      { label: 'Valid', value: validationStats.valid || 0, color: 'bg-green-500', bgColor: 'bg-green-100' },
-                      { label: 'Risky', value: validationStats.risky || 0, color: 'bg-yellow-500', bgColor: 'bg-yellow-100' },
-                      { label: 'Invalid', value: validationStats.invalid || 0, color: 'bg-red-500', bgColor: 'bg-red-100' },
-                      { label: 'Pending', value: validationStats.pending || 0, color: 'bg-slate-500', bgColor: 'bg-slate-100' },
+                      { label: 'Valid', value: validationStats?.valid || 0, color: 'bg-green-500', bgColor: 'bg-green-100' },
+                      { label: 'Risky', value: validationStats?.risky || 0, color: 'bg-yellow-500', bgColor: 'bg-yellow-100' },
+                      { label: 'Invalid', value: validationStats?.invalid || 0, color: 'bg-red-500', bgColor: 'bg-red-100' },
+                      { label: 'Pending', value: validationStats?.pending || 0, color: 'bg-slate-500', bgColor: 'bg-slate-100' },
                     ].map((item, index) => {
-                      const total = (validationStats.valid || 0) + (validationStats.risky || 0) + (validationStats.invalid || 0) + (validationStats.pending || 0);
+                      const total = (validationStats?.valid || 0) + (validationStats?.risky || 0) + (validationStats?.invalid || 0) + (validationStats?.pending || 0);
                       const percentage = total > 0 ? (item.value / total) * 100 : 0;
                       const height = Math.max(percentage * 1.5, 8); // Minimum height of 8px
                       
