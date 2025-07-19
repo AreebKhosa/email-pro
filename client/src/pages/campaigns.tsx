@@ -170,10 +170,12 @@ export default function Campaigns() {
                 <Rocket className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-slate-900 mb-2">No campaigns yet</h3>
                 <p className="text-slate-600 mb-4">Create your first campaign to start sending emails</p>
-                <Button onClick={() => setIsCreateOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Campaign
-                </Button>
+                <Link href="/campaigns/create">
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Your First Campaign
+                  </Button>
+                </Link>
               </div>
             )}
           </CardContent>
