@@ -971,7 +971,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const campaignId = parseInt(req.params.id);
-      const { subject, body } = req.body;
+      const { subject, body, followUpSubject, followUpBody } = req.body;
 
       // Verify campaign ownership
       const campaign = await storage.getCampaign(campaignId);
@@ -987,6 +987,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateData: any = {};
       if (subject !== undefined) updateData.subject = subject;
       if (body !== undefined) updateData.body = body;
+      if (followUpSubject !== undefined) updateData.followUpSubject = followUpSubject;
+      if (followUpBody !== undefined) updateData.followUpBody = followUpBody;
 
       const updatedCampaign = await storage.updateCampaign(campaignId, updateData);
       res.json(updatedCampaign);
