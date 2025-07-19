@@ -58,15 +58,18 @@ export async function validateEmailIntegration(config: InsertEmailIntegration): 
 
         imap.once('error', (err) => {
           console.error('IMAP connection error:', err.message);
+          console.error('IMAP Host used:', config.imapHost);
+          console.error('IMAP Port used:', config.imapPort);
           resolve(false);
         });
 
         imap.connect();
       } catch (error) {
         console.error('IMAP constructor error:', error);
-        // If IMAP fails, we still consider it successful if SMTP worked
-        // This allows the integration to be created for sending emails
-        resolve(true);
+        console.error('IMAP Host used:', config.imapHost);
+        console.error('IMAP Port used:', config.imapPort);
+        // IMAP must work for full email integration functionality
+        resolve(false);
       }
     });
   } catch (error) {

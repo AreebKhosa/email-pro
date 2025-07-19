@@ -93,8 +93,8 @@ export default function CreateCampaign() {
     timeWindowEnd: '17:00',
     rotateEmails: false,
     emailIntegrationIds: [],
-    emailsPerAccount: 30,
-    emailDelay: 5,
+    emailsPerAccount: 30, // Auto-optimized default
+    emailDelay: 5, // Auto-optimized default (5 minutes for best deliverability)
     followUpEnabled: false,
     followUpSubject: '',
     followUpBody: '',
@@ -454,6 +454,54 @@ export default function CreateCampaign() {
                       />
                     </div>
                   </div>
+                </div>
+                
+                {/* Time Spacing Controls */}
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
+                    <Clock className="w-5 h-5" />
+                    Email Timing Settings
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="email-delay">Time Between Emails (minutes)</Label>
+                      <Input
+                        id="email-delay"
+                        type="number"
+                        value={campaignData.emailDelay}
+                        onChange={(e) => setCampaignData(prev => ({ ...prev, emailDelay: parseInt(e.target.value) || 5 }))}
+                        min="1"
+                        max="60"
+                        placeholder="5"
+                        className="mt-2"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Recommended: 3-10 minutes for best deliverability
+                      </p>
+                    </div>
+                    <div>
+                      <Label htmlFor="emails-per-account">Emails Per Account (if rotating)</Label>
+                      <Input
+                        id="emails-per-account"
+                        type="number"
+                        value={campaignData.emailsPerAccount}
+                        onChange={(e) => setCampaignData(prev => ({ ...prev, emailsPerAccount: parseInt(e.target.value) || 30 }))}
+                        min="1"
+                        max="100"
+                        placeholder="30"
+                        className="mt-2"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Number of emails before switching accounts
+                      </p>
+                    </div>
+                  </div>
+                  <Alert className="mt-3">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Auto-optimization:</strong> If left at default values, our system will automatically choose the best timing based on your recipient count and plan limits for optimal deliverability.
+                    </AlertDescription>
+                  </Alert>
                 </div>
               </div>
             )}
