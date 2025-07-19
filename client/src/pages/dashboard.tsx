@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useAuth } from "@/hooks/useAuth";
-import Layout from "@/components/Layout";
 import StatsCard from "@/components/StatsCard";
 import PlanUsage from "@/components/PlanUsage";
 import WarmupStatus from "@/components/WarmupStatus";
@@ -51,11 +50,9 @@ export default function Dashboard() {
 
   if (isDashboardLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
     );
   }
 
@@ -69,10 +66,9 @@ export default function Dashboard() {
   const approachingLimit = emailUsagePercent > 80;
 
   return (
-    <Layout>
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
             <p className="text-slate-600 mt-1">Welcome back! Here's what's happening with your campaigns.</p>
@@ -291,6 +287,5 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    </Layout>
   );
 }

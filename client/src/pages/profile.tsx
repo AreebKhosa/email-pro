@@ -209,35 +209,7 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {/* Account Stats */}
-        <Card className="md:col-span-3">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Account Statistics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{user?.campaignCount || 0}</p>
-                <p className="text-sm text-gray-600">Campaigns Created</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">{user?.emailsSent || 0}</p>
-                <p className="text-sm text-gray-600">Emails Sent</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600">{user?.recipientCount || 0}</p>
-                <p className="text-sm text-gray-600">Recipients Managed</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-orange-600">{user?.integrationCount || 0}</p>
-                <p className="text-sm text-gray-600">Email Integrations</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
       </div>
     </div>
   );

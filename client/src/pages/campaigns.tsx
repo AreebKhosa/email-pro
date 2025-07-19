@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import Layout from "@/components/Layout";
+
 import InstructionBox from "@/components/InstructionBox";
 import CampaignDetailModal from "@/components/CampaignDetailModal";
 import { Button } from "@/components/ui/button";
@@ -133,17 +133,14 @@ export default function Campaigns() {
 
   if (isLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="space-y-8">
+    <div className="space-y-8">
         {/* Instruction Box */}
         <InstructionBox
           id="campaigns-intro"
@@ -310,6 +307,5 @@ export default function Campaigns() {
           }}
         />
       </div>
-    </Layout>
   );
 }

@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import Layout from "@/components/Layout";
+
 import InstructionBox from "@/components/InstructionBox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -213,17 +213,14 @@ export default function EmailIntegrations() {
 
   if (isLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="space-y-8">
+    <div className="space-y-8">
         {/* Instruction Box */}
         <InstructionBox
           id="email-integrations-intro"
@@ -691,6 +688,6 @@ export default function EmailIntegrations() {
           </CardContent>
         </Card>
       </div>
-    </Layout>
+    
   );
 }

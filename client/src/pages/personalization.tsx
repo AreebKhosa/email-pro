@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import Layout from "@/components/Layout";
+
 import InstructionBox from "@/components/InstructionBox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -285,8 +285,7 @@ export default function Personalization() {
   const quotaPercentage = (used / quota) * 100;
 
   return (
-    <Layout>
-      <div className="space-y-8">
+    <div className="space-y-8">
         {/* Instruction Box */}
         <InstructionBox
           id="personalization-intro"
@@ -721,6 +720,6 @@ export default function Personalization() {
           </DialogContent>
         </Dialog>
       </div>
-    </Layout>
+    
   );
 }
