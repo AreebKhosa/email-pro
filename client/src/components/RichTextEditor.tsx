@@ -101,227 +101,109 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
     }
   };
 
+  const insertHtmlTag = (openTag: string, closeTag: string = '') => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const currentValue = textarea.value;
+      const selectedText = currentValue.substring(start, end);
+      
+      let newValue;
+      if (closeTag) {
+        newValue = currentValue.substring(0, start) + openTag + selectedText + closeTag + currentValue.substring(end);
+      } else {
+        newValue = currentValue.substring(0, start) + openTag + currentValue.substring(end);
+      }
+      
+      onChange(newValue);
+      setTimeout(() => {
+        textarea.focus();
+        if (closeTag) {
+          textarea.setSelectionRange(start + openTag.length, end + openTag.length);
+        } else {
+          textarea.setSelectionRange(start + openTag.length, start + openTag.length);
+        }
+      }, 0);
+    }
+  };
+
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">
-      {/* Toolbar */}
-      <div className="bg-gray-50 border-b border-gray-200 p-2">
-        <div className="flex items-center gap-1 flex-wrap">
-          {/* Text Formatting */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand('bold')}
-              className="h-8 w-8 p-0"
-            >
-              <Bold className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand('italic')}
-              className="h-8 w-8 p-0"
-            >
-              <Italic className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand('underline')}
-              className="h-8 w-8 p-0"
-            >
-              <Underline className="w-4 h-4" />
-            </Button>
-          </div>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          {/* Alignment */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand('justifyLeft')}
-              className="h-8 w-8 p-0"
-            >
-              <AlignLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand('justifyCenter')}
-              className="h-8 w-8 p-0"
-            >
-              <AlignCenter className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand('justifyRight')}
-              className="h-8 w-8 p-0"
-            >
-              <AlignRight className="w-4 h-4" />
-            </Button>
-          </div>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          {/* Lists */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand('insertUnorderedList')}
-              className="h-8 w-8 p-0"
-            >
-              <List className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand('insertOrderedList')}
-              className="h-8 w-8 p-0"
-            >
-              <ListOrdered className="w-4 h-4" />
-            </Button>
-          </div>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          {/* Links and Headings */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={insertLink}
-              className="h-8 w-8 p-0"
-            >
-              <Link className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand('formatBlock', 'h1')}
-              className="h-8 px-2"
-            >
-              H1
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand('formatBlock', 'h2')}
-              className="h-8 px-2"
-            >
-              H2
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand('formatBlock', 'h3')}
-              className="h-8 px-2"
-            >
-              H3
-            </Button>
-          </div>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          {/* Dynamic Fields */}
-          <div className="relative">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowDynamicFields(!showDynamicFields)}
-              className="h-8 text-xs"
-            >
-              <User className="w-4 h-4 mr-1" />
-              Insert Field
-            </Button>
-            
-            {showDynamicFields && (
-              <Card className="absolute top-10 left-0 z-50 w-64 p-2 bg-white shadow-lg border">
-                <Label className="text-xs font-medium text-gray-700 mb-2 block">
-                  Dynamic Fields
-                </Label>
-                <div className="grid grid-cols-2 gap-1">
-                  {DYNAMIC_FIELDS.map((field) => (
-                    <Button
-                      key={field.id}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => insertDynamicField(field)}
-                      className="justify-start text-xs h-8 p-2"
-                    >
-                      {field.icon}
-                      <span className="ml-1 truncate">{field.label}</span>
-                    </Button>
-                  ))}
-                </div>
-              </Card>
-            )}
-          </div>
+      {/* Simple HTML Tag Toolbar */}
+      <div className="bg-gray-50 border-b border-gray-200 p-3">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => insertHtmlTag('<strong>', '</strong>')}
+            className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 font-semibold"
+            title="Bold"
+          >
+            <strong>Bold</strong>
+          </button>
+          <button
+            type="button"
+            onClick={() => insertHtmlTag('<br>')}
+            className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50"
+            title="New Line"
+          >
+            New Line
+          </button>
+          <button
+            type="button"
+            onClick={() => insertHtmlTag('<h1>', '</h1>')}
+            className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 font-bold text-lg"
+            title="Heading 1"
+          >
+            H1
+          </button>
+          <button
+            type="button"
+            onClick={() => insertHtmlTag('<h2>', '</h2>')}
+            className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 font-bold"
+            title="Heading 2"
+          >
+            H2
+          </button>
+          <button
+            type="button"
+            onClick={() => insertHtmlTag('<h3>', '</h3>')}
+            className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 font-semibold"
+            title="Heading 3"
+          >
+            H3
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const url = prompt('Enter URL:');
+              if (url) {
+                insertHtmlTag(`<a href="${url}">`, '</a>');
+              }
+            }}
+            className="px-3 py-1 text-sm bg-white border rounded hover:bg-gray-50 text-blue-600"
+            title="Link"
+          >
+            Link
+          </button>
         </div>
       </div>
 
-      {/* Enhanced Text Area with Rich Features */}
+      {/* Simple Text Area */}
       <div className="relative">
         <textarea
-          value={value ? value.replace(/<[^>]*>/g, '') : ''}
+          value={value || ''}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full p-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono text-sm"
+          className="w-full p-4 border-0 focus:outline-none resize-none"
           style={{ minHeight }}
           placeholder={placeholder}
           rows={Math.max(6, Math.ceil((parseInt(minHeight) || 200) / 24))}
         />
-        <div className="absolute top-2 right-2 flex gap-1">
-          <button
-            type="button"
-            onClick={() => {
-              const textarea = document.querySelector('textarea');
-              if (textarea) {
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const currentValue = textarea.value;
-                const newValue = currentValue.substring(0, start) + '**' + currentValue.substring(start, end) + '**' + currentValue.substring(end);
-                onChange(newValue);
-                setTimeout(() => {
-                  textarea.setSelectionRange(start + 2, end + 2);
-                  textarea.focus();
-                }, 0);
-              }
-            }}
-            className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border"
-            title="Bold"
-          >
-            B
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const textarea = document.querySelector('textarea');
-              if (textarea) {
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const currentValue = textarea.value;
-                const newValue = currentValue.substring(0, start) + '*' + currentValue.substring(start, end) + '*' + currentValue.substring(end);
-                onChange(newValue);
-                setTimeout(() => {
-                  textarea.setSelectionRange(start + 1, end + 1);
-                  textarea.focus();
-                }, 0);
-              }
-            }}
-            className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border italic"
-            title="Italic"
-          >
-            I
-          </button>
-        </div>
       </div>
       
       {/* Dynamic Fields */}
-      <div className="mt-3 p-3 bg-gray-50 rounded-md">
-        <p className="text-sm font-medium text-gray-700 mb-2">Available Dynamic Fields:</p>
+      <div className="bg-gray-50 border-t border-gray-200 p-3">
+        <p className="text-sm font-medium text-gray-700 mb-2">Dynamic Fields:</p>
         <div className="flex flex-wrap gap-2">
           {[
             { field: '{{name}}', label: 'Name' },
@@ -334,31 +216,14 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
               key={field}
               type="button"
               onClick={() => {
-                const currentValue = value ? value.replace(/<[^>]*>/g, '') : '';
+                const currentValue = value || '';
                 onChange(currentValue + field);
               }}
-              className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+              className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
             >
-              {label} ({field})
+              {label}
             </button>
           ))}
-        </div>
-      </div>
-
-      {/* Dynamic Fields Legend */}
-      <div className="bg-gray-50 border-t border-gray-200 p-2">
-        <Label className="text-xs text-gray-600">
-          Available Fields: 
-        </Label>
-        <div className="flex flex-wrap gap-1 mt-1">
-          {DYNAMIC_FIELDS.slice(0, 4).map((field) => (
-            <Badge key={field.id} variant="secondary" className="text-xs">
-              {field.label}
-            </Badge>
-          ))}
-          <Badge variant="outline" className="text-xs">
-            +{DYNAMIC_FIELDS.length - 4} more
-          </Badge>
         </div>
       </div>
     </div>

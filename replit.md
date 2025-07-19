@@ -12,14 +12,18 @@ Preferred communication style: Simple, everyday language.
 
 ### Text Editor Improvements (July 19, 2025)
 - Replaced complex rich text editor with simple textarea to fix text reversal bug
+- Added HTML tag buttons for Bold, New Line, Headings (H1-H3), and Link insertion
 - Added dynamic field buttons for recipient personalization ({{name}}, {{email}}, etc.)
 - Users can now type normally without text appearing backward
+- Text editor now supports HTML formatting with clickable buttons
 
 ### Campaign Management Enhancements (July 19, 2025)
 - Added trash icon and delete functionality to campaigns list
 - Enhanced follow-up email system with direct storage in campaigns table
 - Updated database schema to include followUpEnabled, followUpSubject, followUpBody fields
 - Fixed follow-up display logic in campaign detail modal
+- Added ability to edit follow-up delay time (1-30 days) in campaign details
+- Added follow-up condition editing (Not Opened, Not Clicked, Opened but Not Clicked)
 
 ## System Architecture
 

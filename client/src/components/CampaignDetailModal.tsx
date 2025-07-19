@@ -421,13 +421,37 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label>Condition</Label>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {campaign.followUpCondition === 'not_opened' ? 'Not Opened' : 'No Reply'}
-                        </p>
+                        {isEditing ? (
+                          <select 
+                            value={editData.followUpCondition || 'not_opened'}
+                            onChange={(e) => setEditData(prev => ({ ...prev, followUpCondition: e.target.value }))}
+                            className="mt-1 w-full p-2 border rounded text-sm"
+                          >
+                            <option value="not_opened">Not Opened</option>
+                            <option value="not_clicked">Not Clicked</option>
+                            <option value="opened_not_clicked">Opened but Not Clicked</option>
+                          </select>
+                        ) : (
+                          <p className="text-sm text-gray-600 mt-1">
+                            {campaign.followUpCondition === 'not_opened' ? 'Not Opened' : 'No Reply'}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label>Delay</Label>
-                        <p className="text-sm text-gray-600 mt-1">{campaign.followUpDays || 3} days</p>
+                        {isEditing ? (
+                          <Input
+                            type="number"
+                            min="1"
+                            max="30"
+                            value={editData.followUpDays || 3}
+                            onChange={(e) => setEditData(prev => ({ ...prev, followUpDays: parseInt(e.target.value) || 3 }))}
+                            className="mt-1 text-sm"
+                            placeholder="Days"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-600 mt-1">{campaign.followUpDays || 3} days</p>
+                        )}
                       </div>
                     </div>
                   </>
