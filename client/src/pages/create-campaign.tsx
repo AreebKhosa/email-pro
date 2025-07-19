@@ -611,14 +611,14 @@ export default function CreateCampaign() {
                   <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
                     <Mail className="w-5 h-5" />
                     Follow-up Email Settings
-                    {!planLimits.followUps && (
+                    {(!planLimits.followUps || planLimits.followUps === 0) && (
                       <Badge variant="outline" className="text-xs">
                         Upgrade Required
                       </Badge>
                     )}
                   </h3>
                   
-                  {planLimits.followUps ? (
+                  {(planLimits.followUps && planLimits.followUps > 0) ? (
                     <div>
                       <div className="flex items-center space-x-2 mb-4">
                         <Checkbox

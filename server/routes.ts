@@ -939,6 +939,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/campaigns/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found" });
+      }
+
+      const campaignId = parseInt(req.params.id);
+      
+      // Verify campaign ownership
+      const campaign = await storage.getCampaign(campaignId);
+      if (!campaign || campaign.userId !== userId) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+      
+      await storage.deleteCampaign(campaignId);
+      res.json({ message: "Campaign deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting campaign:", error);
+      res.status(500).json({ message: "Failed to delete campaign" });
+    }
+  });
+
   // Update campaign content
   app.patch('/api/campaigns/:id', isAuthenticated, async (req: any, res) => {
     try {

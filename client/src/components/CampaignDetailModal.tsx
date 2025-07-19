@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -73,9 +73,23 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
-    subject: campaign?.subject || "",
-    body: campaign?.body || "",
+    subject: "",
+    body: "",
+    followUpSubject: "",
+    followUpBody: "",
   });
+
+  // Update edit data when campaign changes
+  useEffect(() => {
+    if (campaign) {
+      setEditData({
+        subject: campaign.subject || "",
+        body: campaign.body || "",
+        followUpSubject: campaign.followUpSubject || "",
+        followUpBody: campaign.followUpBody || "",
+      });
+    }
+  }, [campaign]);
 
   // Update campaign status
   const updateStatusMutation = useMutation({
@@ -354,38 +368,62 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
               </CardContent>
             </Card>
 
-            {campaign.followUpEnabled && campaign.followUpSubject && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Follow-up Email</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label>Follow-up Subject</Label>
-                    <p className="mt-2 p-3 bg-gray-50 rounded-md">{campaign.followUpSubject}</p>
-                  </div>
-                  <div>
-                    <Label>Follow-up Body</Label>
-                    <div 
-                      className="mt-2 p-4 bg-gray-50 rounded-md min-h-[150px]"
-                      dangerouslySetInnerHTML={{ __html: campaign.followUpBody || '' }}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Follow-up Email</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {campaign.followUpEnabled ? (
+                  <>
                     <div>
-                      <Label>Condition</Label>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {campaign.followUpCondition === 'not_opened' ? 'Not Opened' : 'No Reply'}
-                      </p>
+                      <Label>Follow-up Subject</Label>
+                      {isEditing ? (
+                        <Input
+                          value={editData.followUpSubject || ''}
+                          onChange={(e) => setEditData(prev => ({ ...prev, followUpSubject: e.target.value }))}
+                          className="mt-2"
+                          placeholder="Follow-up subject..."
+                        />
+                      ) : (
+                        <p className="mt-2 p-3 bg-gray-50 rounded-md">{campaign.followUpSubject || 'Not configured'}</p>
+                      )}
                     </div>
                     <div>
-                      <Label>Delay</Label>
-                      <p className="text-sm text-gray-600 mt-1">{campaign.followUpDays || 3} days</p>
+                      <Label>Follow-up Body</Label>
+                      {isEditing ? (
+                        <div className="mt-2">
+                          <RichTextEditor
+                            value={editData.followUpBody || ''}
+                            onChange={(value) => setEditData(prev => ({ ...prev, followUpBody: value }))}
+                            minHeight="200px"
+                            placeholder="Follow-up email content..."
+                          />
+                        </div>
+                      ) : (
+                        <div 
+                          className="mt-2 p-4 bg-gray-50 rounded-md min-h-[150px]"
+                          dangerouslySetInnerHTML={{ __html: campaign.followUpBody || '<p>Not configured</p>' }}
+                        />
+                      )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Condition</Label>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {campaign.followUpCondition === 'not_opened' ? 'Not Opened' : 'No Reply'}
+                        </p>
+                      </div>
+                      <div>
+                        <Label>Delay</Label>
+                        <p className="text-sm text-gray-600 mt-1">{campaign.followUpDays || 3} days</p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-gray-500 text-center py-4">Follow-up emails are not enabled for this campaign</p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4">

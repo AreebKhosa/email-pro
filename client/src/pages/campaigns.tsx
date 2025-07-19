@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import { Plus, Rocket, Mail, Calendar, MoreHorizontal, Eye, Edit, Trash, Play, Pause } from "lucide-react";
+import { Plus, Rocket, Mail, Calendar, MoreHorizontal, Eye, Edit, Trash2, Play, Pause } from "lucide-react";
 import { Link } from "wouter";
 
 
@@ -25,6 +25,39 @@ export default function Campaigns() {
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ["/api/campaigns"],
     retry: false,
+  });
+
+  // Delete campaign mutation
+  const deleteCampaignMutation = useMutation({
+    mutationFn: async (campaignId: number) => {
+      const response = await apiRequest("DELETE", `/api/campaigns/${campaignId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
+      toast({
+        title: "Success",
+        description: "Campaign deleted successfully",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to delete campaign",
+        variant: "destructive",
+      });
+    },
   });
 
   // Toggle campaign status mutation
@@ -63,6 +96,12 @@ export default function Campaigns() {
   const handleViewCampaign = (campaign: any) => {
     setSelectedCampaign(campaign);
     setIsDetailModalOpen(true);
+  };
+
+  const handleDeleteCampaign = (campaignId: number) => {
+    if (window.confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
+      deleteCampaignMutation.mutate(campaignId);
+    }
   };
 
   const handleToggleStatus = (campaign: any) => {
@@ -227,8 +266,15 @@ export default function Campaigns() {
                               <Pause className="h-4 w-4" />
                             </Button>
                           )}
-                          <Button variant="ghost" size="sm" title="More Options">
-                            <MoreHorizontal className="h-4 w-4" />
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeleteCampaign(campaign.id)}
+                            disabled={deleteCampaignMutation.isPending}
+                            title="Delete Campaign"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
