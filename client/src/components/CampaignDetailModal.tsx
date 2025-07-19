@@ -379,7 +379,7 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
                 <CardTitle>Follow-up Email</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {campaign.followUpEnabled ? (
+                {campaign?.followUpEnabled ? (
                   <>
                     <div>
                       <Label>Follow-up Subject</Label>

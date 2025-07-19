@@ -645,22 +645,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Campaign management methods
-  async getCampaign(campaignId: number): Promise<Campaign | undefined> {
-    const [campaign] = await db
-      .select()
-      .from(campaigns)
-      .where(eq(campaigns.id, campaignId));
-    return campaign;
-  }
 
-  async updateCampaignStatus(campaignId: number, status: string): Promise<Campaign> {
-    const [updatedCampaign] = await db
-      .update(campaigns)
-      .set({ status })
-      .where(eq(campaigns.id, campaignId))
-      .returning();
-    return updatedCampaign;
-  }
 
   async updateCampaign(campaignId: number, updateData: Partial<Campaign>): Promise<Campaign> {
     const [updatedCampaign] = await db

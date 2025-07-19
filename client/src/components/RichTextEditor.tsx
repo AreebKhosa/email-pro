@@ -263,21 +263,41 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         </div>
       </div>
 
-      {/* Editor Area */}
-      <div
-        ref={editorRef}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={handleContentChange}
-        className="p-4 focus:outline-none"
-        style={{ 
-          minHeight,
-          direction: 'ltr',
-          textAlign: 'left'
-        }}
-        dangerouslySetInnerHTML={{ __html: value }}
-        data-placeholder={placeholder}
+      {/* Simple Text Area instead of contentEditable */}
+      <textarea
+        value={value ? value.replace(/<[^>]*>/g, '') : ''}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full p-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        style={{ minHeight }}
+        placeholder={placeholder}
+        rows={Math.max(6, Math.ceil((parseInt(minHeight) || 200) / 24))}
       />
+      
+      {/* Dynamic Fields */}
+      <div className="mt-3 p-3 bg-gray-50 rounded-md">
+        <p className="text-sm font-medium text-gray-700 mb-2">Available Dynamic Fields:</p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { field: '{{name}}', label: 'Name' },
+            { field: '{{lastName}}', label: 'Last Name' },
+            { field: '{{companyName}}', label: 'Company' },
+            { field: '{{position}}', label: 'Position' },
+            { field: '{{email}}', label: 'Email' }
+          ].map(({ field, label }) => (
+            <button
+              key={field}
+              type="button"
+              onClick={() => {
+                const currentValue = value ? value.replace(/<[^>]*>/g, '') : '';
+                onChange(currentValue + field);
+              }}
+              className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+            >
+              {label} ({field})
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Dynamic Fields Legend */}
       <div className="bg-gray-50 border-t border-gray-200 p-2">

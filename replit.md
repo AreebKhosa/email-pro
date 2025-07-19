@@ -8,6 +8,19 @@ This is a comprehensive email marketing SaaS platform built with a full-stack Ty
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### Text Editor Improvements (July 19, 2025)
+- Replaced complex rich text editor with simple textarea to fix text reversal bug
+- Added dynamic field buttons for recipient personalization ({{name}}, {{email}}, etc.)
+- Users can now type normally without text appearing backward
+
+### Campaign Management Enhancements (July 19, 2025)
+- Added trash icon and delete functionality to campaigns list
+- Enhanced follow-up email system with direct storage in campaigns table
+- Updated database schema to include followUpEnabled, followUpSubject, followUpBody fields
+- Fixed follow-up display logic in campaign detail modal
+
 ## System Architecture
 
 ### Frontend Architecture
