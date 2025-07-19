@@ -263,15 +263,61 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         </div>
       </div>
 
-      {/* Simple Text Area instead of contentEditable */}
-      <textarea
-        value={value ? value.replace(/<[^>]*>/g, '') : ''}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full p-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-        style={{ minHeight }}
-        placeholder={placeholder}
-        rows={Math.max(6, Math.ceil((parseInt(minHeight) || 200) / 24))}
-      />
+      {/* Enhanced Text Area with Rich Features */}
+      <div className="relative">
+        <textarea
+          value={value ? value.replace(/<[^>]*>/g, '') : ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full p-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono text-sm"
+          style={{ minHeight }}
+          placeholder={placeholder}
+          rows={Math.max(6, Math.ceil((parseInt(minHeight) || 200) / 24))}
+        />
+        <div className="absolute top-2 right-2 flex gap-1">
+          <button
+            type="button"
+            onClick={() => {
+              const textarea = document.querySelector('textarea');
+              if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const currentValue = textarea.value;
+                const newValue = currentValue.substring(0, start) + '**' + currentValue.substring(start, end) + '**' + currentValue.substring(end);
+                onChange(newValue);
+                setTimeout(() => {
+                  textarea.setSelectionRange(start + 2, end + 2);
+                  textarea.focus();
+                }, 0);
+              }
+            }}
+            className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border"
+            title="Bold"
+          >
+            B
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const textarea = document.querySelector('textarea');
+              if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const currentValue = textarea.value;
+                const newValue = currentValue.substring(0, start) + '*' + currentValue.substring(start, end) + '*' + currentValue.substring(end);
+                onChange(newValue);
+                setTimeout(() => {
+                  textarea.setSelectionRange(start + 1, end + 1);
+                  textarea.focus();
+                }, 0);
+              }
+            }}
+            className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border italic"
+            title="Italic"
+          >
+            I
+          </button>
+        </div>
+      </div>
       
       {/* Dynamic Fields */}
       <div className="mt-3 p-3 bg-gray-50 rounded-md">

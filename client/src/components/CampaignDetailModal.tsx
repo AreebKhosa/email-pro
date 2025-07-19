@@ -379,6 +379,12 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
                 <CardTitle>Follow-up Email</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Debug info */}
+                <div className="text-xs bg-yellow-50 p-2 rounded mb-2">
+                  Debug: followUpEnabled={String(campaign?.followUpEnabled)}, 
+                  followUpSubject={campaign?.followUpSubject || 'null'}, 
+                  followUpBody length={campaign?.followUpBody?.length || 0}
+                </div>
                 {campaign?.followUpEnabled ? (
                   <>
                     <div>

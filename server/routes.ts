@@ -870,6 +870,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dailyLimit: dailyLimit || 50,
         timeWindowStart: timeWindowStart || "08:00",
         timeWindowEnd: timeWindowEnd || "17:00",
+        // Follow-up settings
+        followUpEnabled: extraFields.followUpEnabled || false,
+        followUpSubject: extraFields.followUpSubject || null,
+        followUpBody: extraFields.followUpBody || null,
+        followUpCondition: extraFields.followUpCondition || "not_opened",
+        followUpDays: extraFields.followUpDays || 3,
         scheduledAt: extraFields.scheduledAt || null,
         status: extraFields.status || "draft"
       };
@@ -886,22 +892,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const campaign = await storage.createCampaign(userId, validatedData);
-      
-      // Create follow-up if enabled
-      if (extraFields.followUpEnabled && extraFields.followUpSubject && extraFields.followUpBody) {
-        try {
-          const followUpData = {
-            campaignId: campaign.id,
-            subject: extraFields.followUpSubject,
-            body: extraFields.followUpBody,
-            delayDays: extraFields.followUpDays || 3,
-          };
-          await storage.addFollowUp(followUpData);
-        } catch (followUpError) {
-          console.error("Error creating follow-up:", followUpError);
-          // Don't fail the campaign creation if follow-up fails
-        }
-      }
       
       res.json(campaign);
     } catch (error) {
