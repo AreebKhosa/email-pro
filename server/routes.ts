@@ -174,7 +174,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found" });
+      }
       const stats = await storage.getDashboardStats(userId);
       const usage = await storage.getCurrentMonthUsage(userId);
       const user = await storage.getUser(userId);
@@ -199,7 +202,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User stats for usage tracking
   app.get('/api/user/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found" });
+      }
       const usage = await storage.getCurrentMonthUsage(userId);
       const user = await storage.getUser(userId);
       
@@ -220,7 +226,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email integrations
   app.get('/api/email-integrations', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found" });
+      }
       const integrations = await storage.getUserEmailIntegrations(userId);
       res.json(integrations);
     } catch (error) {
@@ -301,7 +310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Recipient lists
   app.get('/api/recipient-lists', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const lists = await storage.getUserRecipientLists(userId);
       res.json(lists);
     } catch (error) {
@@ -312,7 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/recipient-lists', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const data = insertRecipientListSchema.parse(req.body);
       const list = await storage.createRecipientList(userId, data);
       res.json(list);
@@ -335,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/recipient-lists/:id/recipients', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const listId = parseInt(req.params.id);
       const { recipients: recipientData } = req.body;
 
@@ -368,7 +377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Deliverability checking
   app.post('/api/recipients/:id/check-deliverability', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const recipientId = parseInt(req.params.id);
 
       // Check plan limits
@@ -428,7 +437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/recipient-lists/:id/check-deliverability', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const listId = parseInt(req.params.id);
       
       const recipients = await storage.getListRecipients(listId);
@@ -482,7 +491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Remove invalid emails from list
   app.post('/api/recipient-lists/:id/remove-invalid', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const listId = parseInt(req.params.id);
       
       const removedCount = await storage.removeInvalidRecipients(listId);
@@ -497,7 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Export clean list (valid emails only)
   app.get('/api/recipient-lists/:id/export-clean', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const listId = parseInt(req.params.id);
       
       const cleanRecipients = await storage.getCleanRecipients(listId);
@@ -527,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteRecipient(recipientId);
       
       // Update recipient counts for all lists (but don't decrease upload usage)
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       await storage.updateAllRecipientCounts(userId);
       
       res.json({ success: true });
@@ -540,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete recipient list
   app.delete('/api/recipient-lists/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const listId = parseInt(req.params.id);
       
       // First delete all recipients in the list
@@ -561,7 +570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get recently uploaded recipients (last 5 across all lists)
   app.get('/api/recipients/recent', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const recentRecipients = await storage.getRecentRecipients(userId, 5);
       res.json(recentRecipients);
     } catch (error) {
@@ -587,7 +596,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email personalization - single recipient
   app.post('/api/recipients/:id/personalize', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const recipientId = parseInt(req.params.id);
       const { emailType, tone, maxCharacters, callToAction } = req.body;
 
@@ -646,7 +655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/recipient-lists/:id/personalize', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const listId = parseInt(req.params.id);
       const { emailType, tone, maxCharacters, callToAction } = req.body;
 
@@ -728,7 +737,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update recipient list with personalized emails
   app.post('/api/recipient-lists/:targetListId/update-with-personalized', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const targetListId = parseInt(req.params.targetListId);
       const { sourceListId } = req.body;
 
@@ -807,7 +816,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Campaigns
   app.get('/api/campaigns', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found" });
+      }
       const campaigns = await storage.getUserCampaigns(userId);
       res.json(campaigns);
     } catch (error) {
@@ -818,7 +830,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/campaigns', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found" });
+      }
       
       // Extract the required fields for the campaign schema
       const { 
@@ -897,7 +912,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/campaigns/:id/follow-ups', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const campaignId = parseInt(req.params.id);
       
       // Check plan limits for follow-ups
@@ -921,7 +936,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stripe integration
   app.post('/api/create-subscription', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const { plan } = req.body;
       
       const user = await storage.getUser(userId);
@@ -949,7 +964,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Warmup API routes
   app.get('/api/warmup/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const stats = await warmupService.getWarmupStats(userId);
       res.json(stats);
     } catch (error) {
@@ -961,7 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/warmup/initialize/:integrationId', isAuthenticated, async (req: any, res) => {
     try {
       const { integrationId } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
 
       // Verify the integration belongs to the user
       const integration = await storage.getUserEmailIntegrations(userId);
@@ -981,7 +996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/warmup/send', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       await warmupService.sendWarmupEmails(userId);
       res.json({ message: "Warmup emails sent successfully" });
     } catch (error) {
