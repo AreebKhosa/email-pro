@@ -78,14 +78,15 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
     followUpEnabled: false,
     followUpSubject: "",
     followUpBody: "",
-    followUpCondition: "",
+    followUpCondition: "not_opened",
     followUpDays: 3,
   });
 
-  // Update edit data when campaign changes
+  // Update edit data when campaign changes - keep follow-up data separate
   useEffect(() => {
     if (campaign) {
-      setEditData({
+      setEditData(prev => ({
+        ...prev,
         subject: campaign.subject || "",
         body: campaign.body || "",
         followUpEnabled: campaign.followUpEnabled || false,
@@ -93,7 +94,7 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
         followUpBody: campaign.followUpBody || "",
         followUpCondition: campaign.followUpCondition || "not_opened",
         followUpDays: campaign.followUpDays || 3,
-      });
+      }));
     }
   }, [campaign]);
 
@@ -379,12 +380,6 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
                 <CardTitle>Follow-up Email</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Debug info */}
-                <div className="text-xs bg-yellow-50 p-2 rounded mb-2">
-                  Debug: followUpEnabled={String(campaign?.followUpEnabled)}, 
-                  followUpSubject={campaign?.followUpSubject || 'null'}, 
-                  followUpBody length={campaign?.followUpBody?.length || 0}
-                </div>
                 {campaign?.followUpEnabled ? (
                   <>
                     <div>
