@@ -25,6 +25,15 @@ Preferred communication style: Simple, everyday language.
 - Added ability to edit follow-up delay time (1-30 days) in campaign details
 - Added follow-up condition editing (Not Opened, Not Clicked, Opened but Not Clicked)
 
+### Sidebar and Navigation Redesign (July 19, 2025)
+- Implemented responsive sidebar with collapsible functionality
+- Added mobile-friendly hamburger menu and overlay
+- Created proper background highlighting for selected navigation items
+- Moved logout button to bottom of sidebar with red styling
+- Added profile dropdown in top-right header with avatar and user info
+- Created dedicated profile page with personal information editing
+- Integrated proper layout structure with sidebar, header, and main content area
+
 ## System Architecture
 
 ### Frontend Architecture

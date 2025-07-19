@@ -216,8 +216,21 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
               key={field}
               type="button"
               onClick={() => {
-                const currentValue = value || '';
-                onChange(currentValue + field);
+                const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                if (textarea) {
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+                  const currentValue = textarea.value;
+                  const newValue = currentValue.substring(0, start) + field + currentValue.substring(end);
+                  onChange(newValue);
+                  setTimeout(() => {
+                    textarea.focus();
+                    textarea.setSelectionRange(start + field.length, start + field.length);
+                  }, 0);
+                } else {
+                  const currentValue = value || '';
+                  onChange(currentValue + field);
+                }
               }}
               className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
             >

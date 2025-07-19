@@ -119,6 +119,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user profile
+  app.patch('/api/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found" });
+      }
+
+      const { firstName, lastName, email } = req.body;
+      const updateData: any = {};
+      
+      if (firstName !== undefined) updateData.firstName = firstName;
+      if (lastName !== undefined) updateData.lastName = lastName;
+      if (email !== undefined) updateData.email = email;
+
+      const updatedUser = await storage.updateUser(userId, updateData);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
   // Google OAuth routes (only if Google credentials are configured)
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
