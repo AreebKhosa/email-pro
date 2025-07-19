@@ -40,24 +40,26 @@ interface Campaign {
   status: string;
   subject: string;
   body: string;
-  sentCount: number;
-  openedCount: number;
-  clickedCount: number;
+  sentCount?: number;
+  openedCount?: number;
+  clickedCount?: number;
   recipientListId: number;
-  emailIntegrationIds: number[];
-  dailyLimit: number;
-  timeWindowStart: string;
-  timeWindowEnd: string;
-  rotateEmails: boolean;
-  emailsPerAccount: number;
-  emailDelay: number;
-  followUpEnabled: boolean;
-  followUpSubject: string;
-  followUpBody: string;
-  followUpCondition: string;
-  followUpDays: number;
+  emailIntegrationId: number;
+  emailRotationEnabled?: boolean;
+  emailRotationIds?: number[];
+  dailyLimit?: number;
+  timeWindowStart?: string;
+  timeWindowEnd?: string;
+  emailsPerAccount?: number;
+  emailDelay?: number;
+  followUpEnabled?: boolean;
+  followUpSubject?: string;
+  followUpBody?: string;
+  followUpCondition?: string;
+  followUpDays?: number;
   createdAt: string;
   scheduledAt?: string;
+  userId?: string;
 }
 
 interface CampaignDetailModalProps {
@@ -253,7 +255,7 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
                   <Send className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{campaign.sentCount}</div>
+                  <div className="text-2xl font-bold">{campaign.sentCount || 0}</div>
                 </CardContent>
               </Card>
               <Card>
@@ -262,9 +264,9 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
                   <Eye className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{campaign.openedCount}</div>
+                  <div className="text-2xl font-bold">{campaign.openedCount || 0}</div>
                   <p className="text-xs text-muted-foreground">
-                    {campaign.sentCount > 0 ? ((campaign.openedCount / campaign.sentCount) * 100).toFixed(1) : 0}% rate
+                    {(campaign.sentCount || 0) > 0 ? (((campaign.openedCount || 0) / (campaign.sentCount || 1)) * 100).toFixed(1) : 0}% rate
                   </p>
                 </CardContent>
               </Card>
@@ -274,9 +276,9 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
                   <MousePointer className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{campaign.clickedCount}</div>
+                  <div className="text-2xl font-bold">{campaign.clickedCount || 0}</div>
                   <p className="text-xs text-muted-foreground">
-                    {campaign.sentCount > 0 ? ((campaign.clickedCount / campaign.sentCount) * 100).toFixed(1) : 0}% rate
+                    {(campaign.sentCount || 0) > 0 ? (((campaign.clickedCount || 0) / (campaign.sentCount || 1)) * 100).toFixed(1) : 0}% rate
                   </p>
                 </CardContent>
               </Card>
@@ -290,23 +292,23 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium">Daily Limit</Label>
-                    <p className="text-sm text-gray-600">{campaign.dailyLimit} emails/day</p>
+                    <p className="text-sm text-gray-600">{campaign.dailyLimit || 50} emails/day</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Time Window</Label>
                     <p className="text-sm text-gray-600">
-                      {campaign.timeWindowStart} - {campaign.timeWindowEnd}
+                      {campaign.timeWindowStart || '08:00'} - {campaign.timeWindowEnd || '17:00'}
                     </p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Email Rotation</Label>
                     <p className="text-sm text-gray-600">
-                      {campaign.rotateEmails ? `Yes (${campaign.emailsPerAccount} emails/account)` : 'No'}
+                      {campaign.emailRotationEnabled ? `Yes (${campaign.emailsPerAccount || 30} emails/account)` : 'No'}
                     </p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Email Delay</Label>
-                    <p className="text-sm text-gray-600">{campaign.emailDelay} minutes</p>
+                    <p className="text-sm text-gray-600">{campaign.emailDelay || 5} minutes</p>
                   </div>
                 </div>
               </CardContent>
@@ -352,7 +354,7 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
               </CardContent>
             </Card>
 
-            {campaign.followUpEnabled && (
+            {campaign.followUpEnabled && campaign.followUpSubject && (
               <Card>
                 <CardHeader>
                   <CardTitle>Follow-up Email</CardTitle>
@@ -366,7 +368,7 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
                     <Label>Follow-up Body</Label>
                     <div 
                       className="mt-2 p-4 bg-gray-50 rounded-md min-h-[150px]"
-                      dangerouslySetInnerHTML={{ __html: campaign.followUpBody }}
+                      dangerouslySetInnerHTML={{ __html: campaign.followUpBody || '' }}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -378,7 +380,7 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
                     </div>
                     <div>
                       <Label>Delay</Label>
-                      <p className="text-sm text-gray-600 mt-1">{campaign.followUpDays} days</p>
+                      <p className="text-sm text-gray-600 mt-1">{campaign.followUpDays || 3} days</p>
                     </div>
                   </div>
                 </CardContent>
@@ -398,9 +400,12 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
                     <p className="text-sm text-gray-600 mt-1">{campaign.recipientListId}</p>
                   </div>
                   <div>
-                    <Label>Email Integration IDs</Label>
+                    <Label>Email Integration ID</Label>
                     <p className="text-sm text-gray-600 mt-1">
-                      {campaign.emailIntegrationIds.join(", ")}
+                      {campaign.emailIntegrationId}
+                      {campaign.emailRotationIds && campaign.emailRotationIds.length > 0 && 
+                        `, Rotation: ${campaign.emailRotationIds.join(", ")}`
+                      }
                     </p>
                   </div>
                   <div>
@@ -431,18 +436,18 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
                 <div className="space-y-4">
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <p className="text-2xl font-bold text-blue-600">{campaign.sentCount}</p>
+                      <p className="text-2xl font-bold text-blue-600">{campaign.sentCount || 0}</p>
                       <p className="text-sm text-gray-500">Total Sent</p>
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-green-600">
-                        {campaign.sentCount > 0 ? ((campaign.openedCount / campaign.sentCount) * 100).toFixed(1) : 0}%
+                        {(campaign.sentCount || 0) > 0 ? (((campaign.openedCount || 0) / (campaign.sentCount || 1)) * 100).toFixed(1) : 0}%
                       </p>
                       <p className="text-sm text-gray-500">Open Rate</p>
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-purple-600">
-                        {campaign.sentCount > 0 ? ((campaign.clickedCount / campaign.sentCount) * 100).toFixed(1) : 0}%
+                        {(campaign.sentCount || 0) > 0 ? (((campaign.clickedCount || 0) / (campaign.sentCount || 1)) * 100).toFixed(1) : 0}%
                       </p>
                       <p className="text-sm text-gray-500">Click Rate</p>
                     </div>
@@ -454,7 +459,7 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Delivery Rate</span>
                       <span className="text-sm font-medium">
-                        {campaign.sentCount > 0 ? "100%" : "0%"}
+                        {(campaign.sentCount || 0) > 0 ? "100%" : "0%"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
