@@ -910,6 +910,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update campaign status
+  app.patch('/api/campaigns/:id/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found" });
+      }
+
+      const campaignId = parseInt(req.params.id);
+      const { status } = req.body;
+
+      if (!status || !['draft', 'scheduled', 'sending', 'paused', 'completed'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+
+      // Verify campaign ownership
+      const campaign = await storage.getCampaign(campaignId);
+      if (!campaign || campaign.userId !== userId) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+
+      const updatedCampaign = await storage.updateCampaignStatus(campaignId, status);
+      res.json(updatedCampaign);
+    } catch (error) {
+      console.error("Error updating campaign status:", error);
+      res.status(500).json({ message: "Failed to update campaign status" });
+    }
+  });
+
+  // Update campaign content
+  app.patch('/api/campaigns/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims?.sub || req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found" });
+      }
+
+      const campaignId = parseInt(req.params.id);
+      const { subject, body } = req.body;
+
+      // Verify campaign ownership
+      const campaign = await storage.getCampaign(campaignId);
+      if (!campaign || campaign.userId !== userId) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+
+      // Only allow editing if campaign is draft or paused
+      if (campaign.status !== 'draft' && campaign.status !== 'paused') {
+        return res.status(400).json({ message: "Campaign cannot be edited while active" });
+      }
+
+      const updateData: any = {};
+      if (subject !== undefined) updateData.subject = subject;
+      if (body !== undefined) updateData.body = body;
+
+      const updatedCampaign = await storage.updateCampaign(campaignId, updateData);
+      res.json(updatedCampaign);
+    } catch (error) {
+      console.error("Error updating campaign:", error);
+      res.status(500).json({ message: "Failed to update campaign" });
+    }
+  });
+
   app.post('/api/campaigns/:id/follow-ups', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }

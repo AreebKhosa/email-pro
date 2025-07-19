@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ArrowRight, Check, Mail, Users, FileText, Settings, Sparkles, Clock, RotateCw, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import RichTextEditor from "@/components/RichTextEditor";
 
 interface RecipientList {
   id: number;
@@ -414,12 +415,11 @@ export default function CreateCampaign() {
                       {enhanceEmailMutation.isPending ? "Enhancing..." : "Enhance with AI"}
                     </Button>
                   </div>
-                  <Textarea
-                    id="body"
+                  <RichTextEditor
                     value={campaignData.body}
-                    onChange={(e) => setCampaignData(prev => ({ ...prev, body: e.target.value }))}
+                    onChange={(value) => setCampaignData(prev => ({ ...prev, body: value }))}
                     placeholder="Write your email content here..."
-                    className="min-h-[200px]"
+                    minHeight="300px"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -606,76 +606,101 @@ export default function CreateCampaign() {
 
                 <Separator />
 
-                {planLimits.followUps && (
-                  <div>
-                    <div className="flex items-center space-x-2 mb-4">
-                      <Checkbox
-                        id="follow-up-enabled"
-                        checked={campaignData.followUpEnabled}
-                        onCheckedChange={(checked) => setCampaignData(prev => ({ ...prev, followUpEnabled: checked as boolean }))}
-                      />
-                      <Label htmlFor="follow-up-enabled" className="text-base font-medium">
-                        Enable Follow-up Emails
-                      </Label>
-                    </div>
+                {/* Follow-up Configuration */}
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
+                    <Mail className="w-5 h-5" />
+                    Follow-up Email Settings
+                    {!planLimits.followUps && (
+                      <Badge variant="outline" className="text-xs">
+                        Upgrade Required
+                      </Badge>
+                    )}
+                  </h3>
+                  
+                  {planLimits.followUps ? (
+                    <div>
+                      <div className="flex items-center space-x-2 mb-4">
+                        <Checkbox
+                          id="follow-up-enabled"
+                          checked={campaignData.followUpEnabled}
+                          onCheckedChange={(checked) => setCampaignData(prev => ({ ...prev, followUpEnabled: checked as boolean }))}
+                        />
+                        <Label htmlFor="follow-up-enabled" className="text-base font-medium">
+                          Enable Follow-up Emails
+                        </Label>
+                      </div>
 
-                    {campaignData.followUpEnabled && (
-                      <div className="space-y-4 ml-6">
-                        <div>
-                          <Label htmlFor="follow-up-subject">Follow-up Subject</Label>
-                          <Input
-                            id="follow-up-subject"
-                            value={campaignData.followUpSubject}
-                            onChange={(e) => setCampaignData(prev => ({ ...prev, followUpSubject: e.target.value }))}
-                            placeholder="Re: {original subject}"
-                            className="mt-2"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="follow-up-body">Follow-up Email Body</Label>
-                          <Textarea
-                            id="follow-up-body"
-                            value={campaignData.followUpBody}
-                            onChange={(e) => setCampaignData(prev => ({ ...prev, followUpBody: e.target.value }))}
-                            placeholder="Write your follow-up email..."
-                            className="min-h-[120px] mt-2"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
+                      {campaignData.followUpEnabled && (
+                        <div className="space-y-4 ml-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                           <div>
-                            <Label htmlFor="follow-up-condition">Send follow-up if:</Label>
-                            <Select
-                              value={campaignData.followUpCondition}
-                              onValueChange={(value: 'not_opened' | 'no_reply') => 
-                                setCampaignData(prev => ({ ...prev, followUpCondition: value }))
-                              }
-                            >
-                              <SelectTrigger className="mt-2">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="not_opened">Not Opened</SelectItem>
-                                <SelectItem value="no_reply">No Reply</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label htmlFor="follow-up-days">After X days</Label>
+                            <Label htmlFor="follow-up-subject">Follow-up Subject *</Label>
                             <Input
-                              id="follow-up-days"
-                              type="number"
-                              value={campaignData.followUpDays}
-                              onChange={(e) => setCampaignData(prev => ({ ...prev, followUpDays: parseInt(e.target.value) || 3 }))}
-                              min="1"
-                              max="30"
+                              id="follow-up-subject"
+                              value={campaignData.followUpSubject}
+                              onChange={(e) => setCampaignData(prev => ({ ...prev, followUpSubject: e.target.value }))}
+                              placeholder="Re: {original subject}"
                               className="mt-2"
                             />
                           </div>
+                          <div>
+                            <Label htmlFor="follow-up-body">Follow-up Email Body *</Label>
+                            <div className="mt-2">
+                              <RichTextEditor
+                                value={campaignData.followUpBody}
+                                onChange={(value) => setCampaignData(prev => ({ ...prev, followUpBody: value }))}
+                                placeholder="Write your follow-up email..."
+                                minHeight="200px"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="follow-up-condition">Send follow-up if:</Label>
+                              <Select
+                                value={campaignData.followUpCondition}
+                                onValueChange={(value: 'not_opened' | 'no_reply') => 
+                                  setCampaignData(prev => ({ ...prev, followUpCondition: value }))
+                                }
+                              >
+                                <SelectTrigger className="mt-2">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="not_opened">Email Not Opened</SelectItem>
+                                  <SelectItem value="no_reply">No Reply Received</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label htmlFor="follow-up-days">Days to Wait</Label>
+                              <Input
+                                id="follow-up-days"
+                                type="number"
+                                value={campaignData.followUpDays}
+                                onChange={(e) => setCampaignData(prev => ({ ...prev, followUpDays: parseInt(e.target.value) || 3 }))}
+                                min="1"
+                                max="30"
+                                placeholder="3"
+                                className="mt-2"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Recommended: 3-7 days for optimal response
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  ) : (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Follow-up emails are available on Starter plans and above. <a href="/upgrade" className="text-blue-600 hover:underline">Upgrade your plan</a> to enable automatic follow-up sequences.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
 
                 <Alert>
                   <AlertCircle className="h-4 w-4" />

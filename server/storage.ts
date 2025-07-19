@@ -72,8 +72,9 @@ export interface IStorage {
   // Campaigns
   createCampaign(userId: string, campaign: InsertCampaign): Promise<Campaign>;
   getUserCampaigns(userId: string): Promise<Campaign[]>;
-  getCampaign(id: number): Promise<Campaign | undefined>;
-  updateCampaignStatus(id: number, status: string): Promise<Campaign>;
+  getCampaign(campaignId: number): Promise<Campaign | undefined>;
+  updateCampaignStatus(campaignId: number, status: string): Promise<Campaign>;
+  updateCampaign(campaignId: number, updateData: Partial<Campaign>): Promise<Campaign>;
   updateCampaignStats(id: number, stats: Partial<Campaign>): Promise<Campaign>;
   deleteCampaign(id: number): Promise<void>;
 
@@ -641,6 +642,33 @@ export class DatabaseStorage implements IStorage {
       openRate: totalSent > 0 ? (totalOpened / totalSent) * 100 : 0,
       clickRate: totalSent > 0 ? (totalClicked / totalSent) * 100 : 0,
     };
+  }
+
+  // Campaign management methods
+  async getCampaign(campaignId: number): Promise<Campaign | undefined> {
+    const [campaign] = await db
+      .select()
+      .from(campaigns)
+      .where(eq(campaigns.id, campaignId));
+    return campaign;
+  }
+
+  async updateCampaignStatus(campaignId: number, status: string): Promise<Campaign> {
+    const [updatedCampaign] = await db
+      .update(campaigns)
+      .set({ status })
+      .where(eq(campaigns.id, campaignId))
+      .returning();
+    return updatedCampaign;
+  }
+
+  async updateCampaign(campaignId: number, updateData: Partial<Campaign>): Promise<Campaign> {
+    const [updatedCampaign] = await db
+      .update(campaigns)
+      .set(updateData)
+      .where(eq(campaigns.id, campaignId))
+      .returning();
+    return updatedCampaign;
   }
 }
 

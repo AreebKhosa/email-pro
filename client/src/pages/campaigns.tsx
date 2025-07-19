@@ -1,7 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { isUnauthorizedError } from "@/lib/authUtils";
 import Layout from "@/components/Layout";
 import InstructionBox from "@/components/InstructionBox";
+import CampaignDetailModal from "@/components/CampaignDetailModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +17,58 @@ import { Link } from "wouter";
 
 
 export default function Campaigns() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ["/api/campaigns"],
     retry: false,
   });
+
+  // Toggle campaign status mutation
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ campaignId, status }: { campaignId: number; status: string }) => {
+      const response = await apiRequest("PATCH", `/api/campaigns/${campaignId}/status`, { status });
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
+      toast({
+        title: "Success",
+        description: `Campaign ${variables.status === 'sending' ? 'started' : 'paused'} successfully`,
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update campaign status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleViewCampaign = (campaign: any) => {
+    setSelectedCampaign(campaign);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleToggleStatus = (campaign: any) => {
+    const newStatus = campaign.status === 'paused' || campaign.status === 'draft' ? 'sending' : 'paused';
+    toggleStatusMutation.mutate({ campaignId: campaign.id, status: newStatus });
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -141,22 +193,41 @@ export default function Campaigns() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleViewCampaign(campaign)}
+                            title="View Details"
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" title="Edit Campaign">
                             <Edit className="h-4 w-4" />
                           </Button>
                           {campaign.status === 'draft' || campaign.status === 'paused' ? (
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleToggleStatus(campaign)}
+                              disabled={toggleStatusMutation.isPending}
+                              title="Start Campaign"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            >
                               <Play className="h-4 w-4" />
                             </Button>
                           ) : (
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleToggleStatus(campaign)}
+                              disabled={toggleStatusMutation.isPending}
+                              title="Pause Campaign"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
                               <Pause className="h-4 w-4" />
                             </Button>
                           )}
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" title="More Options">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </div>
@@ -180,6 +251,16 @@ export default function Campaigns() {
             )}
           </CardContent>
         </Card>
+
+        {/* Campaign Detail Modal */}
+        <CampaignDetailModal
+          campaign={selectedCampaign}
+          isOpen={isDetailModalOpen}
+          onClose={() => {
+            setIsDetailModalOpen(false);
+            setSelectedCampaign(null);
+          }}
+        />
       </div>
     </Layout>
   );
