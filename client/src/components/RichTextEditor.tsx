@@ -271,10 +271,9 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         onInput={handleContentChange}
         className="p-4 focus:outline-none"
         style={{ 
-          minHeight,
-          direction: 'ltr',
-          textAlign: 'left'
+          minHeight
         }}
+        dir="ltr"
         dangerouslySetInnerHTML={{ __html: value }}
         data-placeholder={placeholder}
       />

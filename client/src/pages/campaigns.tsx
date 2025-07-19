@@ -205,9 +205,7 @@ export default function Campaigns() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" title="Edit Campaign">
-                            <Edit className="h-4 w-4" />
-                          </Button>
+
                           {campaign.status === 'draft' || campaign.status === 'paused' ? (
                             <Button 
                               variant="ghost" 

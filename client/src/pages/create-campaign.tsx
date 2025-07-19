@@ -178,7 +178,12 @@ export default function CreateCampaign() {
     },
   });
 
-  const planLimits = PLAN_LIMITS[user?.plan as keyof typeof PLAN_LIMITS] || PLAN_LIMITS.Demo;
+  const { data: userStats } = useQuery({
+    queryKey: ["/api/user/stats"],
+    enabled: isAuthenticated,
+  });
+
+  const planLimits = userStats?.planLimits || PLAN_LIMITS[user?.plan as keyof typeof PLAN_LIMITS] || PLAN_LIMITS.Demo;
   const verifiedIntegrations = emailIntegrations?.filter((i: EmailIntegration) => i.isVerified) || [];
 
   const handleNext = () => {
