@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import * as Imap from 'imap';
+import Imap from 'imap';
 import type { InsertEmailIntegration } from '@shared/schema';
 
 export async function validateEmailIntegration(config: InsertEmailIntegration): Promise<boolean> {
@@ -37,7 +37,7 @@ export async function validateEmailIntegration(config: InsertEmailIntegration): 
     // Test IMAP connection
     return new Promise((resolve) => {
       try {
-        const imap = new (Imap as any)({
+        const imap = new Imap({
           user: config.imapUsername,
           password: config.imapPassword,
           host: config.imapHost,
