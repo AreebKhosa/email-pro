@@ -75,8 +75,11 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
   const [editData, setEditData] = useState({
     subject: "",
     body: "",
+    followUpEnabled: false,
     followUpSubject: "",
     followUpBody: "",
+    followUpCondition: "",
+    followUpDays: 3,
   });
 
   // Update edit data when campaign changes
@@ -85,8 +88,11 @@ export default function CampaignDetailModal({ campaign, isOpen, onClose }: Campa
       setEditData({
         subject: campaign.subject || "",
         body: campaign.body || "",
+        followUpEnabled: campaign.followUpEnabled || false,
         followUpSubject: campaign.followUpSubject || "",
         followUpBody: campaign.followUpBody || "",
+        followUpCondition: campaign.followUpCondition || "not_opened",
+        followUpDays: campaign.followUpDays || 3,
       });
     }
   }, [campaign]);

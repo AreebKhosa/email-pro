@@ -112,6 +112,12 @@ export const campaigns = pgTable("campaigns", {
   dailyLimit: integer("daily_limit").default(50),
   timeWindowStart: varchar("time_window_start").default("08:00"),
   timeWindowEnd: varchar("time_window_end").default("17:00"),
+  // Follow-up settings (stored directly in campaign for easier access)
+  followUpEnabled: boolean("follow_up_enabled").default(false),
+  followUpSubject: varchar("follow_up_subject"),
+  followUpBody: text("follow_up_body"),
+  followUpCondition: varchar("follow_up_condition"), // 'not_opened' | 'no_reply'
+  followUpDays: integer("follow_up_days").default(3),
   // Tracking
   sentCount: integer("sent_count").default(0),
   deliveredCount: integer("delivered_count").default(0),

@@ -272,9 +272,8 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         className="p-4 focus:outline-none"
         style={{ 
           minHeight,
-          writingMode: 'horizontal-tb',
           direction: 'ltr',
-          unicodeBidi: 'plaintext'
+          textAlign: 'left'
         }}
         dangerouslySetInnerHTML={{ __html: value }}
         data-placeholder={placeholder}

@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import { Plus, Rocket, Mail, Calendar, MoreHorizontal, Eye, Edit, Play, Pause } from "lucide-react";
+import { Plus, Rocket, Mail, Calendar, MoreHorizontal, Eye, Play, Pause, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 
 
@@ -62,9 +62,48 @@ export default function Campaigns() {
     },
   });
 
+  // Delete campaign mutation
+  const deleteCampaignMutation = useMutation({
+    mutationFn: async (campaignId: number) => {
+      const response = await apiRequest("DELETE", `/api/campaigns/${campaignId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
+      toast({
+        title: "Success", 
+        description: "Campaign deleted successfully",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete campaign",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleViewCampaign = (campaign: any) => {
     setSelectedCampaign(campaign);
     setIsDetailModalOpen(true);
+  };
+
+  const handleDeleteCampaign = (campaignId: number) => {
+    if (confirm("Are you sure you want to delete this campaign? This action cannot be undone.")) {
+      deleteCampaignMutation.mutate(campaignId);
+    }
   };
 
   
@@ -229,7 +268,16 @@ export default function Campaigns() {
                               <Pause className="h-4 w-4" />
                             </Button>
                           )}
-                          
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeleteCampaign(campaign.id)}
+                            disabled={deleteCampaignMutation.isPending}
+                            title="Delete Campaign"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
