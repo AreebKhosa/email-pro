@@ -29,7 +29,7 @@ async function startCampaignSending(campaignId: number, userId: string) {
     const totalRecipients = recipients.length;
     
     // Update total recipients count
-    await storage.updateCampaignField(campaignId, 'totalRecipients', totalRecipients);
+    await storage.updateCampaignStats(campaignId, { totalRecipients });
     
     // Get sending settings and plan limits
     const user = await storage.getUser(userId);
@@ -51,13 +51,13 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
     // Check if campaign is still in sending status
     const currentCampaign = await storage.getCampaign(campaignId);
     if (currentCampaign?.status !== 'sending') {
-      await storage.updateCampaignField(campaignId, 'currentEmailIndex', i);
+      await storage.updateCampaignStats(campaignId, { currentEmailIndex: i });
       break;
     }
     
     // Check daily limit
     if (sentToday >= dailyLimit) {
-      await storage.updateCampaignField(campaignId, 'currentEmailIndex', i);
+      await storage.updateCampaignStats(campaignId, { currentEmailIndex: i });
       // Schedule to continue tomorrow
       setTimeout(() => {
         if (currentCampaign?.status === 'sending') {

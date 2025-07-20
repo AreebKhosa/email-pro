@@ -463,27 +463,7 @@ export class DatabaseStorage implements IStorage {
     return campaign;
   }
 
-  async updateCampaignField(id: number, field: string, value: any): Promise<Campaign> {
-    // Create explicit update object to avoid dynamic field issues
-    let updateData: any = {};
-    
-    // Map common fields explicitly
-    if (field === 'totalRecipients') updateData.totalRecipients = value;
-    else if (field === 'currentEmailIndex') updateData.currentEmailIndex = value;
-    else if (field === 'sentCount') updateData.sentCount = value;
-    else if (field === 'status') updateData.status = value;
-    else {
-      // For other fields, use a safer approach
-      updateData[field] = value;
-    }
-    
-    const [campaign] = await db
-      .update(campaigns)
-      .set(updateData)
-      .where(eq(campaigns.id, id))
-      .returning();
-    return campaign;
-  }
+
 
   async getCampaignStats(id: number): Promise<any> {
     const campaign = await this.getCampaign(id);
