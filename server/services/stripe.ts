@@ -37,10 +37,16 @@ export async function createStripeCheckout(
   userId: string
 ): Promise<string> {
   try {
+    // Check if Stripe is properly configured
+    const stripeSecretKey = await storage.getConfig('stripe_secret_key');
+    if (!stripeSecretKey || (typeof stripeSecretKey === 'object' && !stripeSecretKey.configValue)) {
+      throw new Error('Stripe Secret Key not configured. Please add it in the admin panel under Stripe settings.');
+    }
+
     const planPrices = await getPlanPrices();
     const priceId = planPrices[plan as keyof typeof planPrices];
     if (!priceId) {
-      throw new Error(`Stripe price ID not configured for ${plan} plan. Please configure it in the admin panel.`);
+      throw new Error(`Stripe Price ID for ${plan} plan not configured. Please add it in the admin panel under Stripe → Subscription Price IDs.`);
     }
 
     const session = await stripe.checkout.sessions.create({
