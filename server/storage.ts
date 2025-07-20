@@ -12,8 +12,14 @@ import {
   usageTracking,
   emailVerificationTokens,
   passwordResetTokens,
+  adminConfig,
+  adminUsers,
   type User,
   type UpsertUser,
+  type AdminConfig,
+  type InsertAdminConfig,
+  type AdminUser,
+  type InsertAdminUser,
   type EmailIntegration,
   type InsertEmailIntegration,
   type RecipientList,
@@ -61,6 +67,17 @@ export interface IStorage {
   getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
   deletePasswordResetToken(token: string): Promise<void>;
   deleteExpiredPasswordResetTokens(): Promise<void>;
+
+  // Admin management
+  createAdminUser(admin: InsertAdminUser): Promise<AdminUser>;
+  getAdminByUsername(username: string): Promise<AdminUser | undefined>;
+  updateAdminLastLogin(id: number): Promise<AdminUser>;
+  
+  // Admin configuration
+  setConfig(key: string, value: string, isSecret?: boolean): Promise<AdminConfig>;
+  getConfig(key: string): Promise<AdminConfig | undefined>;
+  getAllConfig(): Promise<AdminConfig[]>;
+  deleteConfig(key: string): Promise<void>;
 
   // Email integrations
   createEmailIntegration(userId: string, integration: InsertEmailIntegration): Promise<EmailIntegration>;
@@ -250,6 +267,74 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(passwordResetTokens)
       .where(sql`expires_at < NOW()`);
+  }
+
+  // Admin user management
+  async createAdminUser(admin: InsertAdminUser): Promise<AdminUser> {
+    const [adminUser] = await db
+      .insert(adminUsers)
+      .values(admin)
+      .returning();
+    return adminUser;
+  }
+
+  async getAdminByUsername(username: string): Promise<AdminUser | undefined> {
+    const [admin] = await db
+      .select()
+      .from(adminUsers)
+      .where(eq(adminUsers.username, username));
+    return admin;
+  }
+
+  async updateAdminLastLogin(id: number): Promise<AdminUser> {
+    const [admin] = await db
+      .update(adminUsers)
+      .set({ lastLoginAt: new Date() })
+      .where(eq(adminUsers.id, id))
+      .returning();
+    return admin;
+  }
+
+  // Admin configuration management
+  async setConfig(key: string, value: string, isSecret = false): Promise<AdminConfig> {
+    const [config] = await db
+      .insert(adminConfig)
+      .values({
+        configKey: key,
+        configValue: value,
+        isSecret,
+        updatedAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: adminConfig.configKey,
+        set: {
+          configValue: value,
+          updatedAt: new Date()
+        }
+      })
+      .returning();
+    return config;
+  }
+
+  async getConfig(key: string): Promise<AdminConfig | undefined> {
+    const [config] = await db
+      .select()
+      .from(adminConfig)
+      .where(eq(adminConfig.configKey, key));
+    return config;
+  }
+
+  async getAllConfig(): Promise<AdminConfig[]> {
+    return await db
+      .select()
+      .from(adminConfig)
+      .orderBy(adminConfig.configKey);
+  }
+
+  async deleteConfig(key: string): Promise<void> {
+    await db
+      .delete(adminConfig)
+      .where(eq(adminConfig.configKey, key));
   }
 
   async updateUserPlan(userId: string, plan: string): Promise<User> {

@@ -409,6 +409,30 @@ export const insertWarmupProgressSchema = createInsertSchema(warmupProgress).omi
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+// Admin configuration table
+export const adminConfig = pgTable("admin_config", {
+  id: serial("id").primaryKey(),
+  configKey: varchar("config_key").notNull().unique(),
+  configValue: text("config_value"),
+  isSecret: boolean("is_secret").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Admin users table  
+export const adminUsers = pgTable("admin_users", {
+  id: serial("id").primaryKey(),
+  username: varchar("username").notNull().unique(),
+  password: varchar("password").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastLoginAt: timestamp("last_login_at"),
+});
+
+export type AdminConfig = typeof adminConfig.$inferSelect;
+export type InsertAdminConfig = typeof adminConfig.$inferInsert;
+export type AdminUser = typeof adminUsers.$inferSelect;
+export type InsertAdminUser = typeof adminUsers.$inferInsert;
 export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
 export type InsertEmailVerificationToken = typeof emailVerificationTokens.$inferInsert;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;

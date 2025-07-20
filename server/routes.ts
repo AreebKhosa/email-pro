@@ -10,6 +10,7 @@ import { emailValidationService, type EmailValidationResult } from "./services/e
 import { warmupService } from "./services/warmup";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import { spawn } from "child_process";
 import passport from "passport";
 import { 
@@ -534,6 +535,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Forgot password error:', error);
       res.status(500).json({ message: 'Failed to process password reset request' });
+    }
+  });
+
+  // Admin authentication routes
+  const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret-key';
+
+  // Create default admin user
+  app.post('/api/admin/create-default', async (req, res) => {
+    try {
+      const { username = 'admin', password = 'admin123456' } = req.body;
+      
+      // Check if admin already exists
+      const existingAdmin = await storage.getAdminByUsername(username);
+      if (existingAdmin) {
+        return res.status(400).json({ message: 'Admin user already exists' });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Create admin user
+      const adminUser = await storage.createAdminUser({
+        username,
+        password: hashedPassword
+      });
+
+      res.json({ 
+        message: 'Admin user created successfully',
+        username: adminUser.username
+      });
+
+    } catch (error) {
+      console.error('Admin creation error:', error);
+      res.status(500).json({ message: 'Failed to create admin user' });
+    }
+  });
+
+  // Admin login
+  app.post('/api/admin/login', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+
+      // Get admin user
+      const adminUser = await storage.getAdminByUsername(username);
+      if (!adminUser) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      // Verify password
+      const validPassword = await bcrypt.compare(password, adminUser.password);
+      if (!validPassword) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      // Update last login
+      await storage.updateAdminLastLogin(adminUser.id);
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { adminId: adminUser.id, username: adminUser.username },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      res.json({ 
+        message: 'Login successful',
+        token,
+        admin: {
+          id: adminUser.id,
+          username: adminUser.username
+        }
+      });
+
+    } catch (error) {
+      console.error('Admin login error:', error);
+      res.status(500).json({ message: 'Login failed' });
+    }
+  });
+
+  // Admin auth middleware
+  const adminAuth = async (req: any, res: any, next: any) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'No token provided' });
+      }
+
+      const token = authHeader.substring(7);
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      
+      const adminUser = await storage.getAdminByUsername(decoded.username);
+      if (!adminUser) {
+        return res.status(401).json({ message: 'Invalid token' });
+      }
+
+      req.admin = adminUser;
+      next();
+    } catch (error) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+  };
+
+  // Get admin configuration
+  app.get('/api/admin/config', adminAuth, async (req, res) => {
+    try {
+      const configs = await storage.getAllConfig();
+      
+      // Transform into easy-to-use object
+      const configObj: any = {};
+      configs.forEach(config => {
+        configObj[config.configKey] = config.configValue;
+      });
+
+      res.json(configObj);
+    } catch (error) {
+      console.error('Get config error:', error);
+      res.status(500).json({ message: 'Failed to get configuration' });
+    }
+  });
+
+  // Update admin configuration
+  app.put('/api/admin/config', adminAuth, async (req, res) => {
+    try {
+      const {
+        openaiApiKey,
+        stripeSecretKey,
+        stripePublicKey,
+        googleClientId,
+        googleClientSecret,
+        smtpHost,
+        smtpPort,
+        smtpUsername,
+        smtpPassword,
+        smtpFromEmail
+      } = req.body;
+
+      // Store each config value (marked as secret for sensitive data)
+      const configUpdates = [
+        { key: 'openai_api_key', value: openaiApiKey, secret: true },
+        { key: 'stripe_secret_key', value: stripeSecretKey, secret: true },
+        { key: 'stripe_public_key', value: stripePublicKey, secret: false },
+        { key: 'google_client_id', value: googleClientId, secret: false },
+        { key: 'google_client_secret', value: googleClientSecret, secret: true },
+        { key: 'smtp_host', value: smtpHost, secret: false },
+        { key: 'smtp_port', value: smtpPort?.toString(), secret: false },
+        { key: 'smtp_username', value: smtpUsername, secret: false },
+        { key: 'smtp_password', value: smtpPassword, secret: true },
+        { key: 'smtp_from_email', value: smtpFromEmail, secret: false },
+      ];
+
+      // Update each config value
+      for (const config of configUpdates) {
+        if (config.value !== undefined && config.value !== null && config.value !== '') {
+          await storage.setConfig(config.key, config.value, config.secret);
+        }
+      }
+
+      res.json({ message: 'Configuration updated successfully' });
+    } catch (error) {
+      console.error('Update config error:', error);
+      res.status(500).json({ message: 'Failed to update configuration' });
     }
   });
 
