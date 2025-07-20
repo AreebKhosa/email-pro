@@ -61,9 +61,17 @@ export default function AdminDashboard() {
   const { data: config, isLoading } = useQuery({
     queryKey: ["/api/admin/config"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/admin/config", {}, {
-        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch("/api/admin/config", {
+        method: "GET",
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
       return response.json();
     },
   });
@@ -82,9 +90,19 @@ export default function AdminDashboard() {
 
   const updateConfigMutation = useMutation({
     mutationFn: async (data: ConfigFormData) => {
-      const response = await apiRequest("PUT", "/api/admin/config", data, {
-        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch("/api/admin/config", {
+        method: "PUT",
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
       });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update configuration');
+      }
       return response.json();
     },
     onSuccess: () => {
