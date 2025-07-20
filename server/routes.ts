@@ -361,8 +361,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt
       });
 
+      // For now, auto-verify users since email sending requires admin SMTP setup
+      await storage.updateUserEmailVerified(user.id, true);
+
       res.json({ 
-        message: 'Account created successfully. Please check your email to verify your account.',
+        message: 'Account created successfully. You can now log in.',
         userId: user.id 
       });
 
@@ -407,6 +410,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Email verification error:', error);
       res.status(500).json({ message: 'Failed to verify email' });
+    }
+  });
+
+  // Manual login
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
+      }
+
+      // Find user
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.password) {
+        return res.status(401).json({ message: 'Invalid email or password' });
+      }
+
+      // Check if email is verified
+      if (!user.emailVerified) {
+        return res.status(401).json({ message: 'Please verify your email before logging in' });
+      }
+
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: 'Invalid email or password' });
+      }
+
+      // Create session manually
+      req.session.manualUser = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        plan: user.plan,
+        isManualAuth: true
+      };
+      
+      res.json({ 
+        message: 'Login successful', 
+        user: { 
+          id: user.id, 
+          email: user.email, 
+          firstName: user.firstName,
+          lastName: user.lastName,
+          plan: user.plan
+        } 
+      });
+
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ message: 'Failed to log in' });
     }
   });
 
@@ -493,15 +549,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
-      // Handle both Replit OAuth and local authentication
-      const userId = req.user?.claims?.sub || req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ message: "No user ID found" });
+      // Handle both Replit OAuth and manual authentication
+      let user = null;
+      
+      // Check for manual authentication session first
+      if (req.session?.manualUser) {
+        user = await storage.getUser(req.session.manualUser.id);
+      }
+      // Then check for OAuth authentication
+      else if (req.user?.claims?.sub) {
+        user = await storage.getUser(req.user.claims.sub);
       }
       
-      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
