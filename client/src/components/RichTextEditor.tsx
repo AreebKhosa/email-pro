@@ -205,38 +205,106 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
       <div className="bg-gray-50 border-t border-gray-200 p-3">
         <p className="text-sm font-medium text-gray-700 mb-2">Dynamic Fields:</p>
         <div className="flex flex-wrap gap-2">
-          {[
-            { field: '{{name}}', label: 'Name' },
-            { field: '{{lastName}}', label: 'Last Name' },
-            { field: '{{companyName}}', label: 'Company' },
-            { field: '{{position}}', label: 'Position' },
-            { field: '{{email}}', label: 'Email' }
-          ].map(({ field, label }) => (
-            <button
-              key={field}
-              type="button"
-              onClick={() => {
-                const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-                if (textarea) {
-                  const start = textarea.selectionStart;
-                  const end = textarea.selectionEnd;
-                  const currentValue = textarea.value;
-                  const newValue = currentValue.substring(0, start) + field + currentValue.substring(end);
-                  onChange(newValue);
-                  setTimeout(() => {
-                    textarea.focus();
-                    textarea.setSelectionRange(start + field.length, start + field.length);
-                  }, 0);
-                } else {
-                  const currentValue = value || '';
-                  onChange(currentValue + field);
-                }
-              }}
-              className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-            >
-              {label}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => {
+              const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+              if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const currentValue = textarea.value;
+                const newValue = currentValue.substring(0, start) + '{{name}}' + currentValue.substring(end);
+                onChange(newValue);
+                setTimeout(() => {
+                  textarea.focus();
+                  textarea.setSelectionRange(start + 8, start + 8);
+                }, 0);
+              }
+            }}
+            className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
+          >
+            {{name}}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+              if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const currentValue = textarea.value;
+                const newValue = currentValue.substring(0, start) + '{{lastName}}' + currentValue.substring(end);
+                onChange(newValue);
+                setTimeout(() => {
+                  textarea.focus();
+                  textarea.setSelectionRange(start + 12, start + 12);
+                }, 0);
+              }
+            }}
+            className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
+          >
+            {{lastName}}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+              if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const currentValue = textarea.value;
+                const newValue = currentValue.substring(0, start) + '{{companyName}}' + currentValue.substring(end);
+                onChange(newValue);
+                setTimeout(() => {
+                  textarea.focus();
+                  textarea.setSelectionRange(start + 15, start + 15);
+                }, 0);
+              }
+            }}
+            className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
+          >
+            {{companyName}}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+              if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const currentValue = textarea.value;
+                const newValue = currentValue.substring(0, start) + '{{position}}' + currentValue.substring(end);
+                onChange(newValue);
+                setTimeout(() => {
+                  textarea.focus();
+                  textarea.setSelectionRange(start + 12, start + 12);
+                }, 0);
+              }
+            }}
+            className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
+          >
+            {{position}}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+              if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const currentValue = textarea.value;
+                const newValue = currentValue.substring(0, start) + '{{email}}' + currentValue.substring(end);
+                onChange(newValue);
+                setTimeout(() => {
+                  textarea.focus();
+                  textarea.setSelectionRange(start + 9, start + 9);
+                }, 0);
+              }
+            }}
+            className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
+          >
+            {{email}}
+          </button>
         </div>
       </div>
     </div>
