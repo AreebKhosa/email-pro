@@ -93,7 +93,7 @@ export async function createStripeCheckout(
     
     // Provide more specific error messages
     if (error.code === 'resource_missing' && error.param?.includes('price')) {
-      throw new Error(`Invalid Stripe Price ID for ${plan} plan. Please configure real Price IDs in the admin panel.`);
+      throw new Error(`Price ID "${priceId}" not found in your Stripe account. Make sure the Price ID matches your Stripe Secret Key mode (test vs live).`);
     } else if (error.type === 'invalid_request_error') {
       throw new Error(`Stripe configuration error: ${error.message}`);
     }
