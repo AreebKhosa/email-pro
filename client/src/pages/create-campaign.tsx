@@ -19,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ArrowRight, Check, Mail, Users, FileText, Settings, Sparkles, Clock, RotateCw, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import RichTextEditor from "@/components/RichTextEditor";
+import { PersonalizationFieldManager } from "@/components/PersonalizationFieldManager";
 
 interface RecipientList {
   id: number;
@@ -53,6 +54,10 @@ interface CampaignData {
   timeWindowStart: string;
   timeWindowEnd: string;
   rotateEmails: boolean;
+  // Personalization settings
+  personalizationEnabled: boolean;
+  fallbackToDefault: boolean;
+  dynamicFields: string[];
   emailIntegrationIds: number[];
   emailsPerAccount: number;
   emailDelay: number;
@@ -101,6 +106,10 @@ export default function CreateCampaign() {
     followUpBody: '',
     followUpCondition: 'not_opened',
     followUpDays: 3,
+    // Personalization defaults
+    personalizationEnabled: true,
+    fallbackToDefault: true,
+    dynamicFields: [],
   });
 
   const { data: recipientLists } = useQuery({
@@ -238,6 +247,10 @@ export default function CreateCampaign() {
       followUpBody: campaignData.followUpBody,
       followUpCondition: campaignData.followUpCondition,
       followUpDays: campaignData.followUpDays,
+      // Personalization settings
+      personalizationEnabled: campaignData.personalizationEnabled,
+      fallbackToDefault: campaignData.fallbackToDefault,
+      dynamicFields: campaignData.dynamicFields,
     };
 
     createCampaignMutation.mutate(campaignPayload);
@@ -419,12 +432,63 @@ export default function CreateCampaign() {
                       {enhanceEmailMutation.isPending ? "Enhancing..." : "Enhance with AI"}
                     </Button>
                   </div>
-                  <RichTextEditor
-                    value={campaignData.body}
-                    onChange={(value) => setCampaignData(prev => ({ ...prev, body: value }))}
-                    placeholder="Write your email content here..."
-                    minHeight="300px"
-                  />
+                  <div className="space-y-4">
+                    <RichTextEditor
+                      value={campaignData.body}
+                      onChange={(value) => setCampaignData(prev => ({ ...prev, body: value }))}
+                      placeholder="Write your email content here..."
+                      minHeight="300px"
+                    />
+                    
+                    {/* Personalization Field Manager */}
+                    <PersonalizationFieldManager
+                      value={campaignData.body}
+                      onChange={(value) => setCampaignData(prev => ({ ...prev, body: value }))}
+                      dynamicFields={campaignData.dynamicFields}
+                      onDynamicFieldsChange={(fields) => 
+                        setCampaignData(prev => ({ ...prev, dynamicFields: fields }))
+                      }
+                    />
+                    
+                    {/* Personalization Settings */}
+                    <div className="border-t pt-4 space-y-4">
+                      <h4 className="font-medium">Email Personalization Settings</h4>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="personalization-enabled"
+                            checked={campaignData.personalizationEnabled}
+                            onCheckedChange={(checked) => 
+                              setCampaignData(prev => ({ ...prev, personalizationEnabled: checked as boolean }))
+                            }
+                          />
+                          <Label htmlFor="personalization-enabled" className="text-sm">
+                            Enable personalization fields in email content
+                          </Label>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="fallback-enabled"
+                            checked={campaignData.fallbackToDefault}
+                            onCheckedChange={(checked) => 
+                              setCampaignData(prev => ({ ...prev, fallbackToDefault: checked as boolean }))
+                            }
+                          />
+                          <Label htmlFor="fallback-enabled" className="text-sm">
+                            Send default content if personalized version unavailable
+                          </Label>
+                        </div>
+                        
+                        <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                          <p>• When personalization is enabled, fields like {{name}} will be replaced with recipient data</p>
+                          <p>• If fallback is disabled, emails without personalized content will be skipped</p>
+                          <p>• If fallback is enabled, default content with field replacement will be used</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

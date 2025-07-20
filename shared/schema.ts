@@ -118,6 +118,10 @@ export const campaigns = pgTable("campaigns", {
   followUpBody: text("follow_up_body"),
   followUpCondition: varchar("follow_up_condition"), // 'not_opened' | 'no_reply'
   followUpDays: integer("follow_up_days").default(3),
+  // Personalization settings
+  personalizationEnabled: boolean("personalization_enabled").default(false),
+  fallbackToDefault: boolean("fallback_to_default").default(true),
+  dynamicFields: jsonb("dynamic_fields").$type<string[]>().default([]),
   // Tracking
   totalRecipients: integer("total_recipients").default(0),
   currentEmailIndex: integer("current_email_index").default(0),
