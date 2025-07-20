@@ -1025,7 +1025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         passport.use(new GoogleStrategy({
           clientID: googleClientId,
           clientSecret: googleClientSecret,
-          callbackURL: "/api/auth/google/callback"
+          callbackURL: `${process.env.NODE_ENV === 'production' ? 'https://' + (process.env.REPLIT_DOMAINS || 'localhost:5000') : 'http://localhost:5000'}/api/auth/google/callback`
         }, async (accessToken: any, refreshToken: any, profile: any, done: any) => {
           try {
             // Check if user exists with this Google ID

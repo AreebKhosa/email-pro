@@ -109,15 +109,7 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     try {
-      const response = await fetch('/api/auth/google');
-      if (response.status === 501) {
-        toast({
-          title: "Google OAuth not configured",
-          description: "Please use email/password login or contact support.",
-          variant: "destructive",
-        });
-        return;
-      }
+      // Directly redirect to Google OAuth - no need to check first
       window.location.href = "/api/auth/google";
     } catch (error) {
       toast({

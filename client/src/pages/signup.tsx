@@ -107,7 +107,17 @@ export default function Signup() {
         </CardHeader>
         <CardContent>
           <Button
-            onClick={() => window.location.href = '/api/auth/google'}
+            onClick={() => {
+              try {
+                window.location.href = '/api/auth/google';
+              } catch (error) {
+                toast({
+                  title: "Error",
+                  description: "Failed to initiate Google login",
+                  variant: "destructive",
+                });
+              }
+            }}
             variant="outline"
             className="w-full mb-4"
             type="button"
