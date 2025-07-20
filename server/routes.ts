@@ -22,6 +22,62 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
+// Plan limits configuration
+const planLimits = {
+  demo: {
+    emailsPerMonth: 1000,
+    recipients: 1000,
+    emailIntegrations: 1,
+    deliverabilityChecks: 10,
+    personalizedEmails: 30,
+    followUps: false,
+    campaigns: 3,
+    warmupEmails: 10,
+    emailAccounts: 1,
+    dailyLimit: 50,
+    emailRotation: false
+  },
+  starter: {
+    emailsPerMonth: 5000,
+    recipients: 10000,
+    emailIntegrations: 3,
+    deliverabilityChecks: 100,
+    personalizedEmails: 1000,
+    followUps: true,
+    campaigns: 10,
+    warmupEmails: 50,
+    emailAccounts: 3,
+    dailyLimit: 200,
+    emailRotation: true
+  },
+  pro: {
+    emailsPerMonth: 25000,
+    recipients: 100000,
+    emailIntegrations: 10,
+    deliverabilityChecks: 1000,
+    personalizedEmails: 1000,
+    followUps: true,
+    campaigns: 50,
+    warmupEmails: 200,
+    emailAccounts: 10,
+    dailyLimit: 1000,
+    emailRotation: true
+  },
+  premium: {
+    emailsPerMonth: 100000,
+    recipients: 500000,
+    emailIntegrations: 25,
+    deliverabilityChecks: 10000,
+    personalizedEmails: 1000,
+    followUps: true,
+    campaigns: 200,
+    warmupEmails: 1000,
+    emailAccounts: 20,
+    dailyLimit: 5000,
+    emailRotation: true
+  }
+};
+
 // Campaign sending functionality
 async function startCampaignSending(campaignId: number, userId: string) {
   try {
@@ -210,49 +266,7 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
   }
 }
 
-const planLimits = {
-  demo: {
-    emailsPerMonth: 1000,
-    recipientsPerMonth: 300,
-    emailIntegrations: 1,
-    deliverabilityChecks: 150,
-    personalizedEmails: 30,
-    followUps: 0,
-    campaigns: 3,
-    warmupEmails: 0,
-  },
-  starter: {
-    emailsPerMonth: 20000,
-    recipientsPerMonth: 6000,
-    emailIntegrations: 4,
-    deliverabilityChecks: 2000,
-    personalizedEmails: 1000,
-    followUps: 1,
-    campaigns: Infinity,
-    warmupEmails: 2500,
-  },
-  pro: {
-    emailsPerMonth: 75000,
-    recipientsPerMonth: 25000,
-    emailIntegrations: 20,
-    deliverabilityChecks: 10000,
-    personalizedEmails: 1000,
-    followUps: 1,
-    campaigns: Infinity,
-    warmupEmails: Infinity,
-  },
-  premium: {
-    emailsPerMonth: Infinity,
-    recipientsPerMonth: Infinity,
-    emailIntegrations: Infinity,
-    deliverabilityChecks: Infinity,
-    personalizedEmails: 1000,
-    followUps: 2,
-    campaigns: Infinity,
-    warmupEmails: Infinity,
-  },
-};
-
+// Plan validation function
 async function checkPlanLimits(userId: string, resource: string, amount: number = 1): Promise<boolean> {
   const user = await storage.getUser(userId);
   if (!user) return false;
@@ -273,7 +287,7 @@ async function checkPlanLimits(userId: string, resource: string, amount: number 
     case 'emails':
       return (currentUsage.emailsSent || 0) + amount <= limits.emailsPerMonth;
     case 'recipients':
-      return (currentUsage.recipientsUploaded || 0) + amount <= limits.recipientsPerMonth;
+      return (currentUsage.recipientsUploaded || 0) + amount <= limits.recipients;
     case 'deliverability':
       return (currentUsage.deliverabilityChecks || 0) + amount <= limits.deliverabilityChecks;
     case 'personalization':
@@ -991,7 +1005,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (googleClientId && googleClientSecret) {
-        const GoogleStrategy = require('passport-google-oauth20').Strategy;
+        const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
         
         passport.use(new GoogleStrategy({
           clientID: googleClientId,
@@ -1336,6 +1350,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Plan validation endpoint
+  app.get('/api/plan/limits', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.user?.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const limits = planLimits[user.plan as keyof typeof planLimits] || planLimits.demo;
+      res.json(limits);
+    } catch (error) {
+      console.error("Error fetching plan limits:", error);
+      res.status(500).json({ message: "Failed to fetch plan limits" });
+    }
+  });
+
+  // Check if user can perform an action based on plan limits
+  app.post('/api/plan/check', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.user?.id;
+      const { resource, amount = 1 } = req.body;
+      
+      const canPerform = await checkPlanLimits(userId, resource, amount);
+      res.json({ allowed: canPerform });
+    } catch (error) {
+      console.error("Error checking plan limits:", error);
+      res.status(500).json({ message: "Failed to check plan limits" });
     }
   });
 
