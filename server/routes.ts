@@ -1089,6 +1089,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email verification route
+  app.get('/verify-email', async (req, res) => {
+    try {
+      const { token } = req.query;
+
+      if (!token || typeof token !== 'string') {
+        return res.status(400).send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Verification Error</title>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+              .error { background-color: #f8d7da; color: #721c24; padding: 20px; border-radius: 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="error">
+              <h2>Invalid Verification Link</h2>
+              <p>The verification link is invalid or missing. Please try again or request a new verification email.</p>
+            </div>
+          </body>
+          </html>
+        `);
+      }
+
+      // Clean up expired tokens first
+      await storage.deleteExpiredEmailVerificationTokens();
+
+      // Find and validate token
+      const verificationToken = await storage.getEmailVerificationToken(token);
+      if (!verificationToken) {
+        return res.status(400).send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Verification Error</title>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+              .error { background-color: #f8d7da; color: #721c24; padding: 20px; border-radius: 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="error">
+              <h2>Invalid or Expired Token</h2>
+              <p>This verification link is invalid or has expired. Please try signing up again or request a new verification email.</p>
+            </div>
+          </body>
+          </html>
+        `);
+      }
+
+      // Check if token is expired
+      if (verificationToken.expiresAt < new Date()) {
+        await storage.deleteEmailVerificationToken(token);
+        return res.status(400).send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Verification Expired</title>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+              .error { background-color: #f8d7da; color: #721c24; padding: 20px; border-radius: 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="error">
+              <h2>Verification Link Expired</h2>
+              <p>This verification link has expired. Please sign up again to receive a new verification email.</p>
+            </div>
+          </body>
+          </html>
+        `);
+      }
+
+      // Mark user as verified
+      await storage.updateUser(verificationToken.userId, {
+        emailVerified: true,
+        updatedAt: new Date()
+      });
+
+      // Delete the used token
+      await storage.deleteEmailVerificationToken(token);
+
+      // Return success page
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Email Verified</title>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; }
+            .success { background-color: #d4edda; color: #155724; padding: 30px; border-radius: 5px; margin-bottom: 20px; }
+            .login-button { 
+              display: inline-block; 
+              background-color: #007bff; 
+              color: white; 
+              padding: 12px 30px; 
+              text-decoration: none; 
+              border-radius: 5px; 
+              font-weight: bold; 
+            }
+            .login-button:hover { background-color: #0056b3; }
+          </style>
+        </head>
+        <body>
+          <div class="success">
+            <h2>🎉 Email Verified Successfully!</h2>
+            <p>Your email address has been verified. You can now log in to your account and start using our email marketing platform.</p>
+          </div>
+          <a href="/login" class="login-button">Log In to Your Account</a>
+        </body>
+        </html>
+      `);
+
+    } catch (error) {
+      console.error('Email verification error:', error);
+      res.status(500).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Verification Error</title>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+            .error { background-color: #f8d7da; color: #721c24; padding: 20px; border-radius: 5px; }
+          </style>
+        </head>
+        <body>
+          <div class="error">
+            <h2>Verification Error</h2>
+            <p>An error occurred during email verification. Please try again or contact support.</p>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+  });
+
   app.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
     res.json({ message: "Login successful", user: req.user });
   });
