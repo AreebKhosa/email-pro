@@ -122,25 +122,26 @@ export function PersonalizationFieldManager({
             {dynamicFields.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {dynamicFields.map((field) => (
-                  <Badge
+                  <div
                     key={field}
-                    variant="secondary"
-                    className="flex items-center gap-1 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900"
-                    onClick={() => insertField(field)}
+                    className="flex items-center gap-1 px-2 py-1 bg-secondary text-secondary-foreground rounded-md text-sm"
                   >
-                    {field}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-red-100 dark:hover:bg-red-900"
+                    <span 
+                      className="cursor-pointer hover:text-blue-600"
+                      onClick={() => insertField(field)}
+                    >
+                      {field}
+                    </span>
+                    <button
+                      className="ml-1 p-0 h-4 w-4 hover:bg-red-100 dark:hover:bg-red-900 rounded flex items-center justify-center"
                       onClick={(e) => {
                         e.stopPropagation();
                         removeCustomField(field);
                       }}
                     >
                       <X className="w-3 h-3" />
-                    </Button>
-                  </Badge>
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
