@@ -21,8 +21,13 @@ async function getOAuth2Client() {
         
         googleClientId = googleClientId || (typeof clientIdConfig === 'string' ? clientIdConfig : clientIdConfig?.configValue);
         googleClientSecret = googleClientSecret || (typeof clientSecretConfig === 'string' ? clientSecretConfig : clientSecretConfig?.configValue);
+        
+        console.log('Using Google OAuth credentials from admin panel:', {
+          clientId: googleClientId ? `${googleClientId.substring(0, 10)}...` : 'NOT_FOUND',
+          clientSecret: googleClientSecret ? 'CONFIGURED' : 'NOT_FOUND'
+        });
       } catch (error) {
-        console.log('Google OAuth config not found in database');
+        console.log('Google OAuth config not found in database:', error);
       }
     }
     
@@ -32,6 +37,9 @@ async function getOAuth2Client() {
         googleClientSecret,
         process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/auth/google/callback'
       );
+      console.log('OAuth client initialized successfully');
+    } else {
+      console.log('Missing Google OAuth credentials - cannot initialize client');
     }
   }
   return oauth2Client;
