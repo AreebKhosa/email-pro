@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, User, Building, Mail, Globe, Briefcase } from "lucide-react";
+import { Plus, X, User } from "lucide-react";
 
 interface PersonalizationFieldManagerProps {
   value: string;
@@ -23,16 +23,16 @@ export function PersonalizationFieldManager({
 
   // Standard personalization fields
   const standardFields = [
-    { name: "name", label: "First Name", icon: User },
-    { name: "firstName", label: "First Name", icon: User },
-    { name: "lastName", label: "Last Name", icon: User },
-    { name: "email", label: "Email", icon: Mail },
-    { name: "companyName", label: "Company", icon: Building },
-    { name: "company", label: "Company", icon: Building },
-    { name: "position", label: "Position", icon: Briefcase },
-    { name: "jobTitle", label: "Job Title", icon: Briefcase },
-    { name: "websiteLink", label: "Website", icon: Globe },
-    { name: "website", label: "Website", icon: Globe },
+    { name: "name", label: "First Name" },
+    { name: "firstName", label: "First Name" },
+    { name: "lastName", label: "Last Name" },
+    { name: "email", label: "Email" },
+    { name: "companyName", label: "Company" },
+    { name: "company", label: "Company" },
+    { name: "position", label: "Position" },
+    { name: "jobTitle", label: "Job Title" },
+    { name: "websiteLink", label: "Website" },
+    { name: "website", label: "Website" },
   ];
 
   const insertField = (fieldName: string) => {
@@ -75,21 +75,17 @@ export function PersonalizationFieldManager({
           <div>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Standard Fields</p>
             <div className="flex flex-wrap gap-2">
-              {standardFields.map((field) => {
-                const Icon = field.icon;
-                return (
-                  <Button
-                    key={field.name}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => insertField(field.name)}
-                    className="text-xs flex items-center gap-1"
-                  >
-                    <Icon className="w-3 h-3" />
-                    {field.label}
-                  </Button>
-                );
-              })}
+              {standardFields.map((field) => (
+                <Button
+                  key={field.name}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => insertField(field.name)}
+                  className="text-xs"
+                >
+                  {field.label}
+                </Button>
+              ))}
             </div>
           </div>
 
