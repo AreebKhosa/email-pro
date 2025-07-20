@@ -970,22 +970,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Google OAuth routes (only if Google credentials are configured)
-  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-    app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+  // Google OAuth setup
+  const setupGoogleOAuth = async () => {
+    try {
+      // Try to get credentials from environment variables first (if provided by Replit Secrets)
+      let googleClientId = process.env.GOOGLE_CLIENT_ID;
+      let googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-    app.get('/api/auth/google/callback',
-      passport.authenticate('google', { failureRedirect: '/login' }),
-      (req, res) => {
-        res.redirect('/');
+      // If not in env vars, try to get from admin config
+      if (!googleClientId || !googleClientSecret) {
+        try {
+          const clientIdConfig = await storage.getConfig('google_client_id');
+          const clientSecretConfig = await storage.getConfig('google_client_secret');
+          
+          googleClientId = googleClientId || clientIdConfig?.configValue;
+          googleClientSecret = googleClientSecret || clientSecretConfig?.configValue;
+        } catch (error) {
+          console.log('Google OAuth config not found in database, checking env vars only');
+        }
       }
-    );
-  } else {
-    // Fallback route when Google OAuth is not configured
-    app.get('/api/auth/google', (req, res) => {
-      res.status(501).json({ message: "Google OAuth not configured" });
-    });
-  }
+
+      if (googleClientId && googleClientSecret) {
+        const GoogleStrategy = require('passport-google-oauth20').Strategy;
+        
+        passport.use(new GoogleStrategy({
+          clientID: googleClientId,
+          clientSecret: googleClientSecret,
+          callbackURL: "/api/auth/google/callback"
+        }, async (accessToken: any, refreshToken: any, profile: any, done: any) => {
+          try {
+            // Check if user exists with this Google ID
+            let user = await storage.getUserByEmail(profile.emails[0].value);
+            
+            if (!user) {
+              // Create new user with Google profile
+              user = await storage.createUser({
+                id: Date.now().toString(),
+                email: profile.emails[0].value,
+                firstName: profile.name.givenName || profile.displayName?.split(' ')[0] || '',
+                lastName: profile.name.familyName || profile.displayName?.split(' ').slice(1).join(' ') || '',
+                password: '', // No password for OAuth users
+                emailVerified: true, // Google email is already verified
+                plan: 'demo',
+                profileImageUrl: profile.photos?.[0]?.value
+              });
+            } else if (!user.emailVerified) {
+              // If user exists but email not verified, verify it via Google
+              await storage.updateUser(user.id, { 
+                emailVerified: true,
+                profileImageUrl: profile.photos?.[0]?.value || user.profileImageUrl
+              });
+            }
+            
+            return done(null, user);
+          } catch (error) {
+            console.error('Google OAuth error:', error);
+            return done(error, null);
+          }
+        }));
+        
+        console.log('Google OAuth configured successfully');
+      } else {
+        console.log('Google OAuth credentials not available');
+      }
+    } catch (error) {
+      console.error('Error setting up Google OAuth:', error);
+    }
+  };
+
+  // Initialize Google OAuth
+  await setupGoogleOAuth();
+
+  // Google OAuth routes
+  app.get('/api/auth/google', async (req, res, next) => {
+    // Check if Google OAuth is configured
+    const hasGoogleClientId = process.env.GOOGLE_CLIENT_ID || (await storage.getConfig('google_client_id'))?.configValue;
+    if (!hasGoogleClientId) {
+      return res.status(501).json({ message: "Google OAuth not configured. Please configure it in admin panel." });
+    }
+    passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+  });
+
+  app.get('/api/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/login?error=google_auth_failed' }),
+    (req, res) => {
+      // Set manual user session for consistency
+      if (req.user) {
+        req.session.manualUser = req.user;
+      }
+      res.redirect('/?google_login=success');
+    }
+  );
 
   // Manual login/register routes
   app.post('/api/auth/register', async (req, res) => {
