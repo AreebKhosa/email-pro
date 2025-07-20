@@ -1443,7 +1443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/email-integrations/gmail-auth-url', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims ? req.user.claims.sub : req.user.id;
-      const authUrl = getGmailAuthUrl(userId);
+      const authUrl = await getGmailAuthUrl(userId);
       res.json({ authUrl });
     } catch (error) {
       console.error("Error generating Gmail auth URL:", error);

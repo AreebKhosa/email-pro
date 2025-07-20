@@ -5,11 +5,37 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcryptjs';
 import { storage } from '../storage';
 
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/auth/google/callback'
-);
+let oauth2Client: any = null;
+
+async function getOAuth2Client() {
+  if (!oauth2Client) {
+    // Try to get credentials from environment variables first
+    let googleClientId = process.env.GOOGLE_CLIENT_ID;
+    let googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    
+    // If not in env vars, get from admin config
+    if (!googleClientId || !googleClientSecret) {
+      try {
+        const clientIdConfig = await storage.getConfig('google_client_id');
+        const clientSecretConfig = await storage.getConfig('google_client_secret');
+        
+        googleClientId = googleClientId || (typeof clientIdConfig === 'string' ? clientIdConfig : clientIdConfig?.configValue);
+        googleClientSecret = googleClientSecret || (typeof clientSecretConfig === 'string' ? clientSecretConfig : clientSecretConfig?.configValue);
+      } catch (error) {
+        console.log('Google OAuth config not found in database');
+      }
+    }
+    
+    if (googleClientId && googleClientSecret) {
+      oauth2Client = new google.auth.OAuth2(
+        googleClientId,
+        googleClientSecret,
+        process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/auth/google/callback'
+      );
+    }
+  }
+  return oauth2Client;
+}
 
 // Scopes for Gmail API access
 const GMAIL_SCOPES = [
@@ -95,8 +121,13 @@ export function setupGoogleAuth() {
 }
 
 // Generate Gmail OAuth URL for email integration
-export function getGmailAuthUrl(userId: string): string {
-  const authUrl = oauth2Client.generateAuthUrl({
+export async function getGmailAuthUrl(userId: string): Promise<string> {
+  const client = await getOAuth2Client();
+  if (!client) {
+    throw new Error('Google OAuth credentials not configured');
+  }
+  
+  const authUrl = client.generateAuthUrl({
     access_type: 'offline',
     scope: GMAIL_SCOPES,
     state: userId, // Pass userId to identify the user during callback
@@ -111,7 +142,12 @@ export async function exchangeGmailCode(code: string): Promise<{
   refreshToken: string;
   expiryDate: number;
 }> {
-  const { tokens } = await oauth2Client.getAccessToken({ code });
+  const client = await getOAuth2Client();
+  if (!client) {
+    throw new Error('Google OAuth credentials not configured');
+  }
+  
+  const { tokens } = await client.getAccessToken({ code });
   
   return {
     accessToken: tokens.access_token!,
@@ -125,9 +161,14 @@ export async function getGmailUserInfo(accessToken: string): Promise<{
   email: string;
   name: string;
 }> {
-  oauth2Client.setCredentials({ access_token: accessToken });
+  const client = await getOAuth2Client();
+  if (!client) {
+    throw new Error('Google OAuth credentials not configured');
+  }
   
-  const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+  client.setCredentials({ access_token: accessToken });
+  
+  const oauth2 = google.oauth2({ version: 'v2', auth: client });
   const userInfo = await oauth2.userinfo.get();
   
   return {
@@ -141,8 +182,13 @@ export async function refreshGmailToken(refreshToken: string): Promise<{
   accessToken: string;
   expiryDate: number;
 }> {
-  oauth2Client.setCredentials({ refresh_token: refreshToken });
-  const { credentials } = await oauth2Client.refreshAccessToken();
+  const client = await getOAuth2Client();
+  if (!client) {
+    throw new Error('Google OAuth credentials not configured');
+  }
+  
+  client.setCredentials({ refresh_token: refreshToken });
+  const { credentials } = await client.refreshAccessToken();
   
   return {
     accessToken: credentials.access_token!,
