@@ -19,6 +19,94 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
+// Campaign sending functionality
+async function startCampaignSending(campaignId: number, userId: string) {
+  try {
+    const campaign = await storage.getCampaign(campaignId);
+    if (!campaign) return;
+
+    const recipients = await storage.getListRecipients(campaign.recipientListId);
+    const totalRecipients = recipients.length;
+    
+    // Update total recipients count
+    await storage.updateCampaignField(campaignId, 'totalRecipients', totalRecipients);
+    
+    // Get sending settings and plan limits
+    const user = await storage.getUser(userId);
+    const limits = planLimits[user?.plan as keyof typeof planLimits] || planLimits.demo;
+    
+    // Send emails in background with respect to plan limits and sending settings
+    sendCampaignEmails(campaignId, recipients, limits, campaign);
+  } catch (error) {
+    console.error('Error starting campaign:', error);
+  }
+}
+
+async function sendCampaignEmails(campaignId: number, recipients: any[], limits: any, campaign: any) {
+  const delayMs = (campaign.emailDelay || 5) * 60 * 1000; // Convert minutes to milliseconds
+  let sentToday = 0;
+  const dailyLimit = Math.min(campaign.dailyLimit || 50, limits.emailsPerMonth);
+  
+  for (let i = campaign.currentEmailIndex || 0; i < recipients.length; i++) {
+    // Check if campaign is still in sending status
+    const currentCampaign = await storage.getCampaign(campaignId);
+    if (currentCampaign?.status !== 'sending') {
+      await storage.updateCampaignField(campaignId, 'currentEmailIndex', i);
+      break;
+    }
+    
+    // Check daily limit
+    if (sentToday >= dailyLimit) {
+      await storage.updateCampaignField(campaignId, 'currentEmailIndex', i);
+      // Schedule to continue tomorrow
+      setTimeout(() => {
+        if (currentCampaign?.status === 'sending') {
+          sendCampaignEmails(campaignId, recipients.slice(i), limits, campaign);
+        }
+      }, 24 * 60 * 60 * 1000); // 24 hours
+      break;
+    }
+    
+    try {
+      const recipient = recipients[i];
+      
+      // Get email integration
+      const integration = await storage.getEmailIntegration(campaign.emailIntegrationId);
+      if (!integration) continue;
+      
+      // Send email
+      const emailBody = recipient.personalizedEmail || campaign.body;
+      await sendEmail({
+        integration,
+        to: recipient.email,
+        subject: campaign.subject,
+        body: emailBody,
+        recipientData: recipient
+      });
+      
+      // Update campaign stats
+      await storage.updateCampaignStats(campaignId, { sentCount: 1 });
+      sentToday++;
+      
+      // Add delay between emails
+      if (i < recipients.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+      
+    } catch (error) {
+      console.error(`Error sending email to ${recipients[i]?.email}:`, error);
+    }
+  }
+  
+  // Mark campaign as completed if all emails sent
+  if (recipients.length > 0 && sentToday > 0) {
+    const updatedCampaign = await storage.getCampaign(campaignId);
+    if (updatedCampaign && updatedCampaign.sentCount >= updatedCampaign.totalRecipients) {
+      await storage.updateCampaignStatus(campaignId, 'completed');
+    }
+  }
+}
+
 const planLimits = {
   demo: {
     emailsPerMonth: 1000,
@@ -236,7 +324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deliverabilityChecksUsed: usage?.deliverabilityChecks || 0,
         recipientCount: usage?.recipientsUploaded || 0,
         emailsSent: usage?.emailsSent || 0,
-        personalizedEmails: usage?.personalizedEmails || 0,
+        personalizationsUsed: usage?.personalizedEmails || 0,
         warmupEmails: usage?.warmupEmails || 0,
         planLimits: planLimits[user?.plan as keyof typeof planLimits] || planLimits.demo,
       });
@@ -944,11 +1032,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Campaign not found" });
       }
 
+      // If starting campaign, begin sending emails
+      if (status === 'sending') {
+        // Get user plan to check limits
+        const user = await storage.getUser(userId);
+        const currentPlan = user?.plan || 'demo';
+        const limits = planLimits[currentPlan as keyof typeof planLimits];
+        
+        // Get current month usage
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const usage = await storage.getCurrentMonthUsage(userId);
+        const emailsSentThisMonth = usage?.emailsSent || 0;
+
+        // Check plan limits before starting
+        if (emailsSentThisMonth >= limits.emailsPerMonth) {
+          return res.status(403).json({ 
+            message: `Plan limit reached. You've sent ${emailsSentThisMonth} of ${limits.emailsPerMonth} monthly emails.`
+          });
+        }
+
+        // Start sending emails asynchronously
+        startCampaignSending(campaignId, userId).catch(err => {
+          console.error('Campaign sending error:', err);
+        });
+      }
+
       const updatedCampaign = await storage.updateCampaignStatus(campaignId, status);
       res.json(updatedCampaign);
     } catch (error) {
       console.error("Error updating campaign status:", error);
       res.status(500).json({ message: "Failed to update campaign status" });
+    }
+  });
+
+  // Get campaign stats
+  app.get('/api/campaigns/:id/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const campaignId = parseInt(req.params.id);
+      const stats = await storage.getCampaignStats(campaignId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching campaign stats:", error);
+      res.status(500).json({ message: "Failed to fetch campaign stats" });
     }
   });
 
@@ -1128,3 +1253,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
+
+

@@ -158,7 +158,7 @@ export default function Dashboard() {
                         <TableHead>Status</TableHead>
                         <TableHead>Sent</TableHead>
                         <TableHead>Open Rate</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead>Created</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -202,18 +202,8 @@ export default function Dashboard() {
                               : '-'
                             }
                           </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Button variant="ghost" size="sm">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </div>
+                          <TableCell className="text-sm">
+                            {new Date(campaign.createdAt).toLocaleDateString()}
                           </TableCell>
                         </TableRow>
                       ))}

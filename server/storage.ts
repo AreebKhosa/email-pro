@@ -463,6 +463,42 @@ export class DatabaseStorage implements IStorage {
     return campaign;
   }
 
+  async updateCampaignField(id: number, field: string, value: any): Promise<Campaign> {
+    const updateData = { [field]: value };
+    const [campaign] = await db
+      .update(campaigns)
+      .set(updateData)
+      .where(eq(campaigns.id, id))
+      .returning();
+    return campaign;
+  }
+
+  async getCampaignStats(id: number): Promise<any> {
+    const campaign = await this.getCampaign(id);
+    if (!campaign) return null;
+
+    return {
+      totalRecipients: campaign.totalRecipients || 0,
+      sentCount: campaign.sentCount || 0,
+      deliveredCount: campaign.deliveredCount || 0,
+      openedCount: campaign.openedCount || 0,
+      clickedCount: campaign.clickedCount || 0,
+      bouncedCount: campaign.bouncedCount || 0,
+      spamCount: campaign.spamCount || 0,
+      openRate: campaign.sentCount > 0 ? ((campaign.openedCount || 0) / campaign.sentCount * 100).toFixed(1) : '0',
+      clickRate: campaign.sentCount > 0 ? ((campaign.clickedCount || 0) / campaign.sentCount * 100).toFixed(1) : '0',
+      deliveryRate: campaign.sentCount > 0 ? ((campaign.deliveredCount || 0) / campaign.sentCount * 100).toFixed(1) : '0',
+    };
+  }
+
+  async getEmailIntegration(id: number): Promise<EmailIntegration | undefined> {
+    const [integration] = await db
+      .select()
+      .from(emailIntegrations)
+      .where(eq(emailIntegrations.id, id));
+    return integration;
+  }
+
   async deleteCampaign(id: number): Promise<void> {
     await db.delete(campaigns).where(eq(campaigns.id, id));
   }

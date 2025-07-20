@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import { Plus, Rocket, Mail, Calendar, MoreHorizontal, Eye, Play, Pause, Trash2 } from "lucide-react";
+import { Plus, Rocket, Mail, Calendar, MoreHorizontal, Eye, Play, Pause, Trash2, Send, MailOpen, MousePointer, Users } from "lucide-react";
 import { Link } from "wouter";
 
 
@@ -24,6 +24,12 @@ export default function Campaigns() {
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ["/api/campaigns"],
+    retry: false,
+  });
+
+  // Get overall campaign stats
+  const { data: dashboardStats } = useQuery({
+    queryKey: ["/api/dashboard/stats"],
     retry: false,
   });
 
@@ -131,6 +137,17 @@ export default function Campaigns() {
     );
   };
 
+  // Calculate total stats from all campaigns
+  const totalStats = campaigns?.reduce((acc: any, campaign: any) => ({
+    totalCampaigns: acc.totalCampaigns + 1,
+    totalEmails: acc.totalEmails + (campaign.sentCount || 0),
+    totalRecipients: acc.totalRecipients + (campaign.totalRecipients || 0),
+    totalOpened: acc.totalOpened + (campaign.openedCount || 0),
+  }), { totalCampaigns: 0, totalEmails: 0, totalRecipients: 0, totalOpened: 0 }) || 
+  { totalCampaigns: 0, totalEmails: 0, totalRecipients: 0, totalOpened: 0 };
+
+  const openRate = totalStats.totalEmails > 0 ? ((totalStats.totalOpened / totalStats.totalEmails) * 100).toFixed(1) : 0;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -161,6 +178,65 @@ export default function Campaigns() {
               New Campaign
             </Button>
           </Link>
+        </div>
+
+        {/* Campaign Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Rocket className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Campaigns</p>
+                  <p className="text-2xl font-bold text-gray-900">{totalStats.totalCampaigns}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Send className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Emails Sent</p>
+                  <p className="text-2xl font-bold text-gray-900">{totalStats.totalEmails.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Users className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Recipients</p>
+                  <p className="text-2xl font-bold text-gray-900">{totalStats.totalRecipients.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <MailOpen className="h-6 w-6 text-orange-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Open Rate</p>
+                  <p className="text-2xl font-bold text-gray-900">{openRate}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Campaigns Table */}
