@@ -11,15 +11,18 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### Real Email Sending Implementation (July 20, 2025)
-- Implemented actual SMTP email sending using nodemailer with integrated email accounts
+- Implemented actual SMTP email sending using Python-based solution replacing problematic nodemailer
 - Added comprehensive email tracking system with open and click tracking
 - Created tracking pixel endpoint for monitoring email opens
 - Implemented link tracking with automatic URL wrapping for click monitoring
 - Added campaign email records creation for detailed tracking
 - Enhanced email personalization with dynamic field replacement ({{name}}, {{email}}, etc.)
 - Integrated usage tracking updates when emails are sent
-- Fixed SQL syntax errors in campaign field updates
+- Fixed SQL syntax errors by adding missing schema fields (totalRecipients, currentEmailIndex)
 - Added proper error handling and logging for email sending process
+- Implemented Python SMTP script for reliable email delivery with detailed console logging
+- Added email rotation functionality for upgraded plans with configurable emails per account
+- Campaign completion automatically disables action buttons with visual completion indicator
 
 ### Campaign Stats and Controls (July 20, 2025)
 - Fixed personalization count display to show correct quota usage from backend

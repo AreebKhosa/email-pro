@@ -70,9 +70,24 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
     try {
       const recipient = recipients[i];
       
-      // Get email integration
-      const integration = await storage.getEmailIntegration(campaign.emailIntegrationId);
-      if (!integration) continue;
+      // Email rotation logic - get the appropriate integration
+      let integration;
+      if (campaign.emailRotationEnabled && campaign.emailRotationIds && campaign.emailRotationIds.length > 0) {
+        // Calculate which email account to use based on emails per account limit
+        const emailsPerAccount = campaign.emailsPerAccount || 30;
+        const accountIndex = Math.floor(sentToday / emailsPerAccount) % campaign.emailRotationIds.length;
+        const rotationIntegrationId = campaign.emailRotationIds[accountIndex];
+        integration = await storage.getEmailIntegration(rotationIntegrationId);
+        console.log(`Using email rotation: account ${accountIndex + 1}/${campaign.emailRotationIds.length} (${integration?.email})`);
+      } else {
+        // Use single email account
+        integration = await storage.getEmailIntegration(campaign.emailIntegrationId);
+      }
+      
+      if (!integration) {
+        console.error('No valid email integration found');
+        continue;
+      }
       
       // Send actual email using SMTP
       const emailBody = recipient.personalizedEmail || campaign.body;

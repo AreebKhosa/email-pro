@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import { Plus, Rocket, Mail, Calendar, MoreHorizontal, Eye, Play, Pause, Trash2, Send, MailOpen, MousePointer, Users } from "lucide-react";
+import { Plus, Rocket, Mail, Calendar, MoreHorizontal, Eye, Play, Pause, Trash2, Send, MailOpen, MousePointer, Users, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
 
 
@@ -328,6 +328,16 @@ export default function Campaigns() {
                               className="text-green-600 hover:text-green-700 hover:bg-green-50"
                             >
                               <Play className="h-4 w-4" />
+                            </Button>
+                          ) : campaign.status === 'completed' ? (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              disabled={true}
+                              title="Campaign Completed"
+                              className="text-gray-400 cursor-not-allowed"
+                            >
+                              <CheckCircle className="h-4 w-4" />
                             </Button>
                           ) : (
                             <Button 
