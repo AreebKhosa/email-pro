@@ -7,6 +7,12 @@ import { storage } from '../storage';
 
 let oauth2Client: any = null;
 
+// Function to reset the OAuth client (useful when credentials are updated)
+export function resetOAuthClient() {
+  oauth2Client = null;
+  console.log('OAuth client reset - will reload credentials on next request');
+}
+
 async function getOAuth2Client() {
   if (!oauth2Client) {
     // Try to get credentials from environment variables first
