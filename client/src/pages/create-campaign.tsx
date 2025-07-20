@@ -451,32 +451,7 @@ export default function CreateCampaign() {
                       minHeight="300px"
                     />
                     
-                    {/* Simple Personalization Help */}
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <p className="text-sm text-blue-700 dark:text-blue-300 mb-2 font-medium">
-                        Available Personalization Fields:
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs font-mono">
-                          {`{{name}}`}
-                        </span>
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs font-mono">
-                          {`{{lastName}}`}
-                        </span>
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs font-mono">
-                          {`{{companyName}}`}
-                        </span>
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs font-mono">
-                          {`{{position}}`}
-                        </span>
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs font-mono">
-                          {`{{email}}`}
-                        </span>
-                      </div>
-                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
-                        These fields will be automatically replaced with recipient data when emails are sent.
-                      </p>
-                    </div>
+                    
                     
                     {/* Personalization Settings */}
                     <div className="border-t pt-4 space-y-4">
