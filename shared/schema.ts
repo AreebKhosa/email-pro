@@ -119,6 +119,8 @@ export const campaigns = pgTable("campaigns", {
   followUpCondition: varchar("follow_up_condition"), // 'not_opened' | 'no_reply'
   followUpDays: integer("follow_up_days").default(3),
   // Tracking
+  totalRecipients: integer("total_recipients").default(0),
+  currentEmailIndex: integer("current_email_index").default(0),
   sentCount: integer("sent_count").default(0),
   deliveredCount: integer("delivered_count").default(0),
   openedCount: integer("opened_count").default(0),
