@@ -37,7 +37,7 @@ const plans = [
       "1,000 emails/month",
       "300 recipients/month",
       "1 email integration",
-      "150 deliverability checks",
+      "100 deliverability checks",
       "30 personalized emails/month",
       "Max 3 campaigns",
       "No follow-ups",
@@ -62,7 +62,7 @@ const plans = [
       "6,000 recipients/month",
       "4 email integrations",
       "2,000 deliverability checks",
-      "1,000 personalized emails/month",
+      "2,000 personalized emails/month",
       "Unlimited campaigns",
       "1 follow-up allowed",
       "2,500 warm-up emails/month"
@@ -82,7 +82,7 @@ const plans = [
       "25,000 recipients/month",
       "20 email integrations",
       "10,000 deliverability checks",
-      "1,000 personalized emails/month",
+      "5,000 personalized emails/month",
       "Unlimited campaigns",
       "1 follow-up allowed",
       "Unlimited warm-up emails"
@@ -102,7 +102,7 @@ const plans = [
       "Unlimited recipients",
       "Unlimited integrations",
       "Unlimited deliverability checks",
-      "1,000 personalized emails/month",
+      "Unlimited personalized emails",
       "Unlimited campaigns",
       "2 follow-ups allowed",
       "Unlimited warm-up emails"
