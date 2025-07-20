@@ -10,6 +10,8 @@ import {
   warmupStats,
   warmupProgress,
   usageTracking,
+  emailVerificationTokens,
+  passwordResetTokens,
   type User,
   type UpsertUser,
   type EmailIntegration,
@@ -27,6 +29,10 @@ import {
   type WarmupStats,
   type WarmupProgress,
   type UsageTracking,
+  type EmailVerificationToken,
+  type InsertEmailVerificationToken,
+  type PasswordResetToken,
+  type InsertPasswordResetToken,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sum, count, sql } from "drizzle-orm";
@@ -42,6 +48,19 @@ export interface IStorage {
   updateUserStripeInfo(userId: string, customerId: string, subscriptionId?: string): Promise<User>;
   updateUserGoogleId(userId: string, googleId: string): Promise<User>;
   updateUser(userId: string, userData: Partial<UpsertUser>): Promise<User>;
+  updateUserEmailVerified(userId: string, verified: boolean): Promise<User>;
+
+  // Email verification tokens
+  createEmailVerificationToken(token: InsertEmailVerificationToken): Promise<EmailVerificationToken>;
+  getEmailVerificationToken(token: string): Promise<EmailVerificationToken | undefined>;
+  deleteEmailVerificationToken(token: string): Promise<void>;
+  deleteExpiredEmailVerificationTokens(): Promise<void>;
+
+  // Password reset tokens
+  createPasswordResetToken(token: InsertPasswordResetToken): Promise<PasswordResetToken>;
+  getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
+  deletePasswordResetToken(token: string): Promise<void>;
+  deleteExpiredPasswordResetTokens(): Promise<void>;
 
   // Email integrations
   createEmailIntegration(userId: string, integration: InsertEmailIntegration): Promise<EmailIntegration>;
@@ -164,6 +183,73 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user;
+  }
+
+  async updateUserEmailVerified(userId: string, verified: boolean): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ emailVerified: verified, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  // Email verification token methods
+  async createEmailVerificationToken(token: InsertEmailVerificationToken): Promise<EmailVerificationToken> {
+    const [verificationToken] = await db
+      .insert(emailVerificationTokens)
+      .values(token)
+      .returning();
+    return verificationToken;
+  }
+
+  async getEmailVerificationToken(token: string): Promise<EmailVerificationToken | undefined> {
+    const [verificationToken] = await db
+      .select()
+      .from(emailVerificationTokens)
+      .where(eq(emailVerificationTokens.token, token));
+    return verificationToken;
+  }
+
+  async deleteEmailVerificationToken(token: string): Promise<void> {
+    await db
+      .delete(emailVerificationTokens)
+      .where(eq(emailVerificationTokens.token, token));
+  }
+
+  async deleteExpiredEmailVerificationTokens(): Promise<void> {
+    await db
+      .delete(emailVerificationTokens)
+      .where(sql`expires_at < NOW()`);
+  }
+
+  // Password reset token methods
+  async createPasswordResetToken(token: InsertPasswordResetToken): Promise<PasswordResetToken> {
+    const [resetToken] = await db
+      .insert(passwordResetTokens)
+      .values(token)
+      .returning();
+    return resetToken;
+  }
+
+  async getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    const [resetToken] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(eq(passwordResetTokens.token, token));
+    return resetToken;
+  }
+
+  async deletePasswordResetToken(token: string): Promise<void> {
+    await db
+      .delete(passwordResetTokens)
+      .where(eq(passwordResetTokens.token, token));
+  }
+
+  async deleteExpiredPasswordResetTokens(): Promise<void> {
+    await db
+      .delete(passwordResetTokens)
+      .where(sql`expires_at < NOW()`);
   }
 
   async updateUserPlan(userId: string, plan: string): Promise<User> {

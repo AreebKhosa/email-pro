@@ -9,6 +9,8 @@ import { createStripeCheckout, handleStripeWebhook } from "./services/stripe";
 import { emailValidationService, type EmailValidationResult } from "./services/emailValidation";
 import { warmupService } from "./services/warmup";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import { spawn } from "child_process";
 import passport from "passport";
 import { 
   insertEmailIntegrationSchema,
@@ -285,10 +287,210 @@ async function checkPlanLimits(userId: string, resource: string, amount: number 
   }
 }
 
+// Utility function to send verification/reset emails
+async function sendAuthEmail(type: 'verification' | 'reset', emailConfig: any) {
+  return new Promise((resolve, reject) => {
+    const pythonScript = spawn('python3', ['server/email_auth.py', type, JSON.stringify(emailConfig)]);
+    
+    pythonScript.stdout.on('data', (data) => {
+      console.log(data.toString());
+    });
+    
+    pythonScript.stderr.on('data', (data) => {
+      console.error(data.toString());
+    });
+    
+    pythonScript.on('close', (code) => {
+      if (code === 0) {
+        resolve(true);
+      } else {
+        reject(new Error(`Email sending failed with code ${code}`));
+      }
+    });
+  });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
   setupGoogleAuth();
+
+  // Manual Authentication Routes
+  // User signup
+  app.post('/api/auth/signup', async (req, res) => {
+    try {
+      const { email, password, firstName, lastName } = req.body;
+
+      // Validation
+      if (!email || !password || !firstName || !lastName) {
+        return res.status(400).json({ message: 'All fields are required' });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'User with this email already exists' });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Create user
+      const userId = crypto.randomUUID();
+      const user = await storage.createUser({
+        id: userId,
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        emailVerified: false,
+        plan: 'demo'
+      });
+
+      // Generate verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      await storage.createEmailVerificationToken({
+        userId: user.id,
+        token: verificationToken,
+        expiresAt
+      });
+
+      res.json({ 
+        message: 'Account created successfully. Please check your email to verify your account.',
+        userId: user.id 
+      });
+
+    } catch (error) {
+      console.error('Signup error:', error);
+      res.status(500).json({ message: 'Failed to create account' });
+    }
+  });
+
+  // Email verification
+  app.get('/api/auth/verify-email', async (req, res) => {
+    try {
+      const { token } = req.query;
+
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ message: 'Invalid verification token' });
+      }
+
+      // Clean up expired tokens
+      await storage.deleteExpiredEmailVerificationTokens();
+
+      // Find verification token
+      const verificationToken = await storage.getEmailVerificationToken(token);
+      if (!verificationToken) {
+        return res.status(400).json({ message: 'Invalid or expired verification token' });
+      }
+
+      // Check if token is expired
+      if (verificationToken.expiresAt < new Date()) {
+        await storage.deleteEmailVerificationToken(token);
+        return res.status(400).json({ message: 'Verification token has expired' });
+      }
+
+      // Update user as verified
+      await storage.updateUserEmailVerified(verificationToken.userId, true);
+      
+      // Delete the used token
+      await storage.deleteEmailVerificationToken(token);
+
+      res.json({ message: 'Email verified successfully. You can now log in.' });
+
+    } catch (error) {
+      console.error('Email verification error:', error);
+      res.status(500).json({ message: 'Failed to verify email' });
+    }
+  });
+
+  // Forget password
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+
+      // Find user
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal if user exists or not for security
+        return res.json({ message: 'If an account with this email exists, a password reset link will be sent.' });
+      }
+
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await storage.createPasswordResetToken({
+        userId: user.id,
+        token: resetToken,
+        expiresAt
+      });
+
+      res.json({ message: 'If an account with this email exists, a password reset link will be sent.' });
+
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      res.status(500).json({ message: 'Failed to process password reset request' });
+    }
+  });
+
+  // Reset password
+  app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: 'Token and new password are required' });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+      }
+
+      // Clean up expired tokens
+      await storage.deleteExpiredPasswordResetTokens();
+
+      // Find reset token
+      const resetToken = await storage.getPasswordResetToken(token);
+      if (!resetToken) {
+        return res.status(400).json({ message: 'Invalid or expired reset token' });
+      }
+
+      // Check if token is expired
+      if (resetToken.expiresAt < new Date()) {
+        await storage.deletePasswordResetToken(token);
+        return res.status(400).json({ message: 'Reset token has expired' });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update user password
+      await storage.updateUser(resetToken.userId, { 
+        password: hashedPassword,
+        updatedAt: new Date()
+      });
+      
+      // Delete the used token
+      await storage.deletePasswordResetToken(token);
+
+      res.json({ message: 'Password reset successfully. You can now log in with your new password.' });
+
+    } catch (error) {
+      console.error('Reset password error:', error);
+      res.status(500).json({ message: 'Failed to reset password' });
+    }
+  });
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {

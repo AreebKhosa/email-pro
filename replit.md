@@ -10,6 +10,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Manual User Authentication System (July 20, 2025)
+- Implemented comprehensive email verification system for user signup using website owner's SMTP
+- Added password reset functionality with secure token-based system
+- Created complete database schema with email_verification_tokens and password_reset_tokens tables
+- Added authentication routes: signup, email verification, forgot password, reset password
+- Modified user schema to include password hash, emailVerified flag
+- Enhanced storage interface with token management methods
+- Updated settings page by removing API keys and data tabs as requested
+- Users must verify email before gaining login access
+- Secure authentication flow using bcrypt password hashing and cryptographically secure tokens
+- Email verification tokens expire after 24 hours, password reset tokens expire after 1 hour
+
 ### Real Email Sending Implementation (July 20, 2025)
 - Implemented actual SMTP email sending using Python-based solution replacing problematic nodemailer
 - Added comprehensive email tracking system with open and click tracking

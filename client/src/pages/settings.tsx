@@ -19,13 +19,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { 
   User, 
-  Mail, 
   Bell, 
   Shield, 
-  CreditCard, 
-  Download, 
-  Upload, 
-  Key, 
+  CreditCard,
   AlertTriangle,
   CheckCircle,
   ExternalLink,
@@ -188,8 +184,6 @@ export default function Settings() {
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "security", label: "Security", icon: Shield },
     { id: "billing", label: "Billing", icon: CreditCard },
-    { id: "api", label: "API Keys", icon: Key },
-    { id: "data", label: "Data", icon: Download },
   ];
 
   if (isLoading) {
@@ -596,153 +590,9 @@ export default function Settings() {
               </Card>
             )}
 
-            {activeTab === "api" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>API Keys</CardTitle>
-                  <CardDescription>Manage your API keys for integrations</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      API keys provide access to your account. Keep them secure and don't share them publicly.
-                    </AlertDescription>
-                  </Alert>
 
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h3 className="font-medium text-slate-900">Production API Key</h3>
-                        <p className="text-sm text-slate-600">For production integrations</p>
-                        <p className="text-sm font-mono text-slate-500 mt-1">er_prod_••••••••••••••••</p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                          Copy
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          Regenerate
-                        </Button>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h3 className="font-medium text-slate-900">Test API Key</h3>
-                        <p className="text-sm text-slate-600">For testing and development</p>
-                        <p className="text-sm font-mono text-slate-500 mt-1">er_test_••••••••••••••••</p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                          Copy
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          Regenerate
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
 
-                  <Button>
-                    <Key className="h-4 w-4 mr-2" />
-                    Generate New Key
-                  </Button>
-
-                  <Separator />
-
-                  <div className="space-y-4">
-                    <h3 className="font-medium text-slate-900">API Documentation</h3>
-                    <p className="text-sm text-slate-600">
-                      Learn how to integrate with EmailReach using our REST API
-                    </p>
-                    <Button variant="outline">
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      View Documentation
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {activeTab === "data" && (
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Data Export</CardTitle>
-                    <CardDescription>Download your data in various formats</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h3 className="font-medium text-slate-900">Complete Data Export</h3>
-                          <p className="text-sm text-slate-600">Download all your campaigns, recipients, and analytics</p>
-                        </div>
-                        <Button onClick={handleExportData} disabled={exportDataMutation.isPending}>
-                          <Download className="h-4 w-4 mr-2" />
-                          {exportDataMutation.isPending ? "Exporting..." : "Export"}
-                        </Button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h3 className="font-medium text-slate-900">Campaign Data</h3>
-                          <p className="text-sm text-slate-600">Export only campaign information and statistics</p>
-                        </div>
-                        <Button variant="outline">
-                          <Download className="h-4 w-4 mr-2" />
-                          Export
-                        </Button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h3 className="font-medium text-slate-900">Recipient Lists</h3>
-                          <p className="text-sm text-slate-600">Export all recipient lists and contacts</p>
-                        </div>
-                        <Button variant="outline">
-                          <Download className="h-4 w-4 mr-2" />
-                          Export
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Data Import</CardTitle>
-                    <CardDescription>Import data from other email marketing platforms</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h3 className="font-medium text-slate-900">Import from CSV</h3>
-                          <p className="text-sm text-slate-600">Upload recipient lists from CSV files</p>
-                        </div>
-                        <Button variant="outline">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Import
-                        </Button>
-                      </div>
-
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h3 className="font-medium text-slate-900">Import from Mailchimp</h3>
-                          <p className="text-sm text-slate-600">Connect and import from your Mailchimp account</p>
-                        </div>
-                        <Button variant="outline">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Connect
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
           </div>
         </div>
       </div>
