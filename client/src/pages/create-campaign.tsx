@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ArrowRight, Check, Mail, Users, FileText, Settings, Sparkles, Clock, RotateCw, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import RichTextEditor from "@/components/RichTextEditor";
-import { PersonalizationFieldManager } from "@/components/PersonalizationFieldManager";
+
 
 interface RecipientList {
   id: number;
@@ -451,15 +451,25 @@ export default function CreateCampaign() {
                       minHeight="300px"
                     />
                     
-                    {/* Personalization Field Manager */}
-                    <PersonalizationFieldManager
-                      value={campaignData.body}
-                      onChange={(value) => setCampaignData(prev => ({ ...prev, body: value }))}
-                      dynamicFields={campaignData.dynamicFields}
-                      onDynamicFieldsChange={(fields) => 
-                        setCampaignData(prev => ({ ...prev, dynamicFields: fields }))
-                      }
-                    />
+                    {/* Simple Personalization Help */}
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <p className="text-sm text-blue-700 dark:text-blue-300 mb-2 font-medium">
+                        Available Personalization Fields:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {['{{name}}', '{{lastName}}', '{{companyName}}', '{{position}}', '{{email}}'].map((field) => (
+                          <span 
+                            key={field}
+                            className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs font-mono"
+                          >
+                            {field}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                        These fields will be automatically replaced with recipient data when emails are sent.
+                      </p>
+                    </div>
                     
                     {/* Personalization Settings */}
                     <div className="border-t pt-4 space-y-4">
