@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -76,10 +76,10 @@ const PLAN_LIMITS = {
 };
 
 const STEPS = [
-  { id: 1, title: "Campaign Info", icon: FileText },
-  { id: 2, title: "Select Recipients", icon: Users },
-  { id: 3, title: "Write Email Content", icon: Mail },
-  { id: 4, title: "Sending Settings", icon: Settings },
+  { id: 1, title: "Campaign Info", icon: "FileText" },
+  { id: 2, title: "Select Recipients", icon: "Users" },
+  { id: 3, title: "Write Email Content", icon: "Mail" },
+  { id: 4, title: "Sending Settings", icon: "Settings" },
 ];
 
 export default function CreateCampaign() {
@@ -306,8 +306,14 @@ export default function CreateCampaign() {
                   }`}>
                     {currentStep > step.id ? (
                       <Check className="w-5 h-5" />
+                    ) : step.icon === "FileText" ? (
+                      <FileText className="w-5 h-5" />
+                    ) : step.icon === "Users" ? (
+                      <Users className="w-5 h-5" />
+                    ) : step.icon === "Mail" ? (
+                      <Mail className="w-5 h-5" />
                     ) : (
-                      <step.icon className="w-5 h-5" />
+                      <Settings className="w-5 h-5" />
                     )}
                   </div>
                   <div className="ml-3 min-w-0">
@@ -340,7 +346,12 @@ export default function CreateCampaign() {
             <CardTitle className="flex items-center gap-2">
               {(() => {
                 const currentStepData = STEPS.find(s => s.id === currentStep);
-                return currentStepData ? <currentStepData.icon className="w-5 h-5" /> : null;
+                if (!currentStepData) return null;
+                
+                if (currentStepData.icon === "FileText") return <FileText className="w-5 h-5" />;
+                if (currentStepData.icon === "Users") return <Users className="w-5 h-5" />;
+                if (currentStepData.icon === "Mail") return <Mail className="w-5 h-5" />;
+                return <Settings className="w-5 h-5" />;
               })()}
               {STEPS.find(s => s.id === currentStep)?.title}
             </CardTitle>
