@@ -1,13 +1,30 @@
 import Stripe from 'stripe';
 import { storage } from '../storage';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
-}
+// Initialize Stripe with a placeholder - will be replaced with admin config value
+let stripe: Stripe;
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
-});
+async function getStripeInstance(): Promise<Stripe> {
+  if (!stripe) {
+    // Try to get Stripe secret key from admin config first
+    const stripeSecretKeyConfig = await storage.getConfig('stripe_secret_key');
+    const stripeSecretKey = typeof stripeSecretKeyConfig === 'string' ? stripeSecretKeyConfig : stripeSecretKeyConfig?.configValue;
+    
+    if (stripeSecretKey && stripeSecretKey.trim() !== '') {
+      stripe = new Stripe(stripeSecretKey, {
+        apiVersion: "2023-10-16",
+      });
+    } else if (process.env.STRIPE_SECRET_KEY) {
+      // Fallback to environment variable
+      stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+        apiVersion: "2023-10-16",
+      });
+    } else {
+      throw new Error('Stripe Secret Key not configured');
+    }
+  }
+  return stripe;
+}
 
 async function getPlanPrices() {
   try {
@@ -37,9 +54,11 @@ export async function createStripeCheckout(
   userId: string
 ): Promise<string> {
   try {
-    // Check if Stripe is properly configured
-    const stripeSecretKey = await storage.getConfig('stripe_secret_key');
-    if (!stripeSecretKey || (typeof stripeSecretKey === 'object' && !stripeSecretKey.configValue)) {
+    // Check if Stripe is properly configured first
+    const stripeSecretKeyConfig = await storage.getConfig('stripe_secret_key');
+    const stripeSecretKey = typeof stripeSecretKeyConfig === 'string' ? stripeSecretKeyConfig : stripeSecretKeyConfig?.configValue;
+    
+    if (!stripeSecretKey || stripeSecretKey.trim() === '') {
       throw new Error('Stripe Secret Key not configured. Please add it in the admin panel under Stripe settings.');
     }
 
@@ -49,7 +68,8 @@ export async function createStripeCheckout(
       throw new Error(`Stripe Price ID for ${plan} plan not configured. Please add it in the admin panel under Stripe → Subscription Price IDs.`);
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const stripeInstance = await getStripeInstance();
+    const session = await stripeInstance.checkout.sessions.create({
       customer_email: email,
       payment_method_types: ['card'],
       line_items: [
@@ -86,7 +106,8 @@ export async function handleStripeWebhook(req: any, res: any): Promise<void> {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    const stripeInstance = await getStripeInstance();
+    event = stripeInstance.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err) {
     console.error('Webhook signature verification failed:', err);
     return res.status(400).send(`Webhook Error: ${err}`);
