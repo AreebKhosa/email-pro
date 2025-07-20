@@ -26,17 +26,17 @@ interface DynamicField {
   id: string;
   label: string;
   placeholder: string;
-  icon: React.ReactNode;
+  icon: string;
 }
 
 const DYNAMIC_FIELDS: DynamicField[] = [
-  { id: "{{firstName}}", label: "First Name", placeholder: "John", icon: <User className="w-4 h-4" /> },
-  { id: "{{lastName}}", label: "Last Name", placeholder: "Doe", icon: <User className="w-4 h-4" /> },
-  { id: "{{email}}", label: "Email", placeholder: "john@example.com", icon: <Mail className="w-4 h-4" /> },
-  { id: "{{company}}", label: "Company", placeholder: "Acme Corp", icon: <Building className="w-4 h-4" /> },
-  { id: "{{website}}", label: "Website", placeholder: "acme.com", icon: <Link className="w-4 h-4" /> },
-  { id: "{{location}}", label: "Location", placeholder: "New York", icon: <MapPin className="w-4 h-4" /> },
-  { id: "{{phone}}", label: "Phone", placeholder: "+1234567890", icon: <Phone className="w-4 h-4" /> },
+  { id: "{{firstName}}", label: "First Name", placeholder: "John", icon: "User" },
+  { id: "{{lastName}}", label: "Last Name", placeholder: "Doe", icon: "User" },
+  { id: "{{email}}", label: "Email", placeholder: "john@example.com", icon: "Mail" },
+  { id: "{{company}}", label: "Company", placeholder: "Acme Corp", icon: "Building" },
+  { id: "{{website}}", label: "Website", placeholder: "acme.com", icon: "Link" },
+  { id: "{{location}}", label: "Location", placeholder: "New York", icon: "MapPin" },
+  { id: "{{phone}}", label: "Phone", placeholder: "+1234567890", icon: "Phone" },
 ];
 
 interface RichTextEditorProps {
