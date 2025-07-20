@@ -364,36 +364,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Try to send verification email using admin SMTP settings
       try {
-        const adminIntegrations = await storage.getUserEmailIntegrations('admin');
-        const smtpConfig = adminIntegrations.find(i => i.isVerified && i.connectionType === 'smtp');
+        // Get admin SMTP configuration
+        const smtpHostConfig = await storage.getConfig('smtp_host');
+        const smtpPortConfig = await storage.getConfig('smtp_port');
+        const smtpUsernameConfig = await storage.getConfig('smtp_username');
+        const smtpPasswordConfig = await storage.getConfig('smtp_password');
+        const smtpFromEmailConfig = await storage.getConfig('smtp_from_email');
         
-        if (smtpConfig) {
+        if (smtpHostConfig && smtpUsernameConfig && smtpPasswordConfig && smtpFromEmailConfig) {
+          console.log('Admin SMTP config found:', {
+            host: smtpHostConfig.configValue,
+            port: smtpPortConfig?.configValue,
+            username: smtpUsernameConfig.configValue,
+            fromEmail: smtpFromEmailConfig.configValue
+          });
+          
           // Send verification email
           const verificationLink = `${req.protocol}://${req.get('host')}/verify-email?token=${verificationToken}`;
           
           const emailConfig = {
             smtp_config: {
-              smtp_host: smtpConfig.smtpHost,
-              smtp_port: smtpConfig.smtpPort,
-              smtp_username: smtpConfig.smtpUsername,
-              smtp_password: smtpConfig.smtpPassword,
-              from_email: smtpConfig.email
+              smtp_host: smtpHostConfig.configValue,
+              smtp_port: parseInt(smtpPortConfig?.configValue || '587'),
+              smtp_username: smtpUsernameConfig.configValue,
+              smtp_password: smtpPasswordConfig.configValue,
+              from_email: smtpFromEmailConfig.configValue
             },
             to_email: email,
             verification_link: verificationLink,
             user_name: firstName
           };
 
+          console.log('Attempting to send verification email to:', email);
           await sendAuthEmail('verification', emailConfig);
+          console.log('Verification email sent successfully');
           res.json({ 
             message: 'Account created successfully. Please check your email to verify your account.',
             userId: user.id 
           });
         } else {
+          console.log('Admin SMTP not configured. Missing configs:', {
+            host: !!smtpHostConfig,
+            username: !!smtpUsernameConfig,
+            password: !!smtpPasswordConfig,
+            fromEmail: !!smtpFromEmailConfig
+          });
           // No admin SMTP configured, auto-verify for now
           await storage.updateUserEmailVerified(user.id, true);
           res.json({ 
-            message: 'Account created successfully. You can now log in.',
+            message: 'Account created successfully. You can now log in. (Email verification disabled - no SMTP configured)',
             userId: user.id 
           });
         }
@@ -402,7 +421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Auto-verify if email sending fails
         await storage.updateUserEmailVerified(user.id, true);
         res.json({ 
-          message: 'Account created successfully. You can now log in.',
+          message: 'Account created successfully. You can now log in. (Email verification failed)',
           userId: user.id 
         });
       }
@@ -696,6 +715,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Update config error:', error);
       res.status(500).json({ message: 'Failed to update configuration' });
+    }
+  });
+
+  // Test email sending route
+  app.post('/api/admin/test-email', adminAuth, async (req, res) => {
+    try {
+      const { testEmail } = req.body;
+      
+      if (!testEmail) {
+        return res.status(400).json({ message: 'Test email address is required' });
+      }
+
+      // Get admin SMTP configuration
+      const smtpHostConfig = await storage.getConfig('smtp_host');
+      const smtpPortConfig = await storage.getConfig('smtp_port');
+      const smtpUsernameConfig = await storage.getConfig('smtp_username');
+      const smtpPasswordConfig = await storage.getConfig('smtp_password');
+      const smtpFromEmailConfig = await storage.getConfig('smtp_from_email');
+      
+      if (!smtpHostConfig || !smtpUsernameConfig || !smtpPasswordConfig || !smtpFromEmailConfig) {
+        return res.status(400).json({ message: 'SMTP configuration incomplete' });
+      }
+
+      // Test verification email
+      const testVerificationLink = `${req.protocol}://${req.get('host')}/verify-email?token=test123`;
+      
+      const emailConfig = {
+        smtp_config: {
+          smtp_host: smtpHostConfig.configValue,
+          smtp_port: parseInt(smtpPortConfig?.configValue || '587'),
+          smtp_username: smtpUsernameConfig.configValue,
+          smtp_password: smtpPasswordConfig.configValue,
+          from_email: smtpFromEmailConfig.configValue
+        },
+        to_email: testEmail,
+        verification_link: testVerificationLink,
+        user_name: 'Test User'
+      };
+
+      console.log('Testing email with config:', emailConfig);
+      await sendAuthEmail('verification', emailConfig);
+      console.log('Test email sent successfully');
+      
+      res.json({ message: 'Test email sent successfully' });
+    } catch (error) {
+      console.error('Test email error:', error);
+      res.status(500).json({ message: 'Failed to send test email: ' + error.message });
     }
   });
 
