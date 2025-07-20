@@ -37,7 +37,8 @@ export function PersonalizationFieldManager({
 
   const insertField = (fieldName: string) => {
     const fieldTag = `{{${fieldName}}}`;
-    onChange(value + fieldTag);
+    const newValue = value + ' ' + fieldTag + ' ';
+    onChange(newValue);
     onFieldAdd?.(fieldName);
   };
 
@@ -56,7 +57,9 @@ export function PersonalizationFieldManager({
     
     // Remove field from email content
     const fieldTag = `{{${field}}}`;
-    onChange(value.replace(new RegExp(fieldTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), ''));
+    const escapedTag = fieldTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const newValue = value.replace(new RegExp(`\\s*${escapedTag}\\s*`, 'g'), ' ').trim();
+    onChange(newValue);
   };
 
   return (
