@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import * as nodemailer from 'nodemailer';
 import Imap from 'imap';
 import type { InsertEmailIntegration } from '@shared/schema';
 
@@ -86,34 +86,11 @@ export async function sendEmail(
   trackingPixelId?: string
 ): Promise<boolean> {
   try {
-    console.log(`Setting up SMTP transporter for ${config.email}`);
-    console.log(`SMTP Host: ${config.smtpHost}, Port: ${config.smtpPort}`);
-    
-    const transporter = nodemailer.createTransporter({
-      host: config.smtpHost,
-      port: config.smtpPort,
-      secure: config.smtpPort === 465,
-      auth: {
-        user: config.smtpUsername,
-        pass: config.smtpPassword,
-      },
-      // Add timeout and additional settings
-      connectionTimeout: 10000,
-      greetingTimeout: 5000,
-      socketTimeout: 10000,
-      requireTLS: true,
-      tls: {
-        rejectUnauthorized: false
-      },
-      debug: true, // Enable debug output
-      logger: true, // Log to console
-    });
-
-    // Replace placeholders in the email body with recipient data
-    let personalizedBody = body;
+    console.log(`Sending email using Python SMTP script`);
+    console.log(`From: ${config.email} to: ${to} with subject: ${subject}`);
     
     // Add tracking pixel and wrap links for click tracking
-    let htmlBody = personalizedBody;
+    let htmlBody = body;
     if (trackingPixelId) {
       const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
       
@@ -129,23 +106,67 @@ export async function sendEmail(
       // Add tracking pixel at the end
       htmlBody += `<img src="https://${domain}/api/track/pixel/${trackingPixelId}" width="1" height="1" style="display:none;" alt="" />`;
     }
-
-    const mailOptions = {
-      from: `"${config.fromName || config.email}" <${config.email}>`,
-      to,
-      subject,
-      html: htmlBody,
-      text: htmlBody.replace(/<[^>]*>/g, ''), // Strip HTML for text version
-    };
-
-    console.log(`Sending email from ${config.email} to ${to} with subject: ${subject}`);
-    const result = await transporter.sendMail(mailOptions);
-    console.log(`Email sent successfully! Message ID: ${result.messageId}`);
     
-    return true;
+    // Prepare configuration for Python script
+    const emailConfig = {
+      smtp_host: config.smtpHost,
+      smtp_port: config.smtpPort,
+      smtp_username: config.smtpUsername,
+      smtp_password: config.smtpPassword,
+      from_email: config.email,
+      from_name: config.fromName || config.email,
+      to_email: to,
+      subject: subject,
+      html_body: htmlBody,
+      tracking_pixel_id: trackingPixelId
+    };
+    
+    const configJson = JSON.stringify(emailConfig);
+    
+    // Execute Python email sender
+    const { spawn } = require('child_process');
+    
+    return new Promise((resolve) => {
+      const pythonProcess = spawn('python3', [
+        './server/email_sender.py',
+        '--config',
+        configJson
+      ]);
+      
+      let output = '';
+      let errorOutput = '';
+      
+      pythonProcess.stdout.on('data', (data) => {
+        const message = data.toString();
+        output += message;
+        console.log(`Python SMTP: ${message.trim()}`);
+      });
+      
+      pythonProcess.stderr.on('data', (data) => {
+        const message = data.toString();
+        errorOutput += message;
+        console.error(`Python SMTP Error: ${message.trim()}`);
+      });
+      
+      pythonProcess.on('close', (code) => {
+        if (code === 0 && output.includes('SUCCESS')) {
+          console.log(`Email sent successfully to ${to}`);
+          resolve(true);
+        } else {
+          console.error(`Failed to send email to ${to}. Exit code: ${code}`);
+          console.error(`Error output: ${errorOutput}`);
+          resolve(false);
+        }
+      });
+      
+      pythonProcess.on('error', (error) => {
+        console.error(`Failed to start Python email sender: ${error.message}`);
+        resolve(false);
+      });
+    });
+    
   } catch (error) {
-    console.error('Error sending email:', error);
-    console.error('Error details:', error.message);
+    console.error('Error in email sending process:', error);
     return false;
   }
 }
