@@ -23,16 +23,24 @@ def send_email(smtp_host, smtp_port, smtp_username, smtp_password, from_email, f
         
         # Add tracking pixel if provided
         if tracking_pixel_id:
-            # Replace links with tracking URLs and add tracking pixel
-            domain = "localhost:5000"  # This will be updated dynamically
+            # Get the correct domain from environment or use default
+            import os
+            replit_domains = os.environ.get('REPLIT_DOMAINS', 'localhost:5000')
+            domain = replit_domains.split(',')[0] if ',' in replit_domains else replit_domains
             
             # Simple link replacement for tracking (basic implementation)
             tracked_html = html_body
             
-            # Add tracking pixel at the end
-            tracked_html += f'<img src="https://{domain}/api/track/pixel/{tracking_pixel_id}" width="1" height="1" style="display:none;" alt="" />'
+            # Add tracking pixel at the end with proper domain
+            if domain.startswith('localhost'):
+                protocol = 'http'
+            else:
+                protocol = 'https'
+            
+            tracked_html += f'<img src="{protocol}://{domain}/api/track/pixel/{tracking_pixel_id}" width="1" height="1" style="display:none;" alt="" />'
             
             html_body = tracked_html
+            print(f"Added tracking pixel: {protocol}://{domain}/api/track/pixel/{tracking_pixel_id}")
         
         # Create HTML part
         html_part = MIMEText(html_body, 'html')

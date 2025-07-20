@@ -95,12 +95,18 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
       // Create tracking pixel ID for open tracking
       const trackingPixelId = `${campaignId}_${recipient.id}_${Date.now()}`;
       
-      // Replace placeholders with recipient data
+      // Replace placeholders with recipient data - using correct field names from schema
       let personalizedBody = emailBody;
       personalizedBody = personalizedBody.replace(/\{\{name\}\}/g, recipient.name || '');
+      personalizedBody = personalizedBody.replace(/\{\{lastName\}\}/g, recipient.lastName || '');
       personalizedBody = personalizedBody.replace(/\{\{email\}\}/g, recipient.email || '');
-      personalizedBody = personalizedBody.replace(/\{\{company\}\}/g, recipient.company || '');
-      personalizedBody = personalizedBody.replace(/\{\{website\}\}/g, recipient.website || '');
+      personalizedBody = personalizedBody.replace(/\{\{company\}\}/g, recipient.companyName || '');
+      personalizedBody = personalizedBody.replace(/\{\{companyName\}\}/g, recipient.companyName || '');
+      personalizedBody = personalizedBody.replace(/\{\{website\}\}/g, recipient.websiteLink || '');
+      personalizedBody = personalizedBody.replace(/\{\{websiteLink\}\}/g, recipient.websiteLink || '');
+      personalizedBody = personalizedBody.replace(/\{\{position\}\}/g, recipient.position || '');
+      
+      console.log(`Personalizing email for ${recipient.name} ${recipient.lastName} (${recipient.email}) from ${recipient.companyName || 'Unknown Company'}`);
       
       // Send the email using SMTP
       const emailSent = await sendEmail(
@@ -1379,6 +1385,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).send('Tracking error');
     }
   });
+
+
 
   const httpServer = createServer(app);
   return httpServer;

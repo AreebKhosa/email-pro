@@ -653,6 +653,64 @@ export class DatabaseStorage implements IStorage {
     return updatedUsage;
   }
 
+  // Campaign email tracking methods
+  async getCampaignEmailByTracking(trackingPixelId: string): Promise<CampaignEmail | undefined> {
+    const [campaignEmail] = await db
+      .select()
+      .from(campaignEmails)
+      .where(eq(campaignEmails.trackingPixelId, trackingPixelId));
+    return campaignEmail;
+  }
+
+  async updateCampaignEmail(id: number, updates: Partial<CampaignEmail>): Promise<CampaignEmail> {
+    const [updatedEmail] = await db
+      .update(campaignEmails)
+      .set({ ...updates, createdAt: new Date() })
+      .where(eq(campaignEmails.id, id))
+      .returning();
+    return updatedEmail;
+  }
+
+  async markCampaignEmailAsOpened(trackingPixelId: string): Promise<void> {
+    const campaignEmail = await this.getCampaignEmailByTracking(trackingPixelId);
+    if (campaignEmail && !campaignEmail.openedAt) {
+      await this.updateCampaignEmail(campaignEmail.id, {
+        status: 'opened',
+        openedAt: new Date(),
+      });
+      
+      // Update campaign stats
+      const [campaignId] = trackingPixelId.split('_');
+      if (campaignId) {
+        const campaign = await this.getCampaign(parseInt(campaignId));
+        if (campaign) {
+          const newOpenedCount = (campaign.openedCount || 0) + 1;
+          await this.updateCampaignStats(parseInt(campaignId), { openedCount: newOpenedCount });
+        }
+      }
+    }
+  }
+
+  async markCampaignEmailAsClicked(trackingPixelId: string): Promise<void> {
+    const campaignEmail = await this.getCampaignEmailByTracking(trackingPixelId);
+    if (campaignEmail) {
+      await this.updateCampaignEmail(campaignEmail.id, {
+        status: 'clicked',
+        clickedAt: new Date(),
+      });
+      
+      // Update campaign stats
+      const [campaignId] = trackingPixelId.split('_');
+      if (campaignId) {
+        const campaign = await this.getCampaign(parseInt(campaignId));
+        if (campaign) {
+          const newClickedCount = (campaign.clickedCount || 0) + 1;
+          await this.updateCampaignStats(parseInt(campaignId), { clickedCount: newClickedCount });
+        }
+      }
+    }
+  }
+
   // Dashboard stats
   async getDashboardStats(userId: string): Promise<{
     totalCampaigns: number;
