@@ -223,7 +223,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
             }}
             className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
           >
-            {{name}}
+            {`{{name}}`}
           </button>
           <button
             type="button"
@@ -243,7 +243,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
             }}
             className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
           >
-            {{lastName}}
+            {`{{lastName}}`}
           </button>
           <button
             type="button"
@@ -263,7 +263,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
             }}
             className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
           >
-            {{companyName}}
+            {`{{companyName}}`}
           </button>
           <button
             type="button"
@@ -283,7 +283,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
             }}
             className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
           >
-            {{position}}
+            {`{{position}}`}
           </button>
           <button
             type="button"
@@ -303,7 +303,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
             }}
             className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
           >
-            {{email}}
+            {`{{email}}`}
           </button>
         </div>
       </div>
