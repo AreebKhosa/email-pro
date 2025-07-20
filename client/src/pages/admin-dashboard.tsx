@@ -339,6 +339,56 @@ export default function AdminDashboard() {
                           </Badge>
                         </div>
                       </div>
+
+                      {/* Price ID Configuration */}
+                      <div className="space-y-4 mt-6 p-4 border rounded-lg bg-gray-50">
+                        <h4 className="text-lg font-medium">Subscription Price IDs</h4>
+                        <p className="text-sm text-gray-600">Configure Stripe Price IDs for each subscription plan. Get these from your Stripe Dashboard → Products.</p>
+                        
+                        <div className="grid grid-cols-1 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="stripeStarterPriceId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Starter Plan Price ID</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="price_..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="stripeProPriceId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Pro Plan Price ID</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="price_..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="stripePremiumPriceId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Premium Plan Price ID</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="price_..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
