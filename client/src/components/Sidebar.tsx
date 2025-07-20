@@ -22,14 +22,14 @@ interface SidebarProps {
 }
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: Home },
-  { name: "Campaigns", href: "/campaigns", icon: Mail },
-  { name: "Recipients", href: "/recipients", icon: Users },
-  { name: "Email Integrations", href: "/email-integrations", icon: UserCheck },
-  { name: "Personalization", href: "/personalization", icon: Palette },
-  { name: "Warm-up", href: "/warm-up", icon: Zap },
-  { name: "Deliverability", href: "/deliverability", icon: BarChart3 },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Dashboard", href: "/", iconName: "Home" },
+  { name: "Campaigns", href: "/campaigns", iconName: "Mail" },
+  { name: "Recipients", href: "/recipients", iconName: "Users" },
+  { name: "Email Integrations", href: "/email-integrations", iconName: "UserCheck" },
+  { name: "Personalization", href: "/personalization", iconName: "Palette" },
+  { name: "Warm-up", href: "/warm-up", iconName: "Zap" },
+  { name: "Deliverability", href: "/deliverability", iconName: "BarChart3" },
+  { name: "Settings", href: "/settings", iconName: "Settings" },
 ];
 
 export default function Sidebar({ className }: SidebarProps) {
@@ -110,7 +110,14 @@ export default function Sidebar({ className }: SidebarProps) {
                       )}
                       onClick={() => setIsMobileOpen(false)}
                     >
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      {item.iconName === "Home" && <Home className="h-5 w-5 flex-shrink-0" />}
+                      {item.iconName === "Mail" && <Mail className="h-5 w-5 flex-shrink-0" />}
+                      {item.iconName === "Users" && <Users className="h-5 w-5 flex-shrink-0" />}
+                      {item.iconName === "UserCheck" && <UserCheck className="h-5 w-5 flex-shrink-0" />}
+                      {item.iconName === "Palette" && <Palette className="h-5 w-5 flex-shrink-0" />}
+                      {item.iconName === "Zap" && <Zap className="h-5 w-5 flex-shrink-0" />}
+                      {item.iconName === "BarChart3" && <BarChart3 className="h-5 w-5 flex-shrink-0" />}
+                      {item.iconName === "Settings" && <Settings className="h-5 w-5 flex-shrink-0" />}
                       {!isCollapsed && (
                         <span className="truncate">{item.name}</span>
                       )}
