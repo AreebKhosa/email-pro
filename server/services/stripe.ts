@@ -36,8 +36,8 @@ export async function createStripeCheckout(
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost'}/dashboard?upgrade=success`,
-      cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost'}/upgrade?canceled=true`,
+      success_url: `${process.env.NODE_ENV === 'production' ? 'https://' : 'http://'}${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}/dashboard?upgrade=success`,
+      cancel_url: `${process.env.NODE_ENV === 'production' ? 'https://' : 'http://'}${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}/upgrade?canceled=true`,
       metadata: {
         userId,
         plan,
