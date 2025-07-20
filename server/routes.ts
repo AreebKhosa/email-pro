@@ -74,17 +74,59 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
       const integration = await storage.getEmailIntegration(campaign.emailIntegrationId);
       if (!integration) continue;
       
-      // Send email - for now just log and track, actual sending will be implemented later
+      // Send actual email using SMTP
       const emailBody = recipient.personalizedEmail || campaign.body;
-      console.log(`Sending email to ${recipient.email} with subject: ${campaign.subject}`);
       
-      // Simulate successful email sending
-      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to simulate sending
+      // Create tracking pixel ID for open tracking
+      const trackingPixelId = `${campaignId}_${recipient.id}_${Date.now()}`;
+      
+      // Replace placeholders with recipient data
+      let personalizedBody = emailBody;
+      personalizedBody = personalizedBody.replace(/\{\{name\}\}/g, recipient.name || '');
+      personalizedBody = personalizedBody.replace(/\{\{email\}\}/g, recipient.email || '');
+      personalizedBody = personalizedBody.replace(/\{\{company\}\}/g, recipient.company || '');
+      personalizedBody = personalizedBody.replace(/\{\{website\}\}/g, recipient.website || '');
+      
+      // Send the email using SMTP
+      const emailSent = await sendEmail(
+        integration,
+        recipient.email,
+        campaign.subject,
+        personalizedBody,
+        trackingPixelId
+      );
+      
+      if (!emailSent) {
+        console.error(`Failed to send email to ${recipient.email}`);
+        continue; // Skip to next recipient
+      }
+
+      // Create campaign email record for tracking
+      try {
+        await storage.createCampaignEmail({
+          campaignId,
+          recipientId: recipient.id,
+          status: 'sent',
+          trackingPixelId: trackingPixelId,
+          sentAt: new Date(),
+        });
+      } catch (error) {
+        console.error('Error creating campaign email record:', error);
+      }
       
       // Update campaign stats - increment sent count
       const currentCampaign = await storage.getCampaign(campaignId);
       const newSentCount = (currentCampaign?.sentCount || 0) + 1;
       await storage.updateCampaignStats(campaignId, { sentCount: newSentCount });
+      
+      // Update user usage tracking
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const usage = await storage.getCurrentMonthUsage(campaign.userId);
+      const currentEmailsSent = usage?.emailsSent || 0;
+      await storage.updateUsage(campaign.userId, currentMonth, {
+        emailsSent: currentEmailsSent + 1
+      });
+      
       sentToday++;
       
       // Add delay between emails
@@ -1246,6 +1288,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error processing warmup action:", error);
       res.status(500).json({ message: "Failed to process action" });
+    }
+  });
+
+  // Email tracking endpoints
+  app.get('/api/track/pixel/:trackingId', async (req, res) => {
+    try {
+      const { trackingId } = req.params;
+      console.log(`Email opened - tracking ID: ${trackingId}`);
+      
+      // Parse tracking ID: campaignId_recipientId_timestamp
+      const [campaignId, recipientId] = trackingId.split('_');
+      
+      if (campaignId && recipientId) {
+        // Update campaign stats for email open
+        const campaign = await storage.getCampaign(parseInt(campaignId));
+        if (campaign) {
+          const newOpenedCount = (campaign.openedCount || 0) + 1;
+          await storage.updateCampaignStats(parseInt(campaignId), { 
+            openedCount: newOpenedCount 
+          });
+        }
+      }
+      
+      // Return 1x1 transparent pixel
+      const pixel = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+        'base64'
+      );
+      
+      res.set({
+        'Content-Type': 'image/png',
+        'Content-Length': pixel.length,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
+      res.send(pixel);
+    } catch (error) {
+      console.error('Error tracking email open:', error);
+      res.status(200).send(''); // Don't break email display if tracking fails
+    }
+  });
+
+  app.get('/api/track/click/:trackingId', async (req, res) => {
+    try {
+      const { trackingId } = req.params;
+      const { url } = req.query;
+      
+      console.log(`Email link clicked - tracking ID: ${trackingId}, URL: ${url}`);
+      
+      // Parse tracking ID: campaignId_recipientId_timestamp
+      const [campaignId, recipientId] = trackingId.split('_');
+      
+      if (campaignId && recipientId) {
+        // Update campaign stats for email click
+        const campaign = await storage.getCampaign(parseInt(campaignId));
+        if (campaign) {
+          const newClickedCount = (campaign.clickedCount || 0) + 1;
+          await storage.updateCampaignStats(parseInt(campaignId), { 
+            clickedCount: newClickedCount 
+          });
+        }
+      }
+      
+      // Redirect to the original URL
+      if (url && typeof url === 'string') {
+        res.redirect(url);
+      } else {
+        res.status(400).send('Invalid URL');
+      }
+    } catch (error) {
+      console.error('Error tracking email click:', error);
+      res.status(500).send('Tracking error');
     }
   });
 

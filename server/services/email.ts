@@ -86,6 +86,9 @@ export async function sendEmail(
   trackingPixelId?: string
 ): Promise<boolean> {
   try {
+    console.log(`Setting up SMTP transporter for ${config.email}`);
+    console.log(`SMTP Host: ${config.smtpHost}, Port: ${config.smtpPort}`);
+    
     const transporter = nodemailer.createTransporter({
       host: config.smtpHost,
       port: config.smtpPort,
@@ -94,25 +97,55 @@ export async function sendEmail(
         user: config.smtpUsername,
         pass: config.smtpPassword,
       },
+      // Add timeout and additional settings
+      connectionTimeout: 10000,
+      greetingTimeout: 5000,
+      socketTimeout: 10000,
+      requireTLS: true,
+      tls: {
+        rejectUnauthorized: false
+      },
+      debug: true, // Enable debug output
+      logger: true, // Log to console
     });
 
-    // Add tracking pixel if provided
-    let htmlBody = body;
+    // Replace placeholders in the email body with recipient data
+    let personalizedBody = body;
+    
+    // Add tracking pixel and wrap links for click tracking
+    let htmlBody = personalizedBody;
     if (trackingPixelId) {
-      htmlBody += `<img src="${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost'}/api/track/pixel/${trackingPixelId}" width="1" height="1" style="display:none;" />`;
+      const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+      
+      // Wrap all links with click tracking
+      htmlBody = htmlBody.replace(
+        /<a\s+([^>]*?)href=["']([^"']+)["']([^>]*?)>/gi,
+        (match, beforeHref, url, afterHref) => {
+          const trackingUrl = `https://${domain}/api/track/click/${trackingPixelId}?url=${encodeURIComponent(url)}`;
+          return `<a ${beforeHref}href="${trackingUrl}"${afterHref}>`;
+        }
+      );
+      
+      // Add tracking pixel at the end
+      htmlBody += `<img src="https://${domain}/api/track/pixel/${trackingPixelId}" width="1" height="1" style="display:none;" alt="" />`;
     }
 
     const mailOptions = {
-      from: config.email,
+      from: `"${config.fromName || config.email}" <${config.email}>`,
       to,
       subject,
       html: htmlBody,
+      text: htmlBody.replace(/<[^>]*>/g, ''), // Strip HTML for text version
     };
 
-    await transporter.sendMail(mailOptions);
+    console.log(`Sending email from ${config.email} to ${to} with subject: ${subject}`);
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Email sent successfully! Message ID: ${result.messageId}`);
+    
     return true;
   } catch (error) {
     console.error('Error sending email:', error);
+    console.error('Error details:', error.message);
     return false;
   }
 }
