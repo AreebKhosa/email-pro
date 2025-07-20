@@ -21,36 +21,33 @@ def send_email(smtp_host, smtp_port, smtp_username, smtp_password, from_email, f
         msg['To'] = to_email
         msg['Subject'] = subject
         
-        # Add tracking pixel if provided
-        if tracking_pixel_id:
-            # Get the correct domain from environment or use default
-            import os
-            replit_domains = os.environ.get('REPLIT_DOMAINS', 'localhost:5000')
-            domain = replit_domains.split(',')[0] if ',' in replit_domains else replit_domains
-            
-            # Simple link replacement for tracking (basic implementation)
-            tracked_html = html_body
-            
-            # Add tracking pixel at the end with proper domain
-            if domain.startswith('localhost'):
-                protocol = 'http'
-            else:
-                protocol = 'https'
-            
-            tracked_html += f'<img src="{protocol}://{domain}/api/track/pixel/{tracking_pixel_id}" width="1" height="1" style="display:none;" alt="" />'
-            
-            html_body = tracked_html
-            print(f"Added tracking pixel: {protocol}://{domain}/api/track/pixel/{tracking_pixel_id}")
+        # Tracking pixel is already added in the backend, so we don't add it here
+        # Just use the html_body as provided
         
-        # Create HTML part
-        html_part = MIMEText(html_body, 'html')
-        msg.attach(html_part)
+        # Wrap HTML content in proper HTML structure for better email client compatibility
+        if not html_body.strip().startswith('<!DOCTYPE') and not html_body.strip().startswith('<html'):
+            html_body = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{subject}</title>
+</head>
+<body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    {html_body}
+</body>
+</html>"""
         
-        # Create text part (strip HTML)
+        # Create text part (strip HTML tags for plain text version)
         import re
         text_body = re.sub('<[^<]+?>', '', html_body)
+        text_body = re.sub(r'\s+', ' ', text_body).strip()  # Clean up whitespace
         text_part = MIMEText(text_body, 'plain')
         msg.attach(text_part)
+        
+        # Create HTML part (this should be last for email clients to prefer HTML)
+        html_part = MIMEText(html_body, 'html')
+        msg.attach(html_part)
         
         # Setup SMTP connection
         if smtp_port == 465:
