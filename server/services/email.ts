@@ -1,5 +1,6 @@
 import * as nodemailer from 'nodemailer';
 import Imap from 'imap';
+import { spawn } from 'child_process';
 import type { InsertEmailIntegration } from '@shared/schema';
 
 export async function validateEmailIntegration(config: InsertEmailIntegration): Promise<boolean> {
@@ -124,7 +125,6 @@ export async function sendEmail(
     const configJson = JSON.stringify(emailConfig);
     
     // Execute Python email sender
-    const { spawn } = require('child_process');
     
     return new Promise((resolve) => {
       const pythonProcess = spawn('python3', [
