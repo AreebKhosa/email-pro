@@ -1020,7 +1020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (googleClientId && googleClientSecret) {
-        const GoogleStrategy = require('passport-google-oauth20').Strategy;
+        const { Strategy: GoogleStrategy } = await import('passport-google-oauth20');
         
         passport.use(new GoogleStrategy({
           clientID: googleClientId,
@@ -1068,7 +1068,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Initialize Google OAuth
-  await setupGoogleOAuth();
+  setupGoogleOAuth();
 
   // Google OAuth routes
   app.get('/api/auth/google', async (req, res, next) => {
