@@ -9,11 +9,27 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
 
-const planPrices = {
-  starter: 'price_1234567890', // Replace with actual Stripe price IDs
-  pro: 'price_1234567891',
-  premium: 'price_1234567892',
-};
+async function getPlanPrices() {
+  try {
+    // Try to get prices from admin config first
+    const starterPrice = await storage.getConfig('stripe_starter_price_id');
+    const proPrice = await storage.getConfig('stripe_pro_price_id');
+    const premiumPrice = await storage.getConfig('stripe_premium_price_id');
+    
+    return {
+      starter: typeof starterPrice === 'string' ? starterPrice : starterPrice?.configValue || null,
+      pro: typeof proPrice === 'string' ? proPrice : proPrice?.configValue || null,
+      premium: typeof premiumPrice === 'string' ? premiumPrice : premiumPrice?.configValue || null,
+    };
+  } catch (error) {
+    console.log('Stripe price IDs not configured in admin panel');
+    return {
+      starter: null,
+      pro: null,
+      premium: null,
+    };
+  }
+}
 
 export async function createStripeCheckout(
   email: string,
@@ -21,9 +37,10 @@ export async function createStripeCheckout(
   userId: string
 ): Promise<string> {
   try {
+    const planPrices = await getPlanPrices();
     const priceId = planPrices[plan as keyof typeof planPrices];
     if (!priceId) {
-      throw new Error('Invalid plan selected');
+      throw new Error(`Stripe price ID not configured for ${plan} plan. Please configure it in the admin panel.`);
     }
 
     const session = await stripe.checkout.sessions.create({
