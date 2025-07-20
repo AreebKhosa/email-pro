@@ -22,58 +22,58 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
-// Plan limits configuration
+// Plan limits configuration matching your specifications
 const planLimits = {
   demo: {
     emailsPerMonth: 1000,
-    recipients: 1000,
+    recipients: 300,
     emailIntegrations: 1,
-    deliverabilityChecks: 10,
-    personalizedEmails: 30,
-    followUps: false,
+    deliverabilityChecks: 150,
+    personalizedEmails: 100,
+    followUps: 0,
     campaigns: 3,
-    warmupEmails: 10,
+    warmupEmails: 1,
     emailAccounts: 1,
     dailyLimit: 50,
     emailRotation: false
   },
   starter: {
-    emailsPerMonth: 5000,
-    recipients: 10000,
-    emailIntegrations: 3,
-    deliverabilityChecks: 100,
-    personalizedEmails: 1000,
-    followUps: true,
-    campaigns: 10,
-    warmupEmails: 50,
-    emailAccounts: 3,
-    dailyLimit: 200,
+    emailsPerMonth: 20000,
+    recipients: 6000,
+    emailIntegrations: 4,
+    deliverabilityChecks: 2000,
+    personalizedEmails: 2000,
+    followUps: 1,
+    campaigns: Infinity,
+    warmupEmails: 2500,
+    emailAccounts: 4,
+    dailyLimit: 667, // 20k/30 days
     emailRotation: true
   },
   pro: {
-    emailsPerMonth: 25000,
-    recipients: 100000,
-    emailIntegrations: 10,
-    deliverabilityChecks: 1000,
-    personalizedEmails: 1000,
-    followUps: true,
-    campaigns: 50,
-    warmupEmails: 200,
-    emailAccounts: 10,
-    dailyLimit: 1000,
+    emailsPerMonth: 75000,
+    recipients: 25000,
+    emailIntegrations: 20,
+    deliverabilityChecks: 10000,
+    personalizedEmails: 5000,
+    followUps: 1,
+    campaigns: Infinity,
+    warmupEmails: Infinity,
+    emailAccounts: 20,
+    dailyLimit: 2500, // 75k/30 days
     emailRotation: true
   },
   premium: {
-    emailsPerMonth: 100000,
-    recipients: 500000,
-    emailIntegrations: 25,
-    deliverabilityChecks: 10000,
-    personalizedEmails: 1000,
-    followUps: true,
-    campaigns: 200,
-    warmupEmails: 1000,
-    emailAccounts: 20,
-    dailyLimit: 5000,
+    emailsPerMonth: Infinity,
+    recipients: Infinity,
+    emailIntegrations: Infinity,
+    deliverabilityChecks: Infinity,
+    personalizedEmails: Infinity,
+    followUps: 2,
+    campaigns: Infinity,
+    warmupEmails: Infinity,
+    emailAccounts: Infinity,
+    dailyLimit: Infinity,
     emailRotation: true
   }
 };
@@ -388,10 +388,25 @@ async function sendVerificationEmail(config: {
   });
 }
 
+// Enhanced authentication middleware for manual users
+const isAuthenticated = (req: any, res: any, next: any) => {
+  // Check for OAuth users
+  if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+    return next();
+  }
+  
+  // Check for manual auth users in session
+  if (req.session?.manualUser) {
+    req.user = req.session.manualUser;
+    return next();
+  }
+  
+  return res.status(401).json({ message: "Unauthorized" });
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
+  // Auth middleware setup
   await setupAuth(app);
-  setupGoogleAuth();
 
   // Manual Authentication Routes
   // User signup
@@ -1005,7 +1020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (googleClientId && googleClientSecret) {
-        const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
+        const GoogleStrategy = require('passport-google-oauth20').Strategy;
         
         passport.use(new GoogleStrategy({
           clientID: googleClientId,
@@ -1328,7 +1343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id;
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id;
       if (!userId) {
         return res.status(401).json({ message: "User ID not found" });
       }
@@ -1388,7 +1403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User stats for usage tracking
   app.get('/api/user/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id;
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id;
       if (!userId) {
         return res.status(401).json({ message: "User ID not found" });
       }
@@ -1412,7 +1427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email integrations
   app.get('/api/email-integrations', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id;
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id;
       if (!userId) {
         return res.status(401).json({ message: "User ID not found" });
       }
@@ -1496,7 +1511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Recipient lists
   app.get('/api/recipient-lists', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const lists = await storage.getUserRecipientLists(userId);
       res.json(lists);
     } catch (error) {
@@ -1507,7 +1522,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/recipient-lists', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const data = insertRecipientListSchema.parse(req.body);
       const list = await storage.createRecipientList(userId, data);
       res.json(list);
@@ -1530,7 +1545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/recipient-lists/:id/recipients', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const listId = parseInt(req.params.id);
       const { recipients: recipientData } = req.body;
 
@@ -1563,7 +1578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Deliverability checking
   app.post('/api/recipients/:id/check-deliverability', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const recipientId = parseInt(req.params.id);
 
       // Check plan limits
@@ -1623,7 +1638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/recipient-lists/:id/check-deliverability', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const listId = parseInt(req.params.id);
       
       const recipients = await storage.getListRecipients(listId);
@@ -1677,7 +1692,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Remove invalid emails from list
   app.post('/api/recipient-lists/:id/remove-invalid', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const listId = parseInt(req.params.id);
       
       const removedCount = await storage.removeInvalidRecipients(listId);
@@ -1692,7 +1707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Export clean list (valid emails only)
   app.get('/api/recipient-lists/:id/export-clean', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const listId = parseInt(req.params.id);
       
       const cleanRecipients = await storage.getCleanRecipients(listId);
@@ -1722,7 +1737,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteRecipient(recipientId);
       
       // Update recipient counts for all lists (but don't decrease upload usage)
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       await storage.updateAllRecipientCounts(userId);
       
       res.json({ success: true });
@@ -1735,7 +1750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete recipient list
   app.delete('/api/recipient-lists/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const listId = parseInt(req.params.id);
       
       // First delete all recipients in the list
@@ -1756,7 +1771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get recently uploaded recipients (last 5 across all lists)
   app.get('/api/recipients/recent', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const recentRecipients = await storage.getRecentRecipients(userId, 5);
       res.json(recentRecipients);
     } catch (error) {
@@ -1782,7 +1797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email personalization - single recipient
   app.post('/api/recipients/:id/personalize', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const recipientId = parseInt(req.params.id);
       const { emailType, tone, maxCharacters, callToAction } = req.body;
 
@@ -1841,7 +1856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/recipient-lists/:id/personalize', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const listId = parseInt(req.params.id);
       const { emailType, tone, maxCharacters, callToAction } = req.body;
 
@@ -1923,7 +1938,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update recipient list with personalized emails
   app.post('/api/recipient-lists/:targetListId/update-with-personalized', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const targetListId = parseInt(req.params.targetListId);
       const { sourceListId } = req.body;
 
@@ -2002,7 +2017,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Campaigns
   app.get('/api/campaigns', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id;
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id;
       if (!userId) {
         return res.status(401).json({ message: "User ID not found" });
       }
@@ -2016,7 +2031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/campaigns', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id;
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id;
       if (!userId) {
         return res.status(401).json({ message: "User ID not found" });
       }
@@ -2089,7 +2104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update campaign status
   app.patch('/api/campaigns/:id/status', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id;
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id;
       if (!userId) {
         return res.status(401).json({ message: "User ID not found" });
       }
@@ -2154,7 +2169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/campaigns/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id;
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id;
       if (!userId) {
         return res.status(401).json({ message: "User ID not found" });
       }
@@ -2178,7 +2193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update campaign content
   app.patch('/api/campaigns/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id;
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id;
       if (!userId) {
         return res.status(401).json({ message: "User ID not found" });
       }
@@ -2213,7 +2228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/campaigns/:id/follow-ups', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const campaignId = parseInt(req.params.id);
       
       // Check plan limits for follow-ups
@@ -2237,7 +2252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stripe integration
   app.post('/api/create-subscription', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const { plan } = req.body;
       
       const user = await storage.getUser(userId);
@@ -2265,7 +2280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Warmup API routes
   app.get('/api/warmup/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const stats = await warmupService.getWarmupStats(userId);
       res.json(stats);
     } catch (error) {
@@ -2277,7 +2292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/warmup/initialize/:integrationId', isAuthenticated, async (req: any, res) => {
     try {
       const { integrationId } = req.params;
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
 
       // Verify the integration belongs to the user
       const integration = await storage.getUserEmailIntegrations(userId);
@@ -2297,7 +2312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/warmup/send', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.user.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       await warmupService.sendWarmupEmails(userId);
       res.json({ message: "Warmup emails sent successfully" });
     } catch (error) {
