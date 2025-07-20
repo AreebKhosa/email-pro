@@ -88,8 +88,16 @@ export async function createStripeCheckout(
     });
 
     return session.url || '';
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating Stripe checkout session:', error);
+    
+    // Provide more specific error messages
+    if (error.code === 'resource_missing' && error.param?.includes('price')) {
+      throw new Error(`Invalid Stripe Price ID for ${plan} plan. Please configure real Price IDs in the admin panel.`);
+    } else if (error.type === 'invalid_request_error') {
+      throw new Error(`Stripe configuration error: ${error.message}`);
+    }
+    
     throw new Error('Failed to create checkout session');
   }
 }
