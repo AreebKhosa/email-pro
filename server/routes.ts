@@ -361,13 +361,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt
       });
 
-      // For now, auto-verify users since email sending requires admin SMTP setup
-      await storage.updateUserEmailVerified(user.id, true);
+      // Try to send verification email using admin SMTP settings
+      try {
+        const adminIntegrations = await storage.getUserEmailIntegrations('admin');
+        const smtpConfig = adminIntegrations.find(i => i.isVerified && i.connectionType === 'smtp');
+        
+        if (smtpConfig) {
+          // Send verification email
+          const verificationLink = `${req.protocol}://${req.get('host')}/verify-email?token=${verificationToken}`;
+          
+          const emailConfig = {
+            smtp_config: {
+              smtp_host: smtpConfig.smtpHost,
+              smtp_port: smtpConfig.smtpPort,
+              smtp_username: smtpConfig.smtpUsername,
+              smtp_password: smtpConfig.smtpPassword,
+              from_email: smtpConfig.email
+            },
+            to_email: email,
+            verification_link: verificationLink,
+            user_name: firstName
+          };
 
-      res.json({ 
-        message: 'Account created successfully. You can now log in.',
-        userId: user.id 
-      });
+          await sendAuthEmail('verification', emailConfig);
+          res.json({ 
+            message: 'Account created successfully. Please check your email to verify your account.',
+            userId: user.id 
+          });
+        } else {
+          // No admin SMTP configured, auto-verify for now
+          await storage.updateUserEmailVerified(user.id, true);
+          res.json({ 
+            message: 'Account created successfully. You can now log in.',
+            userId: user.id 
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Auto-verify if email sending fails
+        await storage.updateUserEmailVerified(user.id, true);
+        res.json({ 
+          message: 'Account created successfully. You can now log in.',
+          userId: user.id 
+        });
+      }
 
     } catch (error) {
       console.error('Signup error:', error);
@@ -497,6 +534,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Forgot password error:', error);
       res.status(500).json({ message: 'Failed to process password reset request' });
+    }
+  });
+
+  // Admin setup route
+  app.post('/api/admin/setup', async (req, res) => {
+    try {
+      const { email, firstName, lastName, password } = req.body;
+
+      // Check if admin already exists
+      const existingAdmin = await storage.getUserByEmail(email);
+      if (existingAdmin) {
+        return res.status(400).json({ message: 'Admin user already exists' });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Create admin user with fixed ID "admin"
+      const adminUser = await storage.createUser({
+        id: "admin",
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        emailVerified: true,
+        plan: 'premium' // Give admin premium access
+      });
+
+      res.json({ 
+        message: 'Admin user created successfully',
+        userId: adminUser.id 
+      });
+
+    } catch (error) {
+      console.error('Admin setup error:', error);
+      res.status(500).json({ message: 'Failed to create admin user' });
     }
   });
 

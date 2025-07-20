@@ -9,6 +9,8 @@ import Header from "./components/Header";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
+import Signup from "@/pages/signup";
+import AdminSetup from "@/pages/admin-setup";
 import Dashboard from "@/pages/dashboard";
 import Campaigns from "@/pages/campaigns";
 import CreateCampaign from "@/pages/create-campaign";
@@ -29,6 +31,8 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/login" component={Login} />
+        <Route path="/signup" component={Signup} />
+        <Route path="/admin-setup" component={AdminSetup} />
         <Route component={NotFound} />
       </Switch>
     );
