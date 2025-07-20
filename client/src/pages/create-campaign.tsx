@@ -457,14 +457,21 @@ export default function CreateCampaign() {
                         Available Personalization Fields:
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {['{{name}}', '{{lastName}}', '{{companyName}}', '{{position}}', '{{email}}'].map((field) => (
-                          <span 
-                            key={field}
-                            className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs font-mono"
-                          >
-                            {field}
-                          </span>
-                        ))}
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs font-mono">
+                          {`{{name}}`}
+                        </span>
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs font-mono">
+                          {`{{lastName}}`}
+                        </span>
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs font-mono">
+                          {`{{companyName}}`}
+                        </span>
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs font-mono">
+                          {`{{position}}`}
+                        </span>
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded text-xs font-mono">
+                          {`{{email}}`}
+                        </span>
                       </div>
                       <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
                         These fields will be automatically replaced with recipient data when emails are sent.
@@ -503,7 +510,7 @@ export default function CreateCampaign() {
                         </div>
                         
                         <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                          <p>• When personalization is enabled, fields like {{name}} will be replaced with recipient data</p>
+                          <p>• When personalization is enabled, fields like {`{{name}}`} will be replaced with recipient data</p>
                           <p>• If fallback is disabled, emails without personalized content will be skipped</p>
                           <p>• If fallback is enabled, default content with field replacement will be used</p>
                         </div>
