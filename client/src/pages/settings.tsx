@@ -25,7 +25,8 @@ import {
   AlertTriangle,
   CheckCircle,
   ExternalLink,
-  Trash2
+  Trash2,
+  Download
 } from "lucide-react";
 
 const profileSchema = z.object({
