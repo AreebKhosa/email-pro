@@ -36,7 +36,7 @@ const plans = [
     features: [
       "1,000 emails/month",
       "300 recipients/month",
-      "1 email integration",
+      "1 email integration", 
       "100 deliverability checks",
       "30 personalized emails/month",
       "Max 3 campaigns",
@@ -62,7 +62,7 @@ const plans = [
       "6,000 recipients/month",
       "4 email integrations",
       "2,000 deliverability checks",
-      "2,000 personalized emails/month",
+      "1,000 personalized emails/month", 
       "Unlimited campaigns",
       "1 follow-up allowed",
       "2,500 warm-up emails/month"
@@ -79,12 +79,12 @@ const plans = [
     description: "Scaling businesses",
     features: [
       "75,000 emails/month",
-      "25,000 recipients/month",
+      "25,000 recipients/month", 
       "20 email integrations",
       "10,000 deliverability checks",
-      "5,000 personalized emails/month",
+      "1,000 personalized emails/month",
       "Unlimited campaigns",
-      "1 follow-up allowed",
+      "1 follow-up allowed", 
       "Unlimited warm-up emails"
     ],
     limitations: [],
@@ -100,9 +100,9 @@ const plans = [
     features: [
       "Unlimited emails",
       "Unlimited recipients",
-      "Unlimited integrations",
+      "Unlimited integrations", 
       "Unlimited deliverability checks",
-      "Unlimited personalized emails",
+      "1,000 personalized emails/month",
       "Unlimited campaigns",
       "2 follow-ups allowed",
       "Unlimited warm-up emails"
@@ -431,12 +431,10 @@ export default function Upgrade() {
                   </tr>
                   <tr className="border-b">
                     <td className="p-4 font-medium">AI Personalization</td>
-                    <td className="text-center p-4">100/month</td>
-                    <td className="text-center p-4">2,000/month</td>
-                    <td className="text-center p-4">5,000/month</td>
-                    <td className="text-center p-4">
-                      <Infinity className="h-4 w-4 mx-auto" />
-                    </td>
+                    <td className="text-center p-4">30/month</td>
+                    <td className="text-center p-4">1,000/month</td>
+                    <td className="text-center p-4">1,000/month</td>
+                    <td className="text-center p-4">1,000/month</td>
                   </tr>
                   <tr className="border-b">
                     <td className="p-4 font-medium">Email Warm-up</td>

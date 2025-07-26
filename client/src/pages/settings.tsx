@@ -577,7 +577,7 @@ export default function Settings() {
                   </div>
 
                   <div className="flex space-x-4">
-                    <Button>
+                    <Button onClick={() => window.location.href = '/upgrade'}>
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Upgrade Plan
                     </Button>

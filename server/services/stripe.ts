@@ -12,12 +12,12 @@ async function getStripeInstance(): Promise<Stripe> {
     
     if (stripeSecretKey && stripeSecretKey.trim() !== '') {
       stripe = new Stripe(stripeSecretKey, {
-        apiVersion: "2023-10-16",
+        apiVersion: "2025-06-30.basil",
       });
     } else if (process.env.STRIPE_SECRET_KEY) {
       // Fallback to environment variable
       stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-        apiVersion: "2023-10-16",
+        apiVersion: "2025-06-30.basil",
       });
     } else {
       throw new Error('Stripe Secret Key not configured');
@@ -90,6 +90,10 @@ export async function createStripeCheckout(
     return session.url || '';
   } catch (error: any) {
     console.error('Error creating Stripe checkout session:', error);
+    
+    // Get priceId for error message
+    const planPrices = await getPlanPrices();
+    const priceId = planPrices[plan as keyof typeof planPrices];
     
     // Provide more specific error messages
     if (error.code === 'resource_missing' && error.param?.includes('price')) {
