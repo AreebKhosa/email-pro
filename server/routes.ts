@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupGoogleAuth, getGmailAuthUrl } from "./services/googleAuth";
 import { validateEmailIntegration, sendEmail } from "./services/email";
-import { personalizeEmailContent, enhanceEmailContent } from "./services/gemini";
+import { personalizeEmailContent, enhanceEmailContent, scrapeWebsiteContent } from "./services/gemini";
 import { createStripeCheckout, handleStripeWebhook } from "./services/stripe";
 import { emailValidationService, type EmailValidationResult } from "./services/emailValidation";
 import { warmupService } from "./services/warmup";
@@ -1829,7 +1829,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Found recipient with website:', { id: recipient.id, website: recipient.websiteLink });
 
-      const personalizedEmail = await personalizeEmailContent(recipient, null, {
+      // Get website content for better personalization
+      let websiteContent = null;
+      if (recipient.websiteLink) {
+        console.log('Scraping website for personalization:', recipient.websiteLink);
+        websiteContent = await scrapeWebsiteContent(recipient.websiteLink);
+        if (websiteContent) {
+          console.log('Successfully scraped website content, length:', websiteContent.length);
+        } else {
+          console.log('Failed to scrape website content, proceeding without it');
+        }
+      }
+
+      const personalizedEmail = await personalizeEmailContent(recipient, websiteContent, {
         emailType,
         tone,
         maxCharacters: parseInt(maxCharacters.toString()),
@@ -1879,7 +1891,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const recipient of unPersonalizedRecipients) {
         try {
-          const personalizedEmail = await personalizeEmailContent(recipient, null, {
+          // Get website content for better personalization
+          let websiteContent = null;
+          if (recipient.websiteLink) {
+            console.log(`Scraping website for recipient ${recipient.id}:`, recipient.websiteLink);
+            websiteContent = await scrapeWebsiteContent(recipient.websiteLink);
+            if (websiteContent) {
+              console.log(`Successfully scraped website content for ${recipient.id}, length:`, websiteContent.length);
+            }
+          }
+
+          const personalizedEmail = await personalizeEmailContent(recipient, websiteContent, {
             emailType,
             tone,
             maxCharacters,

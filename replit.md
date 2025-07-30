@@ -35,6 +35,16 @@ Preferred communication style: Simple, everyday language.
 - Admin routes: /admin/login for authentication, /admin/dashboard for configuration management
 - Secure token-based authentication with 24-hour expiration
 
+### Enhanced AI Personalization with Website Scraping (July 30, 2025)
+- Completely redesigned Gemini AI personalization to create highly professional, research-based emails
+- Added comprehensive website content scraping functionality that extracts business-relevant information
+- Enhanced AI prompts to do deep business analysis including services, target markets, expertise areas, company approach
+- Improved email personalization to reference specific services, industry challenges, and value propositions
+- Added intelligent content filtering to focus on business-relevant website sections
+- Updated personalization system to demonstrate genuine understanding of recipient's business model
+- Enhanced both single and bulk personalization to use real website content for authentic outreach
+- Migrated from generic templates to professional business development approach with detailed company research
+
 ### Real Email Sending Implementation (July 20, 2025)
 - Implemented actual SMTP email sending using Python-based solution replacing problematic nodemailer
 - Added comprehensive email tracking system with open and click tracking
