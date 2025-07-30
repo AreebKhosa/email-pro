@@ -265,14 +265,16 @@ export async function personalizeEmailContent(
     
     5. NATURAL INTEGRATION: Weave "${options.callToAction}" seamlessly into the conversation
     
-    6. MAXIMIZE LENGTH: Use close to ${options.maxCharacters} characters to provide comprehensive value. Include:
-       • Detailed business insights
-       • Specific service references
-       • Industry knowledge demonstration
-       • Multiple value propositions
-       • Professional credibility builders
+    6. MAXIMIZE LENGTH: You MUST use close to ${options.maxCharacters} characters. This is a requirement, not a suggestion. Include:
+       • Detailed business insights and industry analysis
+       • Specific service references with technical details
+       • Multiple paragraphs of industry knowledge demonstration
+       • Several value propositions with concrete examples
+       • Professional credibility builders and case study references
+       • Comprehensive market understanding
+       • Detailed competitive landscape insights
     
-    Create a substantial, well-researched email that uses almost the full character limit while demonstrating exceptional business understanding and offering genuine value.
+    IMPORTANT: Write a substantial, comprehensive email that uses nearly the full ${options.maxCharacters} character limit. Short emails are not acceptable when a high character limit is provided. Expand on every point with specific details, examples, and business insights.
     
     Return only the email content without subject line.
   `;
@@ -286,11 +288,52 @@ export async function personalizeEmailContent(
         parts: [{ text: prompt }]
       }],
       config: {
-        systemInstruction: "You are a senior business development professional and expert email copywriter. Create highly personalized, professional emails that demonstrate deep business research and understanding. Focus on building credible business relationships through authentic, value-driven communication that shows genuine knowledge of the recipient's industry and business model."
+        systemInstruction: "You are a senior business development professional and expert email copywriter. Create highly personalized, professional emails that demonstrate deep business research and understanding. CRITICAL: You must write emails that are close to the maximum character limit specified. Use the full character allowance to provide comprehensive value, detailed business insights, and thorough personalization. Never write short emails when a longer limit is given."
       }
     });
 
-    const personalizedEmail = response.text || '';
+    let personalizedEmail = response.text || '';
+    
+    // If the email is significantly shorter than the max limit, try to expand it
+    if (personalizedEmail.length < options.maxCharacters * 0.7) {
+      console.log(`Email too short (${personalizedEmail.length}/${options.maxCharacters}), attempting to expand...`);
+      
+      // Create an expansion prompt
+      const expansionPrompt = `
+        The following email is too short for the ${options.maxCharacters} character limit. Please expand it to use nearly the full character limit by adding:
+        - More specific business insights about their industry
+        - Additional details about their services and capabilities
+        - More comprehensive value propositions
+        - Deeper market analysis and competitive positioning
+        - Additional professional credibility elements
+        - More detailed explanation of how we can help their specific business
+        
+        Current email:
+        ${personalizedEmail}
+        
+        Expand this to approximately ${options.maxCharacters} characters while maintaining the same professional tone and personalization level.
+      `;
+      
+      try {
+        const geminiInstance = await getGeminiInstance();
+        const expansionResponse = await geminiInstance.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: [{
+            role: "user",
+            parts: [{ text: expansionPrompt }]
+          }]
+        });
+        
+        const expandedEmail = expansionResponse.text || personalizedEmail;
+        if (expandedEmail.length > personalizedEmail.length) {
+          personalizedEmail = expandedEmail;
+          console.log(`Successfully expanded email to ${personalizedEmail.length} characters`);
+        }
+      } catch (error) {
+        console.error('Error expanding email:', error);
+        // Continue with original email if expansion fails
+      }
+    }
     
     // Ensure we stay within character limit
     if (personalizedEmail.length > options.maxCharacters) {
