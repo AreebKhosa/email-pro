@@ -275,7 +275,7 @@ export async function personalizeEmailContent(
     
     7. NATURAL INTEGRATION: Weave "${options.callToAction}" seamlessly into the conversation
     
-    8. MANDATORY LENGTH REQUIREMENT: Your email MUST be exactly ${options.maxCharacters} characters. Do not exceed this limit. Count your characters carefully and ensure you stay within ${options.maxCharacters} characters. Include:
+    8. STRICT LENGTH REQUIREMENT: Your email MUST NOT exceed ${options.maxCharacters} characters. Aim for ${Math.floor(options.maxCharacters * 0.9)}-${options.maxCharacters} characters to maximize content while staying within the limit. Count characters as you write and stop before reaching ${options.maxCharacters}. Include:
        • Detailed business insights and industry analysis
        • Specific service references with technical details
        • Multiple paragraphs of industry knowledge demonstration
@@ -284,9 +284,9 @@ export async function personalizeEmailContent(
        • Comprehensive market understanding
        • Detailed competitive landscape insights
     
-    CRITICAL REQUIREMENT: Your email must be exactly ${options.maxCharacters} characters - no more, no less. If you write more than ${options.maxCharacters} characters, it will be truncated. Write concisely for shorter limits (like 500 chars) and comprehensively for longer limits (like 1000+ chars).
+    CRITICAL REQUIREMENT: Your email must NOT exceed ${options.maxCharacters} characters. If you write more, it will be truncated and the email will be incomplete. Aim for ${Math.floor(options.maxCharacters * 0.9)}-${options.maxCharacters} characters to maximize content while staying within the strict limit.
     
-    CHARACTER COUNT TARGET: ${options.maxCharacters} characters exactly
+    CHARACTER COUNT LIMIT: Maximum ${options.maxCharacters} characters (aim for ${Math.floor(options.maxCharacters * 0.9)}-${options.maxCharacters})
     
     Return only the email content without subject line.
   `;
@@ -306,12 +306,12 @@ export async function personalizeEmailContent(
 
     let personalizedEmail = response.text || '';
     
-    // If the email is shorter than 90% of the max limit, expand it to reach the target
-    if (personalizedEmail.length < options.maxCharacters * 0.9) {
+    // If the email is shorter than 80% of the max limit, expand it to reach closer to the limit
+    if (personalizedEmail.length < options.maxCharacters * 0.8) {
       console.log(`Email too short (${personalizedEmail.length}/${options.maxCharacters}), attempting to expand...`);
       
-      // Create an expansion prompt that targets the exact character count
-      const targetLength = options.maxCharacters; // Target exact character count
+      // Create an expansion prompt that targets 90-95% of max characters
+      const targetLength = Math.floor(options.maxCharacters * 0.92); // Target 92% of max characters
       const expansionPrompt = `
         CRITICAL TASK: Rewrite the following email to be exactly ${targetLength} characters (currently ${personalizedEmail.length} characters).
         
@@ -325,7 +325,7 @@ export async function personalizeEmailContent(
         Current email (${personalizedEmail.length} characters):
         ${personalizedEmail}
         
-        REQUIREMENT: Your response must be exactly ${targetLength} characters. Maintain the same professional ${options.tone} tone and personalization level.
+        REQUIREMENT: Your response must be ${targetLength} characters or less (maximum ${options.maxCharacters}). Maintain the same professional ${options.tone} tone and personalization level.
       `;
       
       try {
@@ -349,11 +349,29 @@ export async function personalizeEmailContent(
       }
     }
     
-    // Ensure we stay within character limit
+    // Final safety check: ensure email doesn't exceed character limit
     if (personalizedEmail.length > options.maxCharacters) {
-      return personalizedEmail.substring(0, options.maxCharacters - 3) + '...';
+      console.log(`Email too long (${personalizedEmail.length}/${options.maxCharacters}), truncating safely...`);
+      
+      // Find the last complete sentence within the limit
+      const truncated = personalizedEmail.substring(0, options.maxCharacters - 20); // Leave room for proper ending
+      const lastSentenceEnd = Math.max(
+        truncated.lastIndexOf('.'),
+        truncated.lastIndexOf('!'),
+        truncated.lastIndexOf('?')
+      );
+      
+      if (lastSentenceEnd > options.maxCharacters * 0.7) {
+        // If we can find a good sentence ending, use it
+        personalizedEmail = truncated.substring(0, lastSentenceEnd + 1);
+      } else {
+        // Otherwise, truncate at word boundary and add proper ending
+        const lastSpace = truncated.lastIndexOf(' ');
+        personalizedEmail = truncated.substring(0, lastSpace) + '...';
+      }
     }
-    
+
+    console.log(`Final personalized email length: ${personalizedEmail.length}/${options.maxCharacters}`);
     return personalizedEmail;
   } catch (error: any) {
     console.error('Error personalizing email with Gemini:', error);

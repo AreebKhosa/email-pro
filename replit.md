@@ -44,6 +44,10 @@ Preferred communication style: Simple, everyday language.
 - Updated personalization system to demonstrate genuine understanding of recipient's business model
 - Enhanced both single and bulk personalization to use real website content for authentic outreach
 - Migrated from generic templates to professional business development approach with detailed company research
+- Fixed character limit enforcement with smart truncation that preserves sentence integrity
+- Added service and industry input fields for more targeted AI personalization
+- Implemented "View Email" functionality to display full personalized emails without truncation
+- Enhanced AI prompts to use user's service offerings and industry expertise for better positioning
 
 ### Real Email Sending Implementation (July 20, 2025)
 - Implemented actual SMTP email sending using Python-based solution replacing problematic nodemailer
