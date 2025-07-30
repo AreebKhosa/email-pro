@@ -55,6 +55,9 @@ export default function Personalization() {
   const [showCreateListDialog, setShowCreateListDialog] = useState(false);
   const [selectedTargetListId, setSelectedTargetListId] = useState<string>("");
   const [newListName, setNewListName] = useState("");
+  const [bulkProgress, setBulkProgress] = useState(0);
+  const [bulkPersonalizing, setBulkPersonalizing] = useState(false);
+  const [currentPersonalizingId, setCurrentPersonalizingId] = useState<number | null>(null);
 
   const { data: recipientLists } = useQuery({
     queryKey: ["/api/recipient-lists"],
@@ -86,8 +89,29 @@ export default function Personalization() {
 
   const personalizeListMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", `/api/recipient-lists/${selectedListId}/personalize`, data);
-      return response.json();
+      setBulkPersonalizing(true);
+      setBulkProgress(0);
+      
+      try {
+        // Simulate progress for better UX
+        const progressInterval = setInterval(() => {
+          setBulkProgress(prev => Math.min(prev + Math.random() * 10, 90));
+        }, 500);
+        
+        const response = await apiRequest("POST", `/api/recipient-lists/${selectedListId}/personalize`, data);
+        
+        clearInterval(progressInterval);
+        setBulkProgress(100);
+        
+        // Show 100% briefly before hiding
+        setTimeout(() => {
+          setBulkProgress(0);
+        }, 1000);
+        
+        return response.json();
+      } finally {
+        setBulkPersonalizing(false);
+      }
     },
     onSuccess: (result) => {
       toast({
@@ -100,6 +124,8 @@ export default function Personalization() {
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
     },
     onError: (error) => {
+      setBulkPersonalizing(false);
+      setBulkProgress(0);
       toast({
         title: "Error",
         description: error.message,
@@ -110,8 +136,13 @@ export default function Personalization() {
 
   const personalizeSingleMutation = useMutation({
     mutationFn: async ({ recipientId, data }: { recipientId: number; data: any }) => {
-      const response = await apiRequest("POST", `/api/recipients/${recipientId}/personalize`, data);
-      return response.json();
+      setCurrentPersonalizingId(recipientId);
+      try {
+        const response = await apiRequest("POST", `/api/recipients/${recipientId}/personalize`, data);
+        return response.json();
+      } finally {
+        setCurrentPersonalizingId(null);
+      }
     },
     onSuccess: (result) => {
       toast({
@@ -124,6 +155,7 @@ export default function Personalization() {
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
     },
     onError: (error) => {
+      setCurrentPersonalizingId(null);
       toast({
         title: "Error",
         description: error.message,
@@ -380,15 +412,15 @@ export default function Personalization() {
                         size="sm"
                         variant="outline"
                         onClick={() => exportMutation.mutate()}
-                        disabled={!recipients || recipients.length === 0 || personalizedCount === 0}
+                        disabled={!recipients || recipients.length === 0 || personalizedCount === 0 || bulkPersonalizing || currentPersonalizingId !== null}
                       >
                         <Download className="h-4 w-4 mr-2" />
-                        Export Personalized
+                        {exportMutation.isPending ? "Exporting..." : "Export Personalized"}
                       </Button>
                       <Button
                         size="sm"
                         onClick={() => setShowUpdateListDialog(true)}
-                        disabled={!recipients || recipients.length === 0 || personalizedCount === 0}
+                        disabled={!recipients || recipients.length === 0 || personalizedCount === 0 || bulkPersonalizing || currentPersonalizingId !== null}
                       >
                         <Users className="h-4 w-4 mr-2" />
                         Update List
@@ -530,15 +562,28 @@ export default function Personalization() {
                 <div className="flex items-center space-x-4">
                   <Button
                     onClick={form.handleSubmit(onSubmit)}
-                    disabled={personalizeListMutation.isPending || remaining <= 0}
+                    disabled={bulkPersonalizing || currentPersonalizingId !== null || remaining <= 0}
                     className="bg-purple-600 hover:bg-purple-700"
                   >
-                    <Zap className="h-4 w-4 mr-2" />
-                    {personalizeListMutation.isPending ? "Personalizing..." : "Personalize All"}
+                    {bulkPersonalizing ? (
+                      <div className="animate-spin h-4 w-4 mr-2 border-2 border-white rounded-full border-t-transparent" />
+                    ) : (
+                      <Zap className="h-4 w-4 mr-2" />
+                    )}
+                    {bulkPersonalizing ? "Personalizing..." : "Personalize All"}
                   </Button>
-                  <p className="text-sm text-slate-600">
-                    This will personalize {totalRecipients - personalizedCount} remaining emails
-                  </p>
+                  {bulkPersonalizing ? (
+                    <div className="flex items-center space-x-3">
+                      <Progress value={bulkProgress} className="w-48 h-2" />
+                      <p className="text-sm text-slate-600">
+                        Processing emails... {Math.round(bulkProgress)}%
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-600">
+                      This will personalize {totalRecipients - personalizedCount} remaining emails
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -595,16 +640,27 @@ export default function Personalization() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              disabled={bulkPersonalizing || currentPersonalizingId !== null}
+                            >
+                              {currentPersonalizingId === recipient.id ? (
+                                <div className="animate-spin h-4 w-4 border-2 border-blue-600 rounded-full border-t-transparent" />
+                              ) : (
+                                <MoreHorizontal className="h-4 w-4" />
+                              )}
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             {recipient.personalizedEmail && (
-                              <DropdownMenuItem onClick={() => {
-                                setPreviewEmail(recipient.personalizedEmail);
-                                setIsPreviewOpen(true);
-                              }}>
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setPreviewEmail(recipient.personalizedEmail);
+                                  setIsPreviewOpen(true);
+                                }}
+                                disabled={bulkPersonalizing || currentPersonalizingId !== null}
+                              >
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Email
                               </DropdownMenuItem>
@@ -612,10 +668,11 @@ export default function Personalization() {
                             {recipient.websiteLink && (
                               <DropdownMenuItem 
                                 onClick={() => handlePersonalizeSingle(recipient.id)}
-                                disabled={personalizeSingleMutation.isPending || remaining <= 0}
+                                disabled={bulkPersonalizing || currentPersonalizingId !== null || remaining <= 0}
                               >
                                 <Wand2 className="h-4 w-4 mr-2" />
-                                {recipient.personalizedEmail ? "Re-personalize" : "Personalize"}
+                                {currentPersonalizingId === recipient.id ? "Personalizing..." : 
+                                 recipient.personalizedEmail ? "Re-personalize" : "Personalize"}
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
