@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupGoogleAuth, getGmailAuthUrl } from "./services/googleAuth";
 import { validateEmailIntegration, sendEmail } from "./services/email";
-import { personalizeEmail, enhanceEmailContent } from "./services/openai";
+import { personalizeEmailContent, enhanceEmailContent } from "./services/gemini";
 import { createStripeCheckout, handleStripeWebhook } from "./services/stripe";
 import { emailValidationService, type EmailValidationResult } from "./services/emailValidation";
 import { warmupService } from "./services/warmup";
@@ -29,7 +29,7 @@ const planLimits = {
     recipients: 300,
     emailIntegrations: 1,
     deliverabilityChecks: 100,
-    personalizedEmails: 30,
+    personalizedEmails: 100,
     followUps: 0,
     campaigns: 3,
     warmupEmails: 1,
@@ -42,7 +42,7 @@ const planLimits = {
     recipients: 6000,
     emailIntegrations: 4,
     deliverabilityChecks: 2000,
-    personalizedEmails: 2000,
+    personalizedEmails: 1000,
     followUps: 1,
     campaigns: Infinity,
     warmupEmails: 2500,
@@ -55,7 +55,7 @@ const planLimits = {
     recipients: 25000,
     emailIntegrations: 20,
     deliverabilityChecks: 10000,
-    personalizedEmails: 5000,
+    personalizedEmails: 1000,
     followUps: 1,
     campaigns: Infinity,
     warmupEmails: Infinity,
@@ -68,7 +68,7 @@ const planLimits = {
     recipients: Infinity,
     emailIntegrations: Infinity,
     deliverabilityChecks: Infinity,
-    personalizedEmails: Infinity,
+    personalizedEmails: 1000,
     followUps: 2,
     campaigns: Infinity,
     warmupEmails: Infinity,
@@ -779,7 +779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/admin/config', adminAuth, async (req, res) => {
     try {
       const {
-        openaiApiKey,
+        geminiApiKey,
         stripeSecretKey,
         stripePublicKey,
         stripeStarterPriceId,
@@ -796,7 +796,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Store each config value (marked as secret for sensitive data)
       const configUpdates = [
-        { key: 'openai_api_key', value: openaiApiKey, secret: true },
+        { key: 'gemini_api_key', value: geminiApiKey, secret: true },
         { key: 'stripe_secret_key', value: stripeSecretKey, secret: true },
         { key: 'stripe_public_key', value: stripePublicKey, secret: false },
         { key: 'stripe_starter_price_id', value: stripeStarterPriceId, secret: false },
@@ -1829,7 +1829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Found recipient with website:', { id: recipient.id, website: recipient.websiteLink });
 
-      const personalizedEmail = await personalizeEmail(recipient, {
+      const personalizedEmail = await personalizeEmailContent(recipient, null, {
         emailType,
         tone,
         maxCharacters: parseInt(maxCharacters.toString()),
@@ -1879,7 +1879,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const recipient of unPersonalizedRecipients) {
         try {
-          const personalizedEmail = await personalizeEmail(recipient, {
+          const personalizedEmail = await personalizeEmailContent(recipient, null, {
             emailType,
             tone,
             maxCharacters,

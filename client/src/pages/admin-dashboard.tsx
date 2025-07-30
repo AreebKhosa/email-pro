@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 
 const configSchema = z.object({
-  openaiApiKey: z.string().optional(),
+  geminiApiKey: z.string().optional(),
   stripeSecretKey: z.string().optional(),
   stripePublicKey: z.string().optional(),
   stripeStarterPriceId: z.string().optional(),
@@ -212,16 +212,16 @@ export default function AdminDashboard() {
                         <div className="flex-1">
                           <FormField
                             control={form.control}
-                            name="openaiApiKey"
+                            name="geminiApiKey"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-base font-medium">OpenAI API Key</FormLabel>
+                                <FormLabel className="text-base font-medium">Gemini API Key</FormLabel>
                                 <p className="text-sm text-gray-600 mb-2">For AI-powered email personalization</p>
                                 <FormControl>
                                   <div className="flex space-x-2">
                                     <Input 
-                                      type={showKeys['openai'] ? "text" : "password"}
-                                      placeholder="sk-..." 
+                                      type={showKeys['gemini'] ? "text" : "password"}
+                                      placeholder="AIza..." 
                                       {...field} 
                                       className="flex-1"
                                     />
@@ -229,9 +229,9 @@ export default function AdminDashboard() {
                                       type="button"
                                       variant="outline"
                                       size="icon"
-                                      onClick={() => toggleKeyVisibility('openai')}
+                                      onClick={() => toggleKeyVisibility('gemini')}
                                     >
-                                      {showKeys['openai'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                      {showKeys['gemini'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </Button>
                                   </div>
                                 </FormControl>
@@ -241,8 +241,8 @@ export default function AdminDashboard() {
                           />
                         </div>
                         <div className="ml-4">
-                          <Badge variant={config?.openaiApiKey ? "default" : "secondary"}>
-                            {config?.openaiApiKey ? "Configured" : "Not Set"}
+                          <Badge variant={config?.geminiApiKey ? "default" : "secondary"}>
+                            {config?.geminiApiKey ? "Configured" : "Not Set"}
                           </Badge>
                         </div>
                       </div>

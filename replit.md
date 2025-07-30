@@ -125,13 +125,13 @@ Preferred communication style: Simple, everyday language.
 - **4-Step Campaign Creation**: Full-page wizard flow (Campaign Info → Recipients → Content → Sending Settings)
 - **Email Rotation**: Multi-account email distribution for upgraded plans
 - **Follow-up Sequences**: Automated follow-up email chains with condition-based triggers
-- **AI Enhancement**: OpenAI-powered email content improvement
+- **AI Enhancement**: Gemini-powered email content improvement
 - **Scheduling**: Time-based campaign execution with configurable sending windows
 - **Tracking**: Email delivery and engagement metrics
 - **Plan-Based Features**: Different capabilities based on subscription tier
 
 ### AI Personalization
-- **Provider**: OpenAI GPT-4o integration
+- **Provider**: Google Gemini API integration (migrated from OpenAI due to cost constraints)
 - **Website Scraping**: Automated content extraction for personalization
 - **Template Generation**: AI-powered email content creation
 - **Customization**: Tone, length, and CTA configuration
@@ -196,7 +196,7 @@ Preferred communication style: Simple, everyday language.
 ### Core Services
 - **Neon Database**: PostgreSQL hosting with serverless architecture
 - **Replit OAuth**: Authentication provider
-- **OpenAI**: AI-powered email personalization
+- **Google Gemini**: AI-powered email personalization (migrated from OpenAI)
 - **Stripe**: Payment processing and subscription management
 
 ### Email Services

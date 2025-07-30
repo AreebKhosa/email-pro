@@ -2,7 +2,7 @@ import { db } from "../db";
 import { storage } from "../storage";
 import { emailIntegrations, warmupEmails, warmupStats, warmupProgress } from "@shared/schema";
 import { eq, and, sql, desc, asc } from "drizzle-orm";
-import { personalizeEmail } from "./openai";
+import { personalizeEmailContent } from "./gemini";
 import { sendEmail } from "./email";
 
 export interface WarmupConfig {
@@ -162,15 +162,21 @@ export class WarmupService {
   async generateWarmupContent(): Promise<{ subject: string; body: string }> {
     // Create a mock recipient for AI generation
     const mockRecipient = {
+      id: 0,
       name: "Colleague",
+      lastName: null,
       email: "colleague@example.com",
       companyName: "Company",
       position: "Professional",
       websiteLink: "https://example.com",
+      listId: 0,
+      createdAt: new Date(),
+      personalizedEmail: null,
+      deliverabilityStatus: null,
     };
 
     try {
-      const personalizedEmail = await personalizeEmail(mockRecipient, {
+      const personalizedEmail = await personalizeEmailContent(mockRecipient, null, {
         emailType: "professional_networking",
         tone: "friendly",
         maxCharacters: 200,
@@ -234,7 +240,7 @@ export class WarmupService {
       }
 
       const todayStats = await this.getTodayStats(fromIntegration.id);
-      const remainingEmails = progress.targetEmailsPerDay - todayStats.emailsSent;
+      const remainingEmails = progress.targetEmailsPerDay - (todayStats.emailsSent || 0);
 
       if (remainingEmails <= 0) {
         // Mark day as completed
@@ -296,7 +302,7 @@ export class WarmupService {
   }
 
   // Get current day progress for an integration
-  async getCurrentDayProgress(integrationId: number) {
+  async getCurrentDayProgress(integrationId: number): Promise<any> {
     const today = new Date();
     const startDate = await this.getWarmupStartDate(integrationId);
     
@@ -357,11 +363,11 @@ export class WarmupService {
     if (existingStats) {
       // Update existing stats
       const updatedStats = {
-        emailsSent: existingStats.emailsSent + (updates.emailsSent || 0),
-        emailsOpened: existingStats.emailsOpened + (updates.emailsOpened || 0),
-        emailsReplied: existingStats.emailsReplied + (updates.emailsReplied || 0),
-        emailsSpam: existingStats.emailsSpam + (updates.emailsSpam || 0),
-        emailsBounced: existingStats.emailsBounced + (updates.emailsBounced || 0),
+        emailsSent: (existingStats.emailsSent || 0) + (updates.emailsSent || 0),
+        emailsOpened: (existingStats.emailsOpened || 0) + (updates.emailsOpened || 0),
+        emailsReplied: (existingStats.emailsReplied || 0) + (updates.emailsReplied || 0),
+        emailsSpam: (existingStats.emailsSpam || 0) + (updates.emailsSpam || 0),
+        emailsBounced: (existingStats.emailsBounced || 0) + (updates.emailsBounced || 0),
       };
 
       // Calculate rates
