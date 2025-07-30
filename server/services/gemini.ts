@@ -128,9 +128,9 @@ export async function personalizeEmailContent(
   websiteContent: string | null,
   options: PersonalizationOptions
 ): Promise<string> {
-  const prompt = `
-    You are a professional business development expert writing a highly personalized ${options.emailType} email.
-
+  // Create type-specific prompts based on email purpose
+  const getTypeSpecificPrompt = (emailType: string, websiteContent: string | null) => {
+    const baseContext = `
     RECIPIENT DETAILS:
     - Name: ${recipient.name || 'there'} ${recipient.lastName || ''}
     - Company: ${recipient.companyName || 'N/A'}
@@ -139,48 +139,140 @@ export async function personalizeEmailContent(
     
     DETAILED WEBSITE ANALYSIS:
     ${websiteContent || 'No website information available'}
+    `;
+
+    switch (emailType.toLowerCase()) {
+      case 'marketing':
+        return `You are a marketing specialist writing a ${emailType} email to promote our services.
+        ${baseContext}
+        
+        MARKETING EMAIL STRATEGY:
+        - Focus on how our services can grow their business
+        - Highlight specific benefits relevant to their industry
+        - Reference their current services to show we understand their market
+        - Position our solution as a growth accelerator
+        - Create urgency around market opportunities
+        - Use data-driven benefits and results
+        - Target their specific customer segments
+        - Address scaling challenges they likely face
+        `;
+        
+      case 'sales':
+        return `You are a senior sales professional writing a ${emailType} email to generate qualified leads.
+        ${baseContext}
+        
+        SALES EMAIL STRATEGY:
+        - Lead with their business pain points we can solve
+        - Quantify potential ROI and business impact
+        - Reference similar companies we've helped
+        - Create competitive advantage positioning
+        - Focus on revenue generation opportunities
+        - Address operational efficiency gains
+        - Mention cost reduction potential
+        - Build trust through industry expertise
+        `;
+        
+      case 'partnership':
+        return `You are a business development executive writing a ${emailType} email to explore strategic partnerships.
+        ${baseContext}
+        
+        PARTNERSHIP EMAIL STRATEGY:
+        - Identify mutual business opportunities
+        - Reference complementary services or markets
+        - Focus on shared customer segments
+        - Highlight collaboration benefits
+        - Discuss market expansion possibilities  
+        - Address joint solution opportunities
+        - Mention cross-referral potential
+        - Build foundation for strategic alliance
+        `;
+        
+      case 'introduction':
+        return `You are a relationship-focused professional writing an ${emailType} email to establish new business connections.
+        ${baseContext}
+        
+        INTRODUCTION EMAIL STRATEGY:
+        - Build rapport through genuine business interest
+        - Reference their industry achievements or reputation
+        - Share relevant business insights or trends
+        - Offer valuable resources or connections
+        - Focus on long-term relationship building
+        - Demonstrate industry knowledge and credibility
+        - Suggest mutual learning opportunities
+        - Create foundation for ongoing dialogue
+        `;
+        
+      case 'follow-up':
+        return `You are a persistent but professional business developer writing a ${emailType} email.
+        ${baseContext}
+        
+        FOLLOW-UP EMAIL STRATEGY:
+        - Reference previous touchpoint naturally
+        - Provide new value or insights since last contact
+        - Address potential concerns or objections
+        - Share relevant case studies or success stories
+        - Offer different engagement options
+        - Create multiple response opportunities
+        - Maintain professional persistence
+        - Focus on building trust through consistency
+        `;
+        
+      default:
+        return `You are a professional business development expert writing a ${emailType} email.
+        ${baseContext}
+        
+        GENERAL EMAIL STRATEGY:
+        - Demonstrate deep understanding of their business
+        - Reference specific services they provide
+        - Address industry challenges they face
+        - Position our value proposition clearly
+        - Build credibility through research
+        - Create genuine business connection
+        `;
+    }
+  };
+
+  const typeSpecificPrompt = getTypeSpecificPrompt(options.emailType, websiteContent);
+  
+  const prompt = `${typeSpecificPrompt}
     
     EMAIL REQUIREMENTS:
     - Type: ${options.emailType}
     - Tone: ${options.tone}
-    - Maximum characters: ${options.maxCharacters}
+    - MAXIMUM CHARACTERS: ${options.maxCharacters} (USE THE FULL LIMIT - this is important!)
     - Call to action: ${options.callToAction}
 
-    COMPREHENSIVE PERSONALIZATION INSTRUCTIONS:
+    DETAILED PERSONALIZATION REQUIREMENTS:
     
-    1. DEEP BUSINESS ANALYSIS: Study their website content thoroughly to understand:
-       • What specific services/products they offer
-       • Their target market and customer segments
-       • Their unique value propositions and differentiators
-       • Their expertise areas and specializations
-       • Recent projects, case studies, or achievements mentioned
-       • Their company approach and methodology
-       • Technologies or tools they use
-       • Industries they serve
-       • Size and scale of their operations
+    1. EXTENSIVE BUSINESS RESEARCH: Based on their website content, identify and reference:
+       • Specific services/products they offer (mention by name)
+       • Their target industries and customer segments
+       • Technologies, methodologies, or approaches they use
+       • Company size, locations, and market reach
+       • Recent projects, case studies, or achievements
+       • Their competitive advantages and differentiators
+       • Industry challenges they help their clients solve
     
-    2. PROFESSIONAL OPENING: Begin with a personalized greeting that demonstrates you've researched them specifically
+    2. COMPELLING OPENING: Start with a personalized hook that proves you've researched them thoroughly
     
-    3. CREDIBLE BUSINESS CONNECTION: Show genuine understanding by referencing:
-       • Specific services they provide (be detailed and accurate)
-       • Markets or industries they serve
-       • Challenges they likely face in their industry
-       • Growth opportunities in their sector
-       • Their competitive positioning
+    3. BUSINESS VALUE ALIGNMENT: Connect our capabilities to their specific business model:
+       • Show how we can enhance their service offerings
+       • Address challenges in their industry or market
+       • Reference growth opportunities in their sector
+       • Demonstrate understanding of their client base
     
-    4. VALUE-DRIVEN PROPOSITION: Clearly articulate how we can help based on their actual business:
-       • Be specific about relevant value we can provide
-       • Connect our capabilities to their real business needs
-       • Reference industry-specific pain points they might have
-       • Show understanding of their client base and challenges
+    4. PROFESSIONAL DEPTH: Use ${options.tone} tone while providing substantial business value
     
-    5. PROFESSIONAL BUSINESS TONE: Use ${options.tone} tone while maintaining executive-level professionalism
+    5. NATURAL INTEGRATION: Weave "${options.callToAction}" seamlessly into the conversation
     
-    6. NATURAL CALL-TO-ACTION: Integrate "${options.callToAction}" naturally into the conversation
+    6. MAXIMIZE LENGTH: Use close to ${options.maxCharacters} characters to provide comprehensive value. Include:
+       • Detailed business insights
+       • Specific service references
+       • Industry knowledge demonstration
+       • Multiple value propositions
+       • Professional credibility builders
     
-    7. CONCISE YET COMPREHENSIVE: Stay within ${options.maxCharacters} characters while showing deep business understanding
-    
-    Create a professional email that demonstrates you've thoroughly researched their business, understand their market position, and can offer genuine value based on what they actually do. Make it clear this is a well-researched, business-focused outreach.
+    Create a substantial, well-researched email that uses almost the full character limit while demonstrating exceptional business understanding and offering genuine value.
     
     Return only the email content without subject line.
   `;
