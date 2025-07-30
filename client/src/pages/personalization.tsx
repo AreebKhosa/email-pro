@@ -515,22 +515,7 @@ export default function Personalization() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="ourIndustry"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Our Industry/Niche</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Technology, Healthcare, E-commerce, Finance..." {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          What industry are you in? This helps AI position your services better.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+
                 </div>
               </Form>
             </CardContent>

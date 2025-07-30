@@ -245,136 +245,95 @@ export async function personalizeEmailContent(
     EMAIL REQUIREMENTS:
     - Type: ${options.emailType}
     - Tone: ${options.tone}
-    - TARGET LENGTH: Exactly ${options.maxCharacters} characters (this is MANDATORY - do not exceed this limit)
+    - TARGET LENGTH: Maximum ${options.maxCharacters} characters (keep it concise and professional)
     - Call to action: ${options.callToAction}
 
-    DETAILED PERSONALIZATION REQUIREMENTS:
+    MANDATORY EMAIL STRUCTURE (Follow this exact order):
     
-    1. EXTENSIVE BUSINESS RESEARCH: Based on their website content, identify and reference:
-       • Specific services/products they offer (mention by name)
-       • Their target industries and customer segments
-       • Technologies, methodologies, or approaches they use
-       • Company size, locations, and market reach
-       • Recent projects, case studies, or achievements
-       • Their competitive advantages and differentiators
-       • Industry challenges they help their clients solve
+    STEP 1: FRIENDLY GREETING + QUICK PERSONAL LINE
+    • Start with a warm greeting using their name
+    • Add ONE specific observation about their business/website that shows you researched them
+    • Keep this section brief (1-2 sentences maximum)
     
-    2. COMPELLING OPENING: Start with a personalized hook that proves you've researched them thoroughly
+    STEP 2: DISCUSS THEIR SERVICES
+    • Reference 1-2 specific services they offer (mention by name from website content)
+    • Show genuine understanding of what they do
+    • Keep it concise and focused
     
-    3. BUSINESS VALUE ALIGNMENT: Connect our capabilities to their specific business model:
-       • Show how we can enhance their service offerings
-       • Address challenges in their industry or market
-       • Reference growth opportunities in their sector
-       • Demonstrate understanding of their client base
+    STEP 3: PROBLEM OR PAIN POINT MENTION
+    • Identify ONE relevant challenge in their industry or business type
+    • Make it relatable to companies like theirs
+    • Don't over-explain - just mention it briefly
     
-    4. OUR COMPANY POSITIONING: ${options.ourServices ? `Position our services (${options.ourServices}) as the perfect solution for their business needs` : 'Position our company as the ideal partner'}
+    STEP 4: YOUR SOLUTION (VERY BRIEFLY)
+    • Mention how ${options.ourServices ? `our ${options.ourServices} services` : 'our services'} can help
+    • Keep this VERY short - just 1 sentence
+    • Focus on the benefit, not detailed features
     
-    5. INDUSTRY ALIGNMENT: ${options.ourIndustry ? `Leverage our ${options.ourIndustry} industry expertise to demonstrate deep understanding` : 'Show general business expertise'}
+    STEP 5: CALL TO ACTION (SOFT, NOT PUSHY)
+    • Use the specified CTA: ${options.callToAction}
+    • Make it conversational and low-pressure
+    • Suggest a simple next step
     
-    6. PROFESSIONAL DEPTH: Use ${options.tone} tone while providing substantial business value
+    STEP 6: SIGNATURE OF USER
+    • End with a professional signature
+    • Keep it simple and friendly
     
-    7. NATURAL INTEGRATION: Weave "${options.callToAction}" seamlessly into the conversation
+    CRITICAL WRITING GUIDELINES:
+    1. Follow the 6-step structure exactly in order
+    2. Keep total length under ${options.maxCharacters} characters
+    3. Make each step concise - don't make the email too long
+    4. Use a genuinely ${options.tone} but professional tone
+    5. Reference specific details from their website
+    6. Avoid generic sales language - be conversational
+    7. Focus on building relationship, not hard selling
     
-    8. STRICT LENGTH REQUIREMENT: Your email MUST NOT exceed ${options.maxCharacters} characters. Aim for ${Math.floor(options.maxCharacters * 0.9)}-${options.maxCharacters} characters to maximize content while staying within the limit. Count characters as you write and stop before reaching ${options.maxCharacters}. Include:
-       • Detailed business insights and industry analysis
-       • Specific service references with technical details
-       • Multiple paragraphs of industry knowledge demonstration
-       • Several value propositions with concrete examples
-       • Professional credibility builders and case study references
-       • Comprehensive market understanding
-       • Detailed competitive landscape insights
-    
-    CRITICAL REQUIREMENT: Your email must NOT exceed ${options.maxCharacters} characters. If you write more, it will be truncated and the email will be incomplete. Aim for ${Math.floor(options.maxCharacters * 0.9)}-${options.maxCharacters} characters to maximize content while staying within the strict limit.
-    
-    CHARACTER COUNT LIMIT: Maximum ${options.maxCharacters} characters (aim for ${Math.floor(options.maxCharacters * 0.9)}-${options.maxCharacters})
-    
+    Write a concise, structured email following the 6 steps above. Keep it professional but personal.
     Return only the email content without subject line.
   `;
 
+  const geminiInstance = await getGeminiInstance();
+
   try {
-    const geminiInstance = await getGeminiInstance();
     const response = await geminiInstance.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [{
         role: "user",
         parts: [{ text: prompt }]
-      }],
-      config: {
-        systemInstruction: "You are a senior business development professional and expert email copywriter. Create highly personalized, professional emails that demonstrate deep business research and understanding. CRITICAL: You must write emails that are close to the maximum character limit specified. Use the full character allowance to provide comprehensive value, detailed business insights, and thorough personalization. Never write short emails when a longer limit is given."
-      }
+      }]
     });
+    let emailContent = response.text || '';
 
-    let personalizedEmail = response.text || '';
-    
-    // If the email is shorter than 80% of the max limit, expand it to reach closer to the limit
-    if (personalizedEmail.length < options.maxCharacters * 0.8) {
-      console.log(`Email too short (${personalizedEmail.length}/${options.maxCharacters}), attempting to expand...`);
+    // Handle character limit with smart truncation if needed
+    if (emailContent.length > options.maxCharacters) {
+      console.log(`Email too long (${emailContent.length}/${options.maxCharacters}), truncating safely...`);
       
-      // Create an expansion prompt that targets 90-95% of max characters
-      const targetLength = Math.floor(options.maxCharacters * 0.92); // Target 92% of max characters
-      const expansionPrompt = `
-        CRITICAL TASK: Rewrite the following email to be exactly ${targetLength} characters (currently ${personalizedEmail.length} characters).
-        
-        You must ${targetLength > personalizedEmail.length ? 'expand by adding' : 'condense by removing'} approximately ${Math.abs(targetLength - personalizedEmail.length)} characters.
-        
-        ${targetLength > personalizedEmail.length ? 
-          `Add more content with:\n        - More detailed industry analysis\n        - Additional service descriptions\n        - More comprehensive value propositions\n        - Extended business insights` :
-          `Make it more concise by:\n        - Removing unnecessary words\n        - Combining similar points\n        - Using shorter phrases\n        - Keeping only essential information`
-        }
-        
-        Current email (${personalizedEmail.length} characters):
-        ${personalizedEmail}
-        
-        REQUIREMENT: Your response must be ${targetLength} characters or less (maximum ${options.maxCharacters}). Maintain the same professional ${options.tone} tone and personalization level.
-      `;
+      // Smart truncation at sentence boundary
+      const maxLength = options.maxCharacters;
+      let truncated = emailContent.substring(0, maxLength);
+      const lastPeriod = truncated.lastIndexOf('.');
+      const lastExclamation = truncated.lastIndexOf('!');
+      const lastQuestion = truncated.lastIndexOf('?');
       
-      try {
-        const geminiInstance = await getGeminiInstance();
-        const expansionResponse = await geminiInstance.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: [{
-            role: "user",
-            parts: [{ text: expansionPrompt }]
-          }]
-        });
-        
-        const expandedEmail = expansionResponse.text || personalizedEmail;
-        if (expandedEmail.length > personalizedEmail.length) {
-          personalizedEmail = expandedEmail;
-          console.log(`Successfully expanded email to ${personalizedEmail.length} characters`);
-        }
-      } catch (error) {
-        console.error('Error expanding email:', error);
-        // Continue with original email if expansion fails
-      }
-    }
-    
-    // Final safety check: ensure email doesn't exceed character limit
-    if (personalizedEmail.length > options.maxCharacters) {
-      console.log(`Email too long (${personalizedEmail.length}/${options.maxCharacters}), truncating safely...`);
+      const lastSentenceEnd = Math.max(lastPeriod, lastExclamation, lastQuestion);
       
-      // Find the last complete sentence within the limit
-      const truncated = personalizedEmail.substring(0, options.maxCharacters - 20); // Leave room for proper ending
-      const lastSentenceEnd = Math.max(
-        truncated.lastIndexOf('.'),
-        truncated.lastIndexOf('!'),
-        truncated.lastIndexOf('?')
-      );
-      
-      if (lastSentenceEnd > options.maxCharacters * 0.7) {
-        // If we can find a good sentence ending, use it
-        personalizedEmail = truncated.substring(0, lastSentenceEnd + 1);
+      if (lastSentenceEnd > maxLength * 0.7) {
+        truncated = emailContent.substring(0, lastSentenceEnd + 1);
       } else {
-        // Otherwise, truncate at word boundary and add proper ending
+        // If no sentence boundary found, truncate at word boundary
         const lastSpace = truncated.lastIndexOf(' ');
-        personalizedEmail = truncated.substring(0, lastSpace) + '...';
+        if (lastSpace > maxLength * 0.7) {
+          truncated = emailContent.substring(0, lastSpace);
+        }
       }
+      
+      emailContent = truncated;
+      console.log(`Final personalized email length: ${emailContent.length}/${options.maxCharacters}`);
     }
 
-    console.log(`Final personalized email length: ${personalizedEmail.length}/${options.maxCharacters}`);
-    return personalizedEmail;
+    return emailContent.trim();
   } catch (error: any) {
-    console.error('Error personalizing email with Gemini:', error);
+    console.error('Error generating personalized email:', error);
     if (error.status === 401 || error.message?.includes('API key')) {
       throw new Error('Gemini API key is invalid. Please check your API key settings.');
     }
@@ -395,7 +354,7 @@ Best regards,
 --- 
 Note: This is a demo email generated due to Gemini quota limits. Please add credits to your Gemini account for full AI personalization.`;
     }
-    throw new Error(`Failed to personalize email: ${error.message}`);
+    throw new Error(`Failed to generate personalized email: ${error.message}`);
   }
 }
 
