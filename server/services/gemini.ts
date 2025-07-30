@@ -239,7 +239,7 @@ export async function personalizeEmailContent(
     EMAIL REQUIREMENTS:
     - Type: ${options.emailType}
     - Tone: ${options.tone}
-    - MAXIMUM CHARACTERS: ${options.maxCharacters} (USE THE FULL LIMIT - this is important!)
+    - TARGET LENGTH: Approximately ${Math.floor(options.maxCharacters * 0.95)} characters (95% of ${options.maxCharacters} limit - this is MANDATORY)
     - Call to action: ${options.callToAction}
 
     DETAILED PERSONALIZATION REQUIREMENTS:
@@ -265,7 +265,7 @@ export async function personalizeEmailContent(
     
     5. NATURAL INTEGRATION: Weave "${options.callToAction}" seamlessly into the conversation
     
-    6. MAXIMIZE LENGTH: You MUST use close to ${options.maxCharacters} characters. This is a requirement, not a suggestion. Include:
+    6. MANDATORY LENGTH REQUIREMENT: Your email MUST be approximately ${Math.floor(options.maxCharacters * 0.95)} characters (${options.maxCharacters} limit). Count your characters and ensure you reach this target. Include:
        • Detailed business insights and industry analysis
        • Specific service references with technical details
        • Multiple paragraphs of industry knowledge demonstration
@@ -274,7 +274,9 @@ export async function personalizeEmailContent(
        • Comprehensive market understanding
        • Detailed competitive landscape insights
     
-    IMPORTANT: Write a substantial, comprehensive email that uses nearly the full ${options.maxCharacters} character limit. Short emails are not acceptable when a high character limit is provided. Expand on every point with specific details, examples, and business insights.
+    CRITICAL REQUIREMENT: Your email must be approximately ${Math.floor(options.maxCharacters * 0.95)} characters. If you write less than ${Math.floor(options.maxCharacters * 0.8)} characters, the email will be rejected. Expand every section with detailed business insights, specific examples, industry analysis, and comprehensive value propositions to reach the target length.
+    
+    CHARACTER COUNT TARGET: ${Math.floor(options.maxCharacters * 0.95)} characters
     
     Return only the email content without subject line.
   `;
@@ -294,24 +296,28 @@ export async function personalizeEmailContent(
 
     let personalizedEmail = response.text || '';
     
-    // If the email is significantly shorter than the max limit, try to expand it
-    if (personalizedEmail.length < options.maxCharacters * 0.7) {
+    // If the email is shorter than 85% of the max limit, expand it to reach the target
+    if (personalizedEmail.length < options.maxCharacters * 0.85) {
       console.log(`Email too short (${personalizedEmail.length}/${options.maxCharacters}), attempting to expand...`);
       
-      // Create an expansion prompt
+      // Create an expansion prompt that targets the exact character count
+      const targetLength = Math.floor(options.maxCharacters * 0.95); // Target 95% of max characters
       const expansionPrompt = `
-        The following email is too short for the ${options.maxCharacters} character limit. Please expand it to use nearly the full character limit by adding:
-        - More specific business insights about their industry
-        - Additional details about their services and capabilities
-        - More comprehensive value propositions
-        - Deeper market analysis and competitive positioning
-        - Additional professional credibility elements
-        - More detailed explanation of how we can help their specific business
+        CRITICAL TASK: Expand the following email to exactly ${targetLength} characters (currently ${personalizedEmail.length} characters).
         
-        Current email:
+        You must add approximately ${targetLength - personalizedEmail.length} more characters by including:
+        - Detailed industry analysis specific to their business sector
+        - More comprehensive descriptions of their services and methodologies
+        - Additional value propositions with concrete examples and benefits
+        - Deeper competitive landscape insights and market positioning
+        - More professional credibility elements, case studies, or success stories
+        - Extended explanations of how our solutions address their specific challenges
+        - Additional paragraphs about industry trends and opportunities
+        
+        Current email (${personalizedEmail.length} characters):
         ${personalizedEmail}
         
-        Expand this to approximately ${options.maxCharacters} characters while maintaining the same professional tone and personalization level.
+        REQUIREMENT: Your response must be approximately ${targetLength} characters. Add substantial content while maintaining the same professional ${options.tone} tone and high level of personalization.
       `;
       
       try {
