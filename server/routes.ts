@@ -2216,8 +2216,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Campaign not found" });
       }
       
-      await storage.deleteCampaign(campaignId);
-      res.json({ message: "Campaign deleted successfully" });
+      // Check if campaign is completed - preserve email counts for completed campaigns
+      const isCompleted = campaign.status === 'completed';
+      
+      await storage.deleteCampaign(campaignId, isCompleted);
+      
+      res.json({ 
+        message: "Campaign deleted successfully",
+        preservedStats: isCompleted
+      });
     } catch (error) {
       console.error("Error deleting campaign:", error);
       res.status(500).json({ message: "Failed to delete campaign" });

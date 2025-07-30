@@ -74,11 +74,19 @@ export default function Campaigns() {
       const response = await apiRequest("DELETE", `/api/campaigns/${campaignId}`);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
+      
+      // Only invalidate dashboard stats if it wasn't a completed campaign (preservedStats = false)
+      if (!data.preservedStats) {
+        queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      }
+      
       toast({
         title: "Success", 
-        description: "Campaign deleted successfully",
+        description: data.preservedStats 
+          ? "Campaign deleted successfully (email counts preserved)"
+          : "Campaign deleted successfully",
       });
     },
     onError: (error) => {
@@ -181,7 +189,7 @@ export default function Campaigns() {
         </div>
 
         {/* Campaign Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -205,20 +213,6 @@ export default function Campaigns() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Emails Sent</p>
                   <p className="text-2xl font-bold text-gray-900">{totalStats.totalEmails.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Users className="h-6 w-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Recipients</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalStats.totalRecipients.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>

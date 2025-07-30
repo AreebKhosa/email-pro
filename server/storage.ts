@@ -612,7 +612,10 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(campaigns)
-      .where(eq(campaigns.userId, userId))
+      .where(and(
+        eq(campaigns.userId, userId),
+        sql`status != 'deleted'`  // Exclude soft-deleted campaigns
+      ))
       .orderBy(desc(campaigns.createdAt));
   }
 
@@ -670,8 +673,22 @@ export class DatabaseStorage implements IStorage {
     return integration;
   }
 
-  async deleteCampaign(id: number): Promise<void> {
-    await db.delete(campaigns).where(eq(campaigns.id, id));
+  async deleteCampaign(id: number, preserveStats: boolean = false): Promise<void> {
+    if (preserveStats) {
+      // For completed campaigns, only mark as deleted but preserve for stats
+      // We'll add a soft delete by setting a deletedAt timestamp
+      await db
+        .update(campaigns)
+        .set({ 
+          name: '[DELETED] ' + (await this.getCampaign(id))?.name || 'Campaign',
+          status: 'deleted',
+          updatedAt: new Date()
+        })
+        .where(eq(campaigns.id, id));
+    } else {
+      // For incomplete campaigns, hard delete
+      await db.delete(campaigns).where(eq(campaigns.id, id));
+    }
   }
 
   // Follow-ups
@@ -897,6 +914,7 @@ export class DatabaseStorage implements IStorage {
     openRate: number;
     clickRate: number;
   }> {
+    // Get stats from all campaigns (including soft-deleted ones) to preserve email counts
     const [campaignStats] = await db
       .select({
         totalCampaigns: count(),
@@ -907,13 +925,24 @@ export class DatabaseStorage implements IStorage {
       .from(campaigns)
       .where(eq(campaigns.userId, userId));
 
+    // Get count of only active campaigns (non-deleted) for campaign count
+    const [activeCampaignStats] = await db
+      .select({
+        activeCampaigns: count(),
+      })
+      .from(campaigns)
+      .where(and(
+        eq(campaigns.userId, userId),
+        sql`status != 'deleted'`
+      ));
+
     const totalSent = Number(campaignStats.totalSent) || 0;
     const totalOpened = Number(campaignStats.totalOpened) || 0;
     const totalClicked = Number(campaignStats.totalClicked) || 0;
 
     return {
-      totalCampaigns: campaignStats.totalCampaigns,
-      emailsSent: totalSent,
+      totalCampaigns: activeCampaignStats.activeCampaigns, // Only count active campaigns
+      emailsSent: totalSent, // Keep all email counts from all campaigns (including deleted)
       openRate: totalSent > 0 ? (totalOpened / totalSent) * 100 : 0,
       clickRate: totalSent > 0 ? (totalClicked / totalSent) * 100 : 0,
     };
