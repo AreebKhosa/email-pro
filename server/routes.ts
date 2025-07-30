@@ -1805,7 +1805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const recipientId = parseInt(req.params.id);
-      const { emailType, tone, maxCharacters, callToAction } = req.body;
+      const { emailType, tone, maxCharacters, callToAction, ourServices, ourIndustry } = req.body;
 
       console.log('Personalizing recipient:', { recipientId, userId, emailType, tone });
 
@@ -1846,11 +1846,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tone,
         maxCharacters: parseInt(maxCharacters.toString()),
         callToAction,
+        ourServices,
+        ourIndustry,
       });
 
       console.log('Generated personalized email, length:', personalizedEmail.length);
+      console.log('Full personalized email content:', personalizedEmail.substring(0, 200) + '...');
 
       await storage.updateRecipientPersonalizedEmail(recipientId, personalizedEmail);
+      console.log('Successfully saved personalized email to database');
 
       // Update usage - track all personalized emails (including demo emails)
       try {
@@ -1876,7 +1880,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       const listId = parseInt(req.params.id);
-      const { emailType, tone, maxCharacters, callToAction } = req.body;
+      const { emailType, tone, maxCharacters, callToAction, ourServices, ourIndustry } = req.body;
 
       const recipients = await storage.getListRecipients(listId);
       const unPersonalizedRecipients = recipients.filter(r => r.websiteLink && !r.personalizedEmail);
@@ -1906,6 +1910,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             tone,
             maxCharacters,
             callToAction,
+            ourServices,
+            ourIndustry,
           });
 
           await storage.updateRecipientPersonalizedEmail(recipient.id, personalizedEmail);

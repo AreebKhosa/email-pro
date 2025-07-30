@@ -508,11 +508,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateRecipientPersonalizedEmail(id: number, personalizedEmail: string): Promise<Recipient> {
+    console.log(`Saving personalized email for recipient ${id}, length: ${personalizedEmail.length}`);
     const [recipient] = await db
       .update(recipients)
       .set({ personalizedEmail })
       .where(eq(recipients.id, id))
       .returning();
+    
+    if (recipient?.personalizedEmail) {
+      console.log(`Verified email saved successfully, actual length: ${recipient.personalizedEmail.length}`);
+    } else {
+      console.error(`Failed to verify email save for recipient ${id}`);
+    }
+    
     return recipient;
   }
 
