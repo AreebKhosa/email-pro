@@ -533,7 +533,7 @@ export default function CreateCampaign() {
                     <Clock className="w-5 h-5" />
                     Email Timing Settings
                   </h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className={`grid gap-4 ${user?.plan !== 'demo' ? 'grid-cols-2' : 'grid-cols-1'}`}>
                     <div>
                       <Label htmlFor="email-delay">Time Between Emails (minutes)</Label>
                       <Input
@@ -550,22 +550,25 @@ export default function CreateCampaign() {
                         Recommended: 3-10 minutes for best deliverability
                       </p>
                     </div>
-                    <div>
-                      <Label htmlFor="emails-per-account">Emails Per Account (if rotating)</Label>
-                      <Input
-                        id="emails-per-account"
-                        type="number"
-                        value={campaignData.emailsPerAccount}
-                        onChange={(e) => setCampaignData(prev => ({ ...prev, emailsPerAccount: parseInt(e.target.value) || 30 }))}
-                        min="1"
-                        max="100"
-                        placeholder="30"
-                        className="mt-2"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Number of emails before switching accounts
-                      </p>
-                    </div>
+                    {/* Only show Emails Per Account for paid plans */}
+                    {user?.plan !== 'demo' && (
+                      <div>
+                        <Label htmlFor="emails-per-account">Emails Per Account (if rotating)</Label>
+                        <Input
+                          id="emails-per-account"
+                          type="number"
+                          value={campaignData.emailsPerAccount}
+                          onChange={(e) => setCampaignData(prev => ({ ...prev, emailsPerAccount: parseInt(e.target.value) || 30 }))}
+                          min="1"
+                          max="100"
+                          placeholder="30"
+                          className="mt-2"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Number of emails before switching accounts
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <Alert className="mt-3">
                     <AlertCircle className="h-4 w-4" />
@@ -640,21 +643,24 @@ export default function CreateCampaign() {
                     
                     {campaignData.rotateEmails && (
                       <div className="ml-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-sm font-medium">Emails per Account</Label>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                              Number of emails to send from each account before switching
-                            </p>
-                            <Input
-                              type="number"
-                              value={campaignData.emailsPerAccount}
-                              onChange={(e) => setCampaignData(prev => ({ ...prev, emailsPerAccount: parseInt(e.target.value) || 30 }))}
-                              min="1"
-                              max="100"
-                              className="w-full"
-                            />
-                          </div>
+                        <div className={`grid gap-4 ${user?.plan !== 'demo' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                          {/* Only show Emails per Account for paid plans */}
+                          {user?.plan !== 'demo' && (
+                            <div>
+                              <Label className="text-sm font-medium">Emails per Account</Label>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                                Number of emails to send from each account before switching
+                              </p>
+                              <Input
+                                type="number"
+                                value={campaignData.emailsPerAccount}
+                                onChange={(e) => setCampaignData(prev => ({ ...prev, emailsPerAccount: parseInt(e.target.value) || 30 }))}
+                                min="1"
+                                max="100"
+                                className="w-full"
+                              />
+                            </div>
+                          )}
                           <div>
                             <Label className="text-sm font-medium">Delay Between Emails (minutes)</Label>
                             <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
@@ -778,7 +784,7 @@ export default function CreateCampaign() {
                   <AlertDescription>
                     <strong>Campaign Summary:</strong> This campaign will send {selectedRecipientList?.recipientCount || 0} emails using {campaignData.emailIntegrationIds.length} email account(s) at a rate of {campaignData.dailyLimit} emails per day between {campaignData.timeWindowStart} and {campaignData.timeWindowEnd}.
                     {campaignData.rotateEmails && (
-                      <> Email rotation is enabled with {campaignData.emailsPerAccount} emails per account and {campaignData.emailDelay} minute(s) delay between sends.</>
+                      <> Email rotation is enabled with {user?.plan !== 'demo' ? `${campaignData.emailsPerAccount} emails per account and ` : ''}{campaignData.emailDelay} minute(s) delay between sends.</>
                     )}
                     {campaignData.followUpEnabled && (
                       <> Follow-up emails will be sent after {campaignData.followUpDays} days for recipients who haven't {campaignData.followUpCondition === 'not_opened' ? 'opened' : 'replied to'} the email.</>
