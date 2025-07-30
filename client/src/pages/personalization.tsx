@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,6 +25,8 @@ const personalizationSchema = z.object({
   tone: z.string().min(1, "Tone is required"),
   maxCharacters: z.coerce.number().min(50, "Minimum 50 characters").max(2000, "Maximum 2000 characters"),
   callToAction: z.string().min(1, "Call to action is required"),
+  ourServices: z.string().optional(),
+  ourIndustry: z.string().optional(),
 });
 
 const emailTypes = [
@@ -77,6 +79,8 @@ export default function Personalization() {
       tone: "",
       maxCharacters: 500,
       callToAction: "",
+      ourServices: "",
+      ourIndustry: "",
     },
   });
 
@@ -489,6 +493,40 @@ export default function Personalization() {
                         <FormControl>
                           <Input type="number" min="50" max="2000" {...field} />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="ourServices"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Our Services/Products</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Web development, AI solutions, Marketing automation..." {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          What services or products do you offer? This helps AI write more relevant emails.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="ourIndustry"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Our Industry/Niche</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Technology, Healthcare, E-commerce, Finance..." {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          What industry are you in? This helps AI position your services better.
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

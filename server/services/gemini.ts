@@ -27,6 +27,8 @@ export interface PersonalizationOptions {
   tone: string;
   maxCharacters: number;
   callToAction: string;
+  ourServices?: string;
+  ourIndustry?: string;
 }
 
 // Comprehensive website content scraping function
@@ -139,6 +141,10 @@ export async function personalizeEmailContent(
     
     DETAILED WEBSITE ANALYSIS:
     ${websiteContent || 'No website information available'}
+    
+    OUR COMPANY DETAILS:
+    - Our Services/Products: ${options.ourServices || 'Not specified'}
+    - Our Industry/Niche: ${options.ourIndustry || 'Not specified'}
     `;
 
     switch (emailType.toLowerCase()) {
@@ -261,11 +267,15 @@ export async function personalizeEmailContent(
        • Reference growth opportunities in their sector
        • Demonstrate understanding of their client base
     
-    4. PROFESSIONAL DEPTH: Use ${options.tone} tone while providing substantial business value
+    4. OUR COMPANY POSITIONING: ${options.ourServices ? `Position our services (${options.ourServices}) as the perfect solution for their business needs` : 'Position our company as the ideal partner'}
     
-    5. NATURAL INTEGRATION: Weave "${options.callToAction}" seamlessly into the conversation
+    5. INDUSTRY ALIGNMENT: ${options.ourIndustry ? `Leverage our ${options.ourIndustry} industry expertise to demonstrate deep understanding` : 'Show general business expertise'}
     
-    6. MANDATORY LENGTH REQUIREMENT: Your email MUST be exactly ${options.maxCharacters} characters. Do not exceed this limit. Count your characters carefully and ensure you stay within ${options.maxCharacters} characters. Include:
+    6. PROFESSIONAL DEPTH: Use ${options.tone} tone while providing substantial business value
+    
+    7. NATURAL INTEGRATION: Weave "${options.callToAction}" seamlessly into the conversation
+    
+    8. MANDATORY LENGTH REQUIREMENT: Your email MUST be exactly ${options.maxCharacters} characters. Do not exceed this limit. Count your characters carefully and ensure you stay within ${options.maxCharacters} characters. Include:
        • Detailed business insights and industry analysis
        • Specific service references with technical details
        • Multiple paragraphs of industry knowledge demonstration
