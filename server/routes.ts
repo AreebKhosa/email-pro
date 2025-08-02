@@ -2361,9 +2361,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send warmup emails (this now auto-continues)
       warmupService.sendWarmupEmails(userId).catch(console.error);
       
-      // Also read existing warmup emails via IMAP
-      const { readWarmupEmailsForUser } = await import('./services/imap');
-      readWarmupEmailsForUser(userId).catch(console.error);
+      // Also read existing warmup emails via IMAP (commented out for now)
+      // const { readWarmupEmailsForUser } = await import('./services/imap');
+      // readWarmupEmailsForUser(userId).catch(console.error);
       
       res.json({ message: "Warmup process started successfully" });
     } catch (error) {

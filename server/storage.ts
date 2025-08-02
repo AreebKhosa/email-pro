@@ -849,7 +849,7 @@ export class DatabaseStorage implements IStorage {
           eq(warmupEmails.subject, subject)
         )
       )
-      .orderBy(sql`${warmupEmails.sentAt} DESC`)
+      .orderBy(desc(warmupEmails.sentAt))
       .limit(1);
     return email;
   }

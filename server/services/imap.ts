@@ -1,4 +1,4 @@
-import Imap from 'imap';
+import * as Imap from 'imap';
 import { simpleParser } from 'mailparser';
 import { storage } from '../storage';
 import { warmupService } from './warmup';
