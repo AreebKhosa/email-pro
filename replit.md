@@ -2,251 +2,59 @@
 
 ## Overview
 
-This is a comprehensive email marketing SaaS platform built with a full-stack TypeScript architecture. The application provides email campaign management, recipient list handling, email integration, warm-up functionality, deliverability checking, and AI-powered email personalization. It features a modern React frontend with shadcn/ui components and an Express.js backend with PostgreSQL database using Drizzle ORM.
+This project is a comprehensive email marketing SaaS platform. It enables users to manage email campaigns, handle recipient lists, integrate various email services, and leverage AI for personalized email content. The platform aims to provide a modern, efficient, and intelligent solution for businesses to conduct email outreach effectively, with capabilities spanning from warm-up functionality and deliverability checking to advanced AI personalization and campaign tracking.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
-
-## Recent Changes
-
-### Manual User Authentication System (July 20, 2025)
-- Implemented comprehensive email verification system for user signup using website owner's SMTP
-- Added password reset functionality with secure token-based system
-- Created complete database schema with email_verification_tokens and password_reset_tokens tables
-- Added authentication routes: signup, email verification, forgot password, reset password
-- Modified user schema to include password hash, emailVerified flag
-- Enhanced storage interface with token management methods
-- Updated settings page by removing API keys and data tabs as requested
-- Users must verify email before gaining login access
-- Secure authentication flow using bcrypt password hashing and cryptographically secure tokens
-- Email verification tokens expire after 24 hours, password reset tokens expire after 1 hour
-
-### Admin Panel System (July 20, 2025)
-- Created comprehensive admin panel for website owner to manage system configurations
-- Implemented secure JWT-based admin authentication separate from user authentication
-- Built admin dashboard with tabbed interface for API keys, Stripe settings, OAuth, and SMTP
-- Added encrypted storage for sensitive configuration data (API keys, passwords)
-- Created admin login system with username/password authentication
-- Database tables: adminConfig for encrypted key storage, adminUsers for admin authentication
-- Admin can view and manage: OpenAI API keys, Stripe keys, Google OAuth credentials, SMTP settings
-- All sensitive keys are stored encrypted and can be toggled for visibility
-- Default admin user: username "admin", password "admin123456" (should be changed immediately)
-- Admin routes: /admin/login for authentication, /admin/dashboard for configuration management
-- Secure token-based authentication with 24-hour expiration
-
-### Enhanced AI Personalization with Website Scraping (July 30, 2025)
-- Completely redesigned Gemini AI personalization to create highly professional, research-based emails
-- Added comprehensive website content scraping functionality that extracts business-relevant information
-- Enhanced AI prompts to do deep business analysis including services, target markets, expertise areas, company approach
-- Improved email personalization to reference specific services, industry challenges, and value propositions
-- Added intelligent content filtering to focus on business-relevant website sections
-- Updated personalization system to demonstrate genuine understanding of recipient's business model
-- Enhanced both single and bulk personalization to use real website content for authentic outreach
-- Migrated from generic templates to professional business development approach with detailed company research
-- Fixed character limit enforcement with smart truncation that preserves sentence integrity
-- Added service and industry input fields for more targeted AI personalization
-- Implemented "View Email" functionality to display full personalized emails without truncation
-- Enhanced AI prompts to use user's service offerings and industry expertise for better positioning
-
-### Real Email Sending Implementation (July 20, 2025)
-- Implemented actual SMTP email sending using Python-based solution replacing problematic nodemailer
-- Added comprehensive email tracking system with open and click tracking
-- Created tracking pixel endpoint for monitoring email opens
-- Implemented link tracking with automatic URL wrapping for click monitoring
-- Added campaign email records creation for detailed tracking
-- Enhanced email personalization with dynamic field replacement ({{name}}, {{email}}, etc.)
-- Integrated usage tracking updates when emails are sent
-- Fixed SQL syntax errors by adding missing schema fields (totalRecipients, currentEmailIndex)
-- Added proper error handling and logging for email sending process
-- Implemented Python SMTP script for reliable email delivery with detailed console logging
-- Added email rotation functionality for upgraded plans with configurable emails per account
-- Campaign completion automatically disables action buttons with visual completion indicator
-- Fixed HTML email rendering by wrapping content in proper HTML structure for email client compatibility
-- Removed duplicate tracking pixel addition and improved email formatting for professional appearance
-
-### Campaign Stats and Controls (July 20, 2025)
-- Fixed personalization count display to show correct quota usage from backend
-- Added campaign stats cards displaying total campaigns, emails sent, recipients, and open rates
-- Implemented functional start/pause/resume campaign buttons with real email sending
-- Campaign sending now respects plan limits and tracks recipient status
-- Added real-time stats tracking and display updates
-- Removed action buttons from dashboard recent campaigns area
-
-### Text Editor Improvements (July 19, 2025)
-- Replaced complex rich text editor with simple textarea to fix text reversal bug
-- Added HTML tag buttons for Bold, New Line, Headings (H1-H3), and Link insertion
-- Added dynamic field buttons for recipient personalization ({{name}}, {{email}}, etc.)
-- Users can now type normally without text appearing backward
-- Text editor now supports HTML formatting with clickable buttons
-
-### Campaign Management Enhancements (July 19, 2025)
-- Added trash icon and delete functionality to campaigns list
-- Enhanced follow-up email system with direct storage in campaigns table
-- Updated database schema to include followUpEnabled, followUpSubject, followUpBody fields
-- Fixed follow-up display logic in campaign detail modal
-- Added ability to edit follow-up delay time (1-30 days) in campaign details
-- Added follow-up condition editing (Not Opened, Not Clicked, Opened but Not Clicked)
-
-### Sidebar and Navigation Redesign (July 19, 2025)
-- Implemented responsive sidebar with collapsible functionality
-- Added mobile-friendly hamburger menu and overlay
-- Created proper background highlighting for selected navigation items
-- Moved logout button to bottom of sidebar with red styling
-- Added profile dropdown in top-right header with avatar and user info
-- Created dedicated profile page with personal information editing
-- Integrated proper layout structure with sidebar, header, and main content area
 
 ## System Architecture
 
 ### Frontend Architecture
 - **Framework**: React with TypeScript
 - **UI Components**: Radix UI primitives with shadcn/ui design system
-- **Styling**: Tailwind CSS with CSS variables for theming
-- **Routing**: Wouter for client-side routing
-- **State Management**: TanStack Query for server state management
+- **Styling**: Tailwind CSS
+- **Routing**: Wouter
+- **State Management**: TanStack Query
 - **Form Handling**: React Hook Form with Zod validation
-- **Build Tool**: Vite with development optimizations
+- **Build Tool**: Vite
 
 ### Backend Architecture
-- **Runtime**: Node.js with Express.js framework
-- **Language**: TypeScript with ES modules
+- **Runtime**: Node.js with Express.js
+- **Language**: TypeScript
 - **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: Replit OAuth integration with session management
-- **Session Storage**: PostgreSQL-backed sessions using connect-pg-simple
+- **Session Storage**: PostgreSQL-backed sessions
 
 ### Database Architecture
 - **ORM**: Drizzle with PostgreSQL dialect
 - **Schema Location**: Shared between client and server (`/shared/schema.ts`)
 - **Migrations**: Managed through Drizzle Kit
-- **Connection**: Neon Database serverless with WebSocket support
+- **Connection**: Neon Database serverless
 
-## Key Components
-
-### Authentication System
-- **Provider**: Replit OAuth with OpenID Connect
-- **Session Management**: Express sessions stored in PostgreSQL
-- **User Model**: Stores profile information, plan details, and Stripe integration
-- **Authorization**: Route-level protection with authentication middleware
-
-### Email Management
-- **SMTP/IMAP Integration**: Multi-account email service configuration
-- **Validation**: Automatic connection testing for email accounts
-- **Warm-up System**: Automated email reputation building
-- **Service Layer**: Nodemailer for SMTP, IMAP library for inbox management
-
-### Campaign System
-- **4-Step Campaign Creation**: Full-page wizard flow (Campaign Info → Recipients → Content → Sending Settings)
-- **Email Rotation**: Multi-account email distribution for upgraded plans
-- **Follow-up Sequences**: Automated follow-up email chains with condition-based triggers
-- **AI Enhancement**: Gemini-powered email content improvement
-- **Scheduling**: Time-based campaign execution with configurable sending windows
-- **Tracking**: Email delivery and engagement metrics
-- **Plan-Based Features**: Different capabilities based on subscription tier
-
-### AI Personalization
-- **Provider**: Google Gemini API integration (migrated from OpenAI due to cost constraints)
-- **Website Scraping**: Automated content extraction for personalization
-- **Template Generation**: AI-powered email content creation
-- **Customization**: Tone, length, and CTA configuration
-
-### Payment Integration
-- **Provider**: Stripe for subscription management
-- **Plan Tiers**: Demo (free), Starter, Pro, Premium with usage limits
-- **Webhooks**: Automated plan updates and billing events
-- **Usage Tracking**: Real-time monitoring of plan limits
-
-### Instruction Boxes System
-- **Persistent Dismissal**: Instruction boxes show only on first visit to each page
-- **localStorage Storage**: Dismissed instructions are stored locally and won't reappear
-- **Provider-Specific Instructions**: Email integration forms show OAuth for Gmail, SMTP/IMAP instructions for other providers
-- **Setup Guides**: Each provider includes links to official documentation for SMTP/IMAP setup
-- **Reset Capability**: Users can reset instruction visibility through the useInstructions hook
-
-### Enhanced Personalization System
-- **Quota Tracking**: Visual cards showing remaining/used personalization quotas per plan
-- **Individual Personalization**: Single recipient personalization via action menu
-- **Bulk Processing**: "Personalize All" functionality with progress tracking
-- **Settings Configuration**: Required personalization settings (email type, tone, CTA, character limits)
-- **Export Functionality**: CSV download with all personalized emails
-- **Website Validation**: Recipients without websites show "No Website" status
-- **Plan-Based Limits**: Demo (30), Starter (1000), Pro (1000), Premium (1000) personalizations
-
-### Advanced Email Rotation System
-- **Multi-Account Sending**: Upgraded plans can rotate emails across multiple verified email accounts
-- **Configurable Rotation**: Users set emails per account before switching (default: 30 emails)
-- **Timing Controls**: Customizable delay between email sends (1-60 minutes)
-- **Daily Limits**: Plan-based sending limits with automatic daily scheduling
-- **Time Windows**: Configurable sending hours (e.g., 8 AM to 5 PM)
-- **Smart Distribution**: Automatic calculation of email distribution across accounts and days
-- **Completion Estimates**: Real-time estimation of campaign completion time
-- **Account Validation**: Verification that all rotation accounts are properly configured
-
-## Data Flow
-
-### User Authentication Flow
-1. User initiates login through Replit OAuth
-2. OpenID Connect authentication with Replit
-3. Session creation and user profile synchronization
-4. Persistent session storage in PostgreSQL
-
-### Email Campaign Flow
-1. User creates recipient lists with CSV import capability
-2. Email integration setup with SMTP/IMAP validation
-3. Campaign creation with personalization options
-4. AI-powered content generation using website data
-5. Scheduled or immediate campaign execution
-6. Real-time delivery tracking and analytics
-
-### Plan Management Flow
-1. User selects plan upgrade
-2. Stripe Checkout session creation
-3. Payment processing and webhook handling
-4. Automatic plan activation and limit updates
-5. Usage tracking against plan boundaries
+### Key Features
+- **Authentication System**: Replit OAuth, secure manual user authentication with email verification and password reset, JWT-based admin authentication.
+- **Email Management**: Multi-account SMTP/IMAP integration, automated warm-up system, email tracking (open/click).
+- **Campaign System**: 4-step creation wizard, email rotation, automated follow-up sequences, scheduling, plan-based features.
+- **AI Personalization**: Google Gemini integration for professional, research-based email content via website scraping and deep business analysis.
+- **Payment Integration**: Stripe for subscription management with various plan tiers and usage tracking.
+- **Instruction Boxes System**: Persistent, localStorage-based dismissal of setup guides and specific instructions.
+- **Advanced Email Rotation System**: Configurable multi-account sending, timing controls, daily limits, and smart distribution.
 
 ## External Dependencies
 
 ### Core Services
-- **Neon Database**: PostgreSQL hosting with serverless architecture
+- **Neon Database**: PostgreSQL hosting
 - **Replit OAuth**: Authentication provider
-- **Google Gemini**: AI-powered email personalization (migrated from OpenAI)
+- **Google Gemini**: AI-powered email personalization
 - **Stripe**: Payment processing and subscription management
 
 ### Email Services
 - **SMTP Providers**: Support for major email providers (Gmail, Outlook, custom)
 - **IMAP Access**: Inbox monitoring and email verification
-- **Nodemailer**: Email sending infrastructure
+- **Python SMTP Script**: Used for reliable email sending
 
 ### Development Tools
 - **Replit Integration**: Development environment optimization
-- **Vite Plugins**: Hot module replacement and development tooling
+- **Vite**: Frontend build tool
 - **TypeScript**: Full-stack type safety
-
-## Deployment Strategy
-
-### Development Environment
-- **Hot Reloading**: Vite development server with React Fast Refresh
-- **API Development**: Express server with TypeScript compilation
-- **Database**: Replit-provisioned PostgreSQL instance
-- **Environment Variables**: Replit Secrets management
-
-### Production Build
-- **Frontend**: Vite production build with static asset optimization
-- **Backend**: ESBuild compilation for Node.js deployment
-- **Database Migrations**: Drizzle Kit automated schema updates
-- **Static Serving**: Express static file serving for SPA
-
-### Configuration Management
-- **Environment Variables**: Database URLs, API keys, OAuth credentials
-- **Feature Flags**: Plan-based feature availability
-- **CORS**: Configured for Replit domain handling
-- **Session Security**: Secure cookies with domain restrictions
-
-### Monitoring and Analytics
-- **Usage Tracking**: Real-time plan limit monitoring
-- **Error Handling**: Centralized error management with user feedback
-- **Performance**: Query optimization and connection pooling
-- **Logging**: Request/response logging for API endpoints
-
-The application implements a modern SaaS architecture with clear separation of concerns, robust authentication, and scalable data management suitable for email marketing operations.
