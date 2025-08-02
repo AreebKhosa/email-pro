@@ -921,7 +921,8 @@ export class DatabaseStorage implements IStorage {
         avgOpenRate: sql<number>`AVG(${warmupStats.openRate})`,
         avgReplyRate: sql<number>`AVG(${warmupStats.replyRate})`,
         avgSpamRate: sql<number>`AVG(${warmupStats.spamRate})`,
-        avgInboxRate: sql<number>`AVG(${warmupStats.inboxRate})`
+        avgInboxRate: sql<number>`AVG(${warmupStats.inboxRate})`,
+        avgSpamTransferRate: sql<number>`AVG(${warmupStats.spamTransferRate})`
       })
       .from(warmupStats)
       .where(eq(warmupStats.emailIntegrationId, integrationId));
