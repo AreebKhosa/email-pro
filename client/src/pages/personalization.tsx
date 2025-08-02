@@ -306,19 +306,23 @@ export default function Personalization() {
   const personalizedCount = recipients?.filter((r: any) => r.personalizedEmail).length || 0;
   const totalRecipients = recipients?.length || 0;
 
-  // Calculate personalization quota
-  const planLimits: Record<string, number> = {
-    demo: 30,
-    starter: 1000,
-    pro: 1000,
-    premium: 1000,
-  };
-
-  const currentPlan = userStats?.plan || 'demo';
-  const quota = planLimits[currentPlan] || 10;
+  // Calculate personalization quota from actual plan limits
+  const quota = userStats?.planLimits?.personalizedEmails || 100;
   const used = userStats?.personalizationsUsed || 0;
-  const remaining = quota - used;
-  const quotaPercentage = (used / quota) * 100;
+  const remaining = Math.max(0, quota - used);
+  const quotaPercentage = quota === Infinity ? 0 : (used / quota) * 100;
+  
+  // Determine current plan based on limits
+  const determinePlan = (limits: any) => {
+    if (!limits) return 'demo';
+    if (limits.personalizedEmails === 100 && limits.emailsPerMonth === 1000) return 'demo';
+    if (limits.personalizedEmails === 1000 && limits.emailsPerMonth === 20000) return 'starter';
+    if (limits.personalizedEmails === 1000 && limits.emailsPerMonth === 75000) return 'pro';
+    if (limits.personalizedEmails === 1000 && limits.emailsPerMonth === Infinity) return 'premium';
+    return 'demo';
+  };
+  
+  const currentPlan = determinePlan(userStats?.planLimits);
 
   return (
     <div className="space-y-8">
@@ -353,7 +357,7 @@ export default function Personalization() {
                 </div>
               </div>
               <Badge className="bg-purple-100 text-purple-800">
-                {currentPlan === 'premium' ? 'Unlimited' : `${remaining} remaining`}
+                {quota === Infinity ? 'Unlimited' : `${remaining} remaining`}
               </Badge>
             </div>
           </CardHeader>
@@ -361,9 +365,9 @@ export default function Personalization() {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-600">Used: {used}</span>
-                <span className="text-slate-600">Total: {currentPlan === 'premium' ? 'Unlimited' : quota}</span>
+                <span className="text-slate-600">Total: {quota === Infinity ? 'Unlimited' : quota}</span>
               </div>
-              <Progress value={currentPlan === 'premium' ? 0 : quotaPercentage} className="h-2" />
+              <Progress value={quotaPercentage} className="h-2" />
               {remaining <= 10 && (
                 <div className="flex items-center space-x-2 text-amber-700 bg-amber-50 p-3 rounded-lg">
                   <AlertCircle className="h-4 w-4" />
