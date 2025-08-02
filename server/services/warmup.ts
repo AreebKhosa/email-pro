@@ -289,8 +289,11 @@ export class WarmupService {
           status: "sent",
         });
 
-        // Update statistics
+        // Update statistics and progress
         await this.updateWarmupStats(fromIntegration.id, { emailsSent: 1 });
+        
+        // Check if day is completed and advance to next day if needed
+        await this.checkAndAdvanceDay(fromIntegration.id);
         
         console.log(`Warmup email sent from ${fromIntegration.email} to ${toIntegration.email}`);
       } else {
@@ -408,6 +411,55 @@ export class WarmupService {
       };
 
       await db.insert(warmupStats).values(newStats);
+    }
+  }
+
+  // Check if current day is completed and advance to next day
+  async checkAndAdvanceDay(integrationId: number) {
+    const progress = await this.getCurrentDayProgress(integrationId);
+    if (!progress) return;
+
+    const todayStats = await this.getTodayStats(integrationId);
+    const emailsSentToday = todayStats.emailsSent || 0;
+
+    // If target is reached, mark day as completed
+    if (emailsSentToday >= progress.targetEmailsPerDay && !progress.isCompleted) {
+      await db
+        .update(warmupProgress)
+        .set({ 
+          isCompleted: true
+        })
+        .where(eq(warmupProgress.id, progress.id));
+
+      // Initialize next day if not the last day
+      const currentDay = progress.day;
+      if (currentDay < this.config.warmupDays) {
+        const nextDay = currentDay + 1;
+        const nextDayTarget = Math.min(
+          1 + (nextDay - 1) * this.config.dailyIncrease, // Start with 1 email on day 1
+          this.config.maxDailyEmails
+        );
+
+        // Check if next day already exists
+        const [existingNextDay] = await db
+          .select()
+          .from(warmupProgress)
+          .where(
+            and(
+              eq(warmupProgress.emailIntegrationId, integrationId),
+              eq(warmupProgress.day, nextDay)
+            )
+          );
+
+        if (!existingNextDay) {
+          await db.insert(warmupProgress).values({
+            emailIntegrationId: integrationId,
+            day: nextDay,
+            targetEmailsPerDay: nextDayTarget,
+            isCompleted: false,
+          });
+        }
+      }
     }
   }
 

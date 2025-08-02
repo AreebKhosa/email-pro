@@ -132,12 +132,13 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
       // Email rotation logic - get the appropriate integration
       let integration;
       if (campaign.emailRotationEnabled && campaign.emailRotationIds && campaign.emailRotationIds.length > 0) {
-        // Calculate which email account to use based on emails per account limit
-        const emailsPerAccount = campaign.emailsPerAccount || 30;
-        const accountIndex = Math.floor(sentToday / emailsPerAccount) % campaign.emailRotationIds.length;
+        // Calculate which email account to use based on total sent count (not just today)
+        const emailsPerAccount = campaign.emailsPerAccount || 1; // Default to 1 for "rotate after each email"
+        const totalSentSoFar = (campaign.sentCount || 0) + sentToday; // Use campaign total + today's count
+        const accountIndex = Math.floor(totalSentSoFar / emailsPerAccount) % campaign.emailRotationIds.length;
         const rotationIntegrationId = campaign.emailRotationIds[accountIndex];
         integration = await storage.getEmailIntegration(rotationIntegrationId);
-        console.log(`Using email rotation: account ${accountIndex + 1}/${campaign.emailRotationIds.length} (${integration?.email})`);
+        console.log(`Using email rotation: account ${accountIndex + 1}/${campaign.emailRotationIds.length} (${integration?.email}) - sent so far: ${totalSentSoFar}, emails per account: ${emailsPerAccount}`);
       } else {
         // Use single email account
         integration = await storage.getEmailIntegration(campaign.emailIntegrationId);
@@ -2359,6 +2360,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error sending warmup emails:", error);
       res.status(500).json({ message: "Failed to send warmup emails" });
+    }
+  });
+
+  // Handle warmup email opens
+  app.post('/api/warmup/email-opened', isAuthenticated, async (req: any, res) => {
+    try {
+      const { emailId } = req.body;
+      // Update warmup email status to opened
+      await storage.updateWarmupEmailStatus(emailId, 'opened');
+      
+      // Get the email integration ID to update stats
+      const warmupEmail = await storage.getWarmupEmail(emailId);
+      if (warmupEmail) {
+        await warmupService.updateWarmupStats(warmupEmail.fromIntegrationId, { emailsOpened: 1 });
+      }
+      
+      res.json({ message: "Warmup email marked as opened" });
+    } catch (error) {
+      console.error("Error marking warmup email as opened:", error);
+      res.status(500).json({ message: "Failed to mark email as opened" });
     }
   });
 

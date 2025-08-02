@@ -93,6 +93,7 @@ export default function WarmUp() {
     queryKey: ["/api/warmup/stats"],
     retry: false,
     enabled: isAuthenticated,
+    refetchInterval: 10000, // Refresh every 10 seconds for real-time updates
   });
 
   const toggleWarmupMutation = useMutation({
