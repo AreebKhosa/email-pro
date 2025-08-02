@@ -2358,17 +2358,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
       
+      // Mark warmup as active for user's integrations
+      const integrations = await storage.getUserEmailIntegrations(userId);
+      for (const integration of integrations.filter(i => i.warmupEnabled)) {
+        await storage.updateEmailIntegration(integration.id, { lastWarmupAt: new Date() });
+      }
+      
       // Send warmup emails (this now auto-continues)
       warmupService.sendWarmupEmails(userId).catch(console.error);
-      
-      // Also read existing warmup emails via IMAP (commented out for now)
-      // const { readWarmupEmailsForUser } = await import('./services/imap');
-      // readWarmupEmailsForUser(userId).catch(console.error);
       
       res.json({ message: "Warmup process started successfully" });
     } catch (error) {
       console.error("Error starting warmup process:", error);
       res.status(500).json({ message: "Failed to start warmup process" });
+    }
+  });
+
+  // Stop warmup process
+  app.post('/api/warmup/stop', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; 
+      if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      
+      // Clear last warmup timestamp for user's integrations
+      const integrations = await storage.getUserEmailIntegrations(userId);
+      for (const integration of integrations.filter(i => i.warmupEnabled)) {
+        await storage.updateEmailIntegration(integration.id, { lastWarmupAt: null });
+      }
+      
+      res.json({ message: "Warmup process stopped successfully" });
+    } catch (error) {
+      console.error("Error stopping warmup process:", error);
+      res.status(500).json({ message: "Failed to stop warmup process" });
     }
   });
 

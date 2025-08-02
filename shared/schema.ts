@@ -84,6 +84,7 @@ export const emailIntegrations = pgTable("email_integrations", {
   tokenExpiresAt: timestamp("token_expires_at"),
   isVerified: boolean("is_verified").default(false),
   warmupEnabled: boolean("warmup_enabled").default(false),
+  lastWarmupAt: timestamp("last_warmup_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -24,6 +24,7 @@ interface EmailIntegration {
   name: string;
   warmupEnabled: boolean;
   isVerified: boolean;
+  lastWarmupAt?: string | null;
   createdAt: string;
 }
 
@@ -164,6 +165,7 @@ export default function WarmUp() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/warmup/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-integrations"] });
       toast({
         title: "Success",
         description: "Warmup process started - will auto-continue every 30 minutes",
@@ -184,6 +186,38 @@ export default function WarmUp() {
       toast({
         title: "Error",
         description: error.message || "Failed to send warmup emails",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const stopWarmupMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/warmup/stop");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/warmup/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-integrations"] });
+      toast({
+        title: "Success",
+        description: "Warmup process stopped",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to stop warmup process",
         variant: "destructive",
       });
     },
@@ -301,15 +335,39 @@ export default function WarmUp() {
                 </div>
               </div>
 
+              {/* Warmup Status Indicator */}
+              {activeIntegrations.some((integration: EmailIntegration) => integration.lastWarmupAt) && (
+                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-green-800 dark:text-green-300 font-medium">
+                      Warmup process is running - auto-continues every 30 minutes
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-4">
-                <Button
-                  onClick={() => sendWarmupMutation.mutate()}
-                  disabled={sendWarmupMutation.isPending || activeIntegrations.length < 2}
-                  className="flex items-center gap-2"
-                >
-                  <Play className="w-4 h-4" />
-                  {sendWarmupMutation.isPending ? "Sending..." : "Send Warmup Emails"}
-                </Button>
+                {activeIntegrations.some((integration: EmailIntegration) => integration.lastWarmupAt) ? (
+                  <Button
+                    onClick={() => stopWarmupMutation.mutate()}
+                    disabled={stopWarmupMutation.isPending}
+                    variant="destructive"
+                    className="flex items-center gap-2"
+                  >
+                    <Pause className="w-4 h-4" />
+                    {stopWarmupMutation.isPending ? "Stopping..." : "Stop Warmup"}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => sendWarmupMutation.mutate()}
+                    disabled={sendWarmupMutation.isPending || activeIntegrations.length < 2}
+                    className="flex items-center gap-2"
+                  >
+                    <Play className="w-4 h-4" />
+                    {sendWarmupMutation.isPending ? "Starting..." : "Start Warmup"}
+                  </Button>
+                )}
 
                 {activeIntegrations.length < 2 && (
                   <Alert className="flex-1">
