@@ -186,12 +186,17 @@ export const warmupEmails = pgTable("warmup_emails", {
   toIntegrationId: integer("to_integration_id").notNull().references(() => emailIntegrations.id),
   subject: varchar("subject").notNull(),
   body: text("body").notNull(),
-  status: varchar("status").notNull().default("sent"), // sent, delivered, opened, replied, spam
+  status: varchar("status").notNull().default("sent"), // sent, delivered, opened, replied, spam, bounced
+  deliveryLocation: varchar("delivery_location").default("unknown"), // inbox, spam, bounced
   sentAt: timestamp("sent_at").defaultNow(),
   openedAt: timestamp("opened_at"),
   repliedAt: timestamp("replied_at"),
+  spamTransferredAt: timestamp("spam_transferred_at"), // When moved from spam to inbox
   isSpam: boolean("is_spam").default(false),
+  isBounced: boolean("is_bounced").default(false),
   replyBody: text("reply_body"),
+  trackingId: varchar("tracking_id").unique(), // For open/click tracking
+  warmupDay: integer("warmup_day").notNull(), // Which day of 15-day warmup this was sent
 });
 
 // Warm-up statistics for each email integration
@@ -204,11 +209,15 @@ export const warmupStats = pgTable("warmup_stats", {
   emailsReplied: integer("emails_replied").default(0),
   emailsSpam: integer("emails_spam").default(0),
   emailsBounced: integer("emails_bounced").default(0),
+  emailsInbox: integer("emails_inbox").default(0), // Delivered to inbox
+  spamTransferred: integer("spam_transferred").default(0), // Moved from spam to inbox
   warmupScore: real("warmup_score").default(0), // 0-100 score
   spamRate: real("spam_rate").default(0), // percentage
   openRate: real("open_rate").default(0), // percentage
   replyRate: real("reply_rate").default(0), // percentage
   bounceRate: real("bounce_rate").default(0), // percentage
+  inboxRate: real("inbox_rate").default(0), // percentage delivered to inbox
+  spamTransferRate: real("spam_transfer_rate").default(0), // percentage moved from spam
 });
 
 // Warm-up progress tracking
@@ -218,6 +227,11 @@ export const warmupProgress = pgTable("warmup_progress", {
   day: integer("day").notNull(), // Day number in warmup process (1-15)
   targetEmailsPerDay: integer("target_emails_per_day").notNull(),
   actualEmailsSent: integer("actual_emails_sent").default(0),
+  emailsOpened: integer("emails_opened").default(0),
+  emailsInInbox: integer("emails_in_inbox").default(0),
+  emailsInSpam: integer("emails_in_spam").default(0),
+  spamTransferred: integer("spam_transferred").default(0),
+  dailyScore: real("daily_score").default(0), // Score for this specific day
   isCompleted: boolean("is_completed").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });

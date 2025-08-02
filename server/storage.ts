@@ -130,6 +130,14 @@ export interface IStorage {
   getWarmupStats(integrationId: number): Promise<{ sent: number; received: number; opened: number; replied: number }>;
   getWarmupProgress(integrationId: number): Promise<WarmupProgress[]>;
   getTodayWarmupStats(integrationId: number): Promise<WarmupStats | undefined>;
+  updateWarmupEmailTracking(trackingId: string, field: 'opened' | 'replied' | 'spam', value?: any): Promise<WarmupEmail | undefined>;
+  markWarmupEmailAsOpened(trackingId: string): Promise<WarmupEmail | undefined>;
+  markWarmupEmailAsReplied(trackingId: string, replyBody?: string): Promise<WarmupEmail | undefined>;
+  markWarmupEmailAsSpam(trackingId: string): Promise<WarmupEmail | undefined>;
+  getActiveWarmupIntegrations(): Promise<EmailIntegration[]>;
+  getWarmupStatsForIntegration(integrationId: number): Promise<any>;
+  updateWarmupProgress(integrationId: number, day: number, stats: Partial<WarmupProgress>): Promise<WarmupProgress>;
+  calculateWarmupScore(integrationId: number): Promise<number>;
 
   // Usage tracking
   getCurrentMonthUsage(userId: string): Promise<UsageTracking | undefined>;
@@ -833,6 +841,164 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return stats;
+  }
+
+  async updateWarmupEmailTracking(trackingId: string, field: 'opened' | 'replied' | 'spam', value?: any): Promise<WarmupEmail | undefined> {
+    const updateData: any = {};
+    
+    switch (field) {
+      case 'opened':
+        updateData.openedAt = new Date();
+        updateData.status = 'opened';
+        break;
+      case 'replied':
+        updateData.repliedAt = new Date();
+        updateData.status = 'replied';
+        if (value) updateData.replyBody = value;
+        break;
+      case 'spam':
+        updateData.isSpam = true;
+        updateData.status = 'spam';
+        updateData.deliveryLocation = 'spam';
+        break;
+    }
+
+    const [warmupEmail] = await db
+      .update(warmupEmails)
+      .set(updateData)
+      .where(eq(warmupEmails.trackingId, trackingId))
+      .returning();
+    
+    return warmupEmail;
+  }
+
+  async markWarmupEmailAsOpened(trackingId: string): Promise<WarmupEmail | undefined> {
+    // Check if already opened to prevent duplicate counting
+    const existing = await db
+      .select()
+      .from(warmupEmails)
+      .where(and(
+        eq(warmupEmails.trackingId, trackingId),
+        sql`${warmupEmails.openedAt} IS NOT NULL`
+      ));
+    
+    if (existing.length > 0) {
+      return existing[0];
+    }
+    
+    return this.updateWarmupEmailTracking(trackingId, 'opened');
+  }
+
+  async markWarmupEmailAsReplied(trackingId: string, replyBody?: string): Promise<WarmupEmail | undefined> {
+    return this.updateWarmupEmailTracking(trackingId, 'replied', replyBody);
+  }
+
+  async markWarmupEmailAsSpam(trackingId: string): Promise<WarmupEmail | undefined> {
+    return this.updateWarmupEmailTracking(trackingId, 'spam');
+  }
+
+  async getActiveWarmupIntegrations(): Promise<EmailIntegration[]> {
+    return await db
+      .select()
+      .from(emailIntegrations)
+      .where(eq(emailIntegrations.warmupEnabled, true));
+  }
+
+  async getWarmupStatsForIntegration(integrationId: number): Promise<any> {
+    // Get today's stats
+    const todayStats = await this.getTodayWarmupStats(integrationId);
+    
+    // Get overall stats
+    const [overallStats] = await db
+      .select({
+        totalSent: sum(warmupStats.emailsSent),
+        totalOpened: sum(warmupStats.emailsOpened),
+        totalReplied: sum(warmupStats.emailsReplied),
+        totalSpam: sum(warmupStats.emailsSpam),
+        totalBounced: sum(warmupStats.emailsBounced),
+        totalInbox: sum(warmupStats.emailsInbox),
+        avgWarmupScore: sql<number>`AVG(${warmupStats.warmupScore})`,
+        avgOpenRate: sql<number>`AVG(${warmupStats.openRate})`,
+        avgReplyRate: sql<number>`AVG(${warmupStats.replyRate})`,
+        avgSpamRate: sql<number>`AVG(${warmupStats.spamRate})`,
+        avgInboxRate: sql<number>`AVG(${warmupStats.inboxRate})`
+      })
+      .from(warmupStats)
+      .where(eq(warmupStats.emailIntegrationId, integrationId));
+
+    // Get 15-day progress
+    const progress = await this.getWarmupProgress(integrationId);
+    
+    return {
+      todayStats: todayStats || {
+        emailsSent: 0,
+        emailsOpened: 0,
+        emailsReplied: 0,
+        emailsSpam: 0,
+        emailsBounced: 0,
+        emailsInbox: 0,
+        warmupScore: 0,
+        openRate: 0,
+        replyRate: 0,
+        spamRate: 0,
+        inboxRate: 0
+      },
+      overallStats: {
+        totalSent: Number(overallStats.totalSent) || 0,
+        totalOpened: Number(overallStats.totalOpened) || 0,
+        totalReplied: Number(overallStats.totalReplied) || 0,
+        totalSpam: Number(overallStats.totalSpam) || 0,
+        totalBounced: Number(overallStats.totalBounced) || 0,
+        totalInbox: Number(overallStats.totalInbox) || 0,
+        avgWarmupScore: Number(overallStats.avgWarmupScore) || 0,
+        avgOpenRate: Number(overallStats.avgOpenRate) || 0,
+        avgReplyRate: Number(overallStats.avgReplyRate) || 0,
+        avgSpamRate: Number(overallStats.avgSpamRate) || 0,
+        avgInboxRate: Number(overallStats.avgInboxRate) || 0
+      },
+      progress
+    };
+  }
+
+  async updateWarmupProgress(integrationId: number, day: number, stats: Partial<WarmupProgress>): Promise<WarmupProgress> {
+    const [progress] = await db
+      .insert(warmupProgress)
+      .values({
+        emailIntegrationId: integrationId,
+        day,
+        targetEmailsPerDay: stats.targetEmailsPerDay || 1,
+        ...stats
+      })
+      .onConflictDoUpdate({
+        target: [warmupProgress.emailIntegrationId, warmupProgress.day],
+        set: stats
+      })
+      .returning();
+    
+    return progress;
+  }
+
+  async calculateWarmupScore(integrationId: number): Promise<number> {
+    const stats = await this.getWarmupStatsForIntegration(integrationId);
+    const { overallStats } = stats;
+    
+    if (overallStats.totalSent === 0) return 0;
+    
+    // Score calculation based on key metrics
+    const inboxRate = (overallStats.totalInbox / overallStats.totalSent) * 100;
+    const openRate = overallStats.avgOpenRate || 0;
+    const replyRate = overallStats.avgReplyRate || 0;
+    const spamRate = overallStats.avgSpamRate || 0;
+    
+    // Weighted scoring: inbox delivery (40%), open rate (30%), reply rate (20%), low spam rate (10%)
+    const score = Math.min(100, Math.max(0,
+      (inboxRate * 0.4) +
+      (openRate * 0.3) +
+      (replyRate * 0.2) +
+      ((100 - spamRate) * 0.1)
+    ));
+    
+    return Math.round(score);
   }
 
   async updateWarmupEmailStatus(emailId: number, status: string): Promise<void> {

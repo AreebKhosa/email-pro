@@ -289,25 +289,41 @@ export class WarmupService {
   }
 
   // Send a single warmup email
+  // Generate tracking ID for warmup emails
+  private generateTrackingId(): string {
+    return `warmup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
   async sendSingleWarmupEmail(fromIntegration: any, toIntegration: any) {
     try {
       const content = await this.generateWarmupContent();
+      const trackingId = this.generateTrackingId();
+      const progress = await this.getCurrentDayProgress(fromIntegration.id);
+      const currentDay = progress?.day || 1;
+      
+      // Add tracking pixel to email body
+      const bodyWithTracking = `${content.body}
+
+<img src="${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost'}/api/track/warmup/open/${trackingId}" width="1" height="1" style="display: none;" />`;
       
       const success = await sendEmail(
         fromIntegration,
         toIntegration.email,
         content.subject,
-        content.body
+        bodyWithTracking
       );
 
       if (success) {
-        // Record the warmup email
+        // Record the warmup email with tracking
         await db.insert(warmupEmails).values({
           fromIntegrationId: fromIntegration.id,
           toIntegrationId: toIntegration.id,
           subject: content.subject,
-          body: content.body,
+          body: bodyWithTracking,
           status: "sent",
+          trackingId,
+          warmupDay: currentDay,
+          deliveryLocation: 'unknown'
         });
 
         // Update statistics and progress
@@ -316,12 +332,136 @@ export class WarmupService {
         // Check if day is completed and advance to next day if needed
         await this.checkAndAdvanceDay(fromIntegration.id);
         
-        console.log(`Warmup email sent from ${fromIntegration.email} to ${toIntegration.email}`);
+        console.log(`Warmup email sent from ${fromIntegration.email} to ${toIntegration.email} with tracking ${trackingId}`);
       } else {
         console.error(`Failed to send warmup email from ${fromIntegration.email} to ${toIntegration.email}`);
       }
     } catch (error) {
       console.error("Error sending warmup email:", error);
+    }
+  }
+
+  // Enhanced inter-user warmup - find other users to send warmup emails to
+  async findWarmupPartners(excludeIntegrationId: number): Promise<any[]> {
+    try {
+      // Get all other active warmup integrations from different users
+      const currentIntegration = await db
+        .select()
+        .from(emailIntegrations)
+        .where(eq(emailIntegrations.id, excludeIntegrationId))
+        .limit(1);
+
+      if (!currentIntegration.length) return [];
+
+      const partners = await db
+        .select()
+        .from(emailIntegrations)
+        .where(
+          and(
+            eq(emailIntegrations.warmupEnabled, true),
+            eq(emailIntegrations.isVerified, true),
+            sql`${emailIntegrations.userId} != ${currentIntegration[0].userId}`,
+            sql`${emailIntegrations.id} != ${excludeIntegrationId}`
+          )
+        )
+        .limit(10); // Limit to prevent too many partners
+
+      console.log(`Found ${partners.length} warmup partners for integration ${excludeIntegrationId}`);
+      return partners;
+    } catch (error) {
+      console.error("Error finding warmup partners:", error);
+      return [];
+    }
+  }
+
+  // Send inter-user warmup email
+  async sendInterUserWarmupEmail(fromIntegration: any, toIntegration: any, warmupDay: number) {
+    try {
+      const trackingId = this.generateTrackingId();
+      
+      // Generate natural conversation-like email
+      const subjects = [
+        "Quick question about your services",
+        "Checking in on our potential collaboration", 
+        "Follow-up on our previous discussion",
+        "Exploring partnership opportunities",
+        "Your expertise in our upcoming project",
+        "Introduction and potential synergy",
+        "Reviewing options for our next quarter",
+        "Partnership discussion - next steps?",
+        "Collaborative opportunity ahead",
+        "Following up on our connection"
+      ];
+
+      const bodies = [
+        `Hi there,
+
+I hope this message finds you well. I've been following your work and I'm impressed with your approach.
+
+I'd love to discuss how we might collaborate on upcoming projects. Do you have time for a brief call this week?
+
+Looking forward to hearing from you.
+
+Best regards,
+Team`,
+
+        `Hello,
+
+I was referred to you by a colleague who spoke highly of your expertise.
+
+We're exploring new partnerships and I believe there could be great synergy between our organizations. 
+
+Would you be interested in a brief conversation to explore possibilities?
+
+Best,
+Partnership Team`,
+
+        `Hi,
+
+I came across your profile and was intrigued by your recent projects.
+
+We're currently evaluating potential collaborators for an exciting initiative. Your background seems like it could be a perfect fit.
+
+Are you available for a quick chat sometime next week?
+
+Regards,
+Business Development`
+      ];
+
+      const subject = subjects[Math.floor(Math.random() * subjects.length)];
+      const body = bodies[Math.floor(Math.random() * bodies.length)];
+      
+      const bodyWithTracking = `${body}
+
+<img src="${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost'}/api/track/warmup/open/${trackingId}" width="1" height="1" style="display: none;" />`;
+
+      // Send the email
+      const success = await sendEmail(
+        fromIntegration,
+        toIntegration.email,
+        subject,
+        bodyWithTracking
+      );
+
+      if (success) {
+        // Create warmup email record
+        const warmupEmail = await db.insert(warmupEmails).values({
+          fromIntegrationId: fromIntegration.id,
+          toIntegrationId: toIntegration.id,
+          subject,
+          body: bodyWithTracking,
+          status: 'sent',
+          trackingId,
+          warmupDay,
+          deliveryLocation: 'unknown'
+        });
+
+        console.log(`Inter-user warmup email sent from ${fromIntegration.email} to ${toIntegration.email}`);
+        return warmupEmail;
+      }
+    } catch (error) {
+      console.error("Error sending inter-user warmup email:", error);
+      throw error;
     }
   }
 

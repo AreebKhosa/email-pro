@@ -2339,12 +2339,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Warmup API routes
   app.get('/api/warmup/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
-      const stats = await warmupService.getWarmupStats(userId);
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; 
+      if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      
+      const integrations = await storage.getUserEmailIntegrations(userId);
+      
+      const statsPromises = integrations.map(async (integration: EmailIntegration) => {
+        const fullStats = await storage.getWarmupStatsForIntegration(integration.id);
+        const warmupScore = await storage.calculateWarmupScore(integration.id);
+        
+        return {
+          integration,
+          todayStats: {
+            ...fullStats.todayStats,
+            warmupScore
+          },
+          overallStats: {
+            ...fullStats.overallStats,
+            avgWarmupScore: warmupScore
+          },
+          progress: fullStats.progress.map((p: any) => ({
+            id: p.id,
+            day: p.day,
+            targetEmailsPerDay: p.targetEmailsPerDay,
+            actualEmailsSent: p.actualEmailsSent,
+            emailsOpened: p.emailsOpened || 0,
+            emailsInInbox: p.emailsInInbox || 0,
+            emailsInSpam: p.emailsInSpam || 0,
+            spamTransferred: p.spamTransferred || 0,
+            dailyScore: p.dailyScore || 0,
+            isCompleted: p.isCompleted,
+          })),
+        };
+      });
+      
+      const stats = await Promise.all(statsPromises);
       res.json(stats);
     } catch (error) {
       console.error("Error getting warmup stats:", error);
       res.status(500).json({ message: "Failed to get warmup stats" });
+    }
+  });
+
+  // Warmup email tracking endpoints
+  app.get("/api/track/warmup/open/:trackingId", async (req, res) => {
+    try {
+      const { trackingId } = req.params;
+      console.log(`Warmup email opened - tracking ID: ${trackingId}`);
+      
+      const warmupEmail = await storage.markWarmupEmailAsOpened(trackingId);
+      if (warmupEmail) {
+        console.log(`Warmup open tracked for email ${warmupEmail.id}`);
+      }
+      
+      // Return 1x1 pixel tracking image
+      const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+      res.writeHead(200, {
+        'Content-Type': 'image/gif',
+        'Content-Length': pixel.length,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      res.end(pixel);
+    } catch (error) {
+      console.error("Error tracking warmup email open:", error);
+      res.status(200).end();
+    }
+  });
+
+  app.post("/api/track/warmup/reply/:trackingId", async (req, res) => {
+    try {
+      const { trackingId } = req.params;
+      const { replyBody } = req.body;
+      console.log(`Warmup email replied - tracking ID: ${trackingId}`);
+      
+      await storage.markWarmupEmailAsReplied(trackingId, replyBody);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error tracking warmup email reply:", error);
+      res.status(500).json({ message: "Failed to track reply" });
+    }
+  });
+
+  app.post("/api/track/warmup/spam/:trackingId", async (req, res) => {
+    try {
+      const { trackingId } = req.params;
+      console.log(`Warmup email marked as spam - tracking ID: ${trackingId}`);
+      
+      await storage.markWarmupEmailAsSpam(trackingId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error tracking warmup email spam:", error);
+      res.status(500).json({ message: "Failed to track spam" });
     }
   });
 

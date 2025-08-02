@@ -36,11 +36,15 @@ interface WarmupStats {
     emailsReplied: number;
     emailsSpam: number;
     emailsBounced: number;
+    emailsInbox: number;
+    spamTransferred: number;
     warmupScore: number;
     spamRate: number;
     openRate: number;
     replyRate: number;
     bounceRate: number;
+    inboxRate: number;
+    spamTransferRate: number;
   };
   overallStats: {
     totalSent: number;
@@ -48,17 +52,24 @@ interface WarmupStats {
     totalReplied: number;
     totalSpam: number;
     totalBounced: number;
+    totalInbox: number;
     avgWarmupScore: number;
     avgSpamRate: number;
     avgOpenRate: number;
     avgReplyRate: number;
     avgBounceRate: number;
+    avgInboxRate: number;
   };
   progress: Array<{
     id: number;
     day: number;
     targetEmailsPerDay: number;
     actualEmailsSent: number;
+    emailsOpened: number;
+    emailsInInbox: number;
+    emailsInSpam: number;
+    spamTransferred: number;
+    dailyScore: number;
     isCompleted: boolean;
   }>;
 }
@@ -300,7 +311,7 @@ export default function WarmUp() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">
                     {activeIntegrations.length}
@@ -314,7 +325,7 @@ export default function WarmUp() {
                     {warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + (stat.todayStats?.emailsSent || 0), 0) || 0}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-300">
-                    Emails Sent Today
+                    Sent Today
                   </div>
                 </div>
                 <div className="text-center">
@@ -326,15 +337,43 @@ export default function WarmUp() {
                     })()}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-300">
-                    Open Rate Today
+                    Open Rate
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-emerald-600">
+                    {(() => {
+                      const totalSent = warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + (stat.todayStats?.emailsSent || 0), 0) || 0;
+                      const totalInbox = warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + (stat.todayStats?.emailsInbox || 0), 0) || 0;
+                      return totalSent > 0 ? `${Math.round((totalInbox / totalSent) * 100)}%` : '0%';
+                    })()}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    Inbox Rate
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-red-600">
-                    {warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + (stat.todayStats?.emailsSpam || 0), 0) || 0}
+                    {(() => {
+                      const totalSent = warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + (stat.todayStats?.emailsSent || 0), 0) || 0;
+                      const totalSpam = warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + (stat.todayStats?.emailsSpam || 0), 0) || 0;
+                      return totalSent > 0 ? `${Math.round((totalSpam / totalSent) * 100)}%` : '0%';
+                    })()}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-300">
-                    Spam Reports Today
+                    Spam Rate
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {(() => {
+                      const avgScore = warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + (stat.todayStats?.warmupScore || 0), 0) || 0;
+                      const count = warmupStats?.length || 1;
+                      return Math.round(avgScore / count);
+                    })()}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    Warmup Score
                   </div>
                 </div>
               </div>
@@ -475,22 +514,30 @@ export default function WarmUp() {
                         </Badge>
                       </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-4">
                         <div className="text-center">
                           <div className="text-lg font-bold">{stat.todayStats?.emailsSent || 0}</div>
                           <div className="text-xs text-gray-600 dark:text-gray-300">Sent Today</div>
                         </div>
                         <div className="text-center">
                           <div className="text-lg font-bold text-green-600">{(stat.todayStats?.openRate || 0).toFixed(1)}%</div>
-                          <div className="text-xs text-gray-600 dark:text-gray-300">Open Rate</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300">Opens</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-emerald-600">{(stat.todayStats?.inboxRate || 0).toFixed(1)}%</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300">Inbox</div>
                         </div>
                         <div className="text-center">
                           <div className="text-lg font-bold text-blue-600">{(stat.todayStats?.replyRate || 0).toFixed(1)}%</div>
-                          <div className="text-xs text-gray-600 dark:text-gray-300">Reply Rate</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300">Replies</div>
                         </div>
                         <div className="text-center">
                           <div className="text-lg font-bold text-red-600">{(stat.todayStats?.spamRate || 0).toFixed(1)}%</div>
-                          <div className="text-xs text-gray-600 dark:text-gray-300">Spam Rate</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300">Spam</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-orange-600">{(stat.todayStats?.spamTransferRate || 0).toFixed(1)}%</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-300">Transfer</div>
                         </div>
                       </div>
 
@@ -517,6 +564,8 @@ export default function WarmUp() {
                               >
                                 <div className="font-medium">Day {day.day}</div>
                                 <div>{day.actualEmailsSent}/{day.targetEmailsPerDay}</div>
+                                {day.emailsOpened && <div className="text-[10px] text-green-600">↗{day.emailsOpened}</div>}
+                                {day.dailyScore && <div className="text-[10px] text-purple-600">⭐{Math.round(day.dailyScore)}</div>}
                                 {day.isCompleted && <CheckCircle className="w-3 h-3 mx-auto mt-1" />}
                               </div>
                             ))}
