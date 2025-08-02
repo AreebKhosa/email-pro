@@ -730,6 +730,8 @@ export class DatabaseStorage implements IStorage {
     return campaignEmail;
   }
 
+
+
   async updateCampaignEmailStatus(id: number, status: string, timestamp?: Date): Promise<CampaignEmail> {
     const updateData: any = { status };
     

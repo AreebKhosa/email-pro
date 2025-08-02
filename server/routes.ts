@@ -108,28 +108,37 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
   let sentToday = 0;
   const dailyLimit = Math.min(campaign.dailyLimit || 50, limits.emailsPerMonth);
   
-  for (let i = campaign.currentEmailIndex || 0; i < recipients.length; i++) {
+  // Get list of recipients who have already been sent emails for this campaign
+  const sentEmails = await storage.getCampaignEmails(campaignId);
+  const sentRecipientIds = new Set(sentEmails.map(email => email.recipientId));
+  
+  // Filter out recipients who have already been sent emails
+  const remainingRecipients = recipients.filter(recipient => !sentRecipientIds.has(recipient.id));
+  
+  console.log(`Campaign ${campaignId}: Found ${sentRecipientIds.size} already sent, ${remainingRecipients.length} remaining to send`);
+  
+  for (let i = 0; i < remainingRecipients.length; i++) {
     // Check if campaign is still in sending status
     const currentCampaign = await storage.getCampaign(campaignId);
     if (currentCampaign?.status !== 'sending') {
-      await storage.updateCampaignStats(campaignId, { currentEmailIndex: i });
+      // Don't update currentEmailIndex since we're using sent tracking now
       break;
     }
     
     // Check daily limit
     if (sentToday >= dailyLimit) {
-      await storage.updateCampaignStats(campaignId, { currentEmailIndex: i });
-      // Schedule to continue tomorrow
+      // Don't update currentEmailIndex since we're using sent tracking now
+      // Schedule to continue tomorrow with remaining recipients
       setTimeout(() => {
         if (currentCampaign?.status === 'sending') {
-          sendCampaignEmails(campaignId, recipients.slice(i), limits, campaign);
+          sendCampaignEmails(campaignId, recipients, limits, campaign);
         }
       }, 24 * 60 * 60 * 1000); // 24 hours
       break;
     }
     
     try {
-      const recipient = recipients[i];
+      const recipient = remainingRecipients[i];
       
       // Email rotation logic - get the appropriate integration
       let integration;
@@ -251,17 +260,17 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
       sentToday++;
       
       // Add delay between emails
-      if (i < recipients.length - 1) {
+      if (i < remainingRecipients.length - 1) {
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
       
     } catch (error) {
-      console.error(`Error sending email to ${recipients[i]?.email}:`, error);
+      console.error(`Error sending email to ${remainingRecipients[i]?.email}:`, error);
     }
   }
   
   // Mark campaign as completed if all emails sent
-  if (recipients.length > 0 && sentToday > 0) {
+  if (remainingRecipients.length > 0 && sentToday > 0) {
     const updatedCampaign = await storage.getCampaign(campaignId);
     if (updatedCampaign && updatedCampaign.sentCount >= updatedCampaign.totalRecipients) {
       await storage.updateCampaignStatus(campaignId, 'completed');
