@@ -319,10 +319,14 @@ export default function WarmUp() {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-yellow-600">
-                    {warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + (stat.todayStats?.emailsOpened || 0), 0) || 0}
+                    {(() => {
+                      const totalSent = warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + (stat.todayStats?.emailsSent || 0), 0) || 0;
+                      const totalOpened = warmupStats?.reduce((sum: number, stat: WarmupStats) => sum + (stat.todayStats?.emailsOpened || 0), 0) || 0;
+                      return totalSent > 0 ? `${Math.round((totalOpened / totalSent) * 100)}%` : '0%';
+                    })()}
                   </div>
                   <div className="text-sm text-gray-600 dark:text-gray-300">
-                    Emails Opened Today
+                    Open Rate Today
                   </div>
                 </div>
                 <div className="text-center">

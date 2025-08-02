@@ -368,6 +368,15 @@ export class DatabaseStorage implements IStorage {
     return emailIntegration;
   }
 
+  async updateEmailIntegration(id: number, updates: Partial<EmailIntegration>): Promise<EmailIntegration> {
+    const [updated] = await db
+      .update(emailIntegrations)
+      .set(updates)
+      .where(eq(emailIntegrations.id, id))
+      .returning();
+    return updated;
+  }
+
   async getUserEmailIntegrations(userId: string): Promise<EmailIntegration[]> {
     return await db
       .select()
