@@ -143,16 +143,20 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
       // Email rotation logic - get the appropriate integration
       let integration;
       if (campaign.emailRotationEnabled && campaign.emailRotationIds && campaign.emailRotationIds.length > 0) {
-        // Calculate which email account to use based on total sent count (not just today)
+        // Calculate which email account to use - use the current loop index for proper rotation
         const emailsPerAccount = campaign.emailsPerAccount || 1; // Default to 1 for "rotate after each email"
-        const totalSentSoFar = (campaign.sentCount || 0) + sentToday; // Use campaign total + today's count
-        const accountIndex = Math.floor(totalSentSoFar / emailsPerAccount) % campaign.emailRotationIds.length;
+        // Use actual emails sent count instead of campaign.sentCount which may not be updated yet
+        const alreadySentCount = sentRecipientIds.size; // Number of recipients who already got emails
+        const currentSendingIndex = alreadySentCount + sentToday; // Current position in sending sequence
+        
+        const accountIndex = Math.floor(currentSendingIndex / emailsPerAccount) % campaign.emailRotationIds.length;
         const rotationIntegrationId = campaign.emailRotationIds[accountIndex];
         integration = await storage.getEmailIntegration(rotationIntegrationId);
-        console.log(`Using email rotation: account ${accountIndex + 1}/${campaign.emailRotationIds.length} (${integration?.email}) - sent so far: ${totalSentSoFar}, emails per account: ${emailsPerAccount}`);
+        console.log(`Email rotation DEBUG: currentSendingIndex=${currentSendingIndex}, emailsPerAccount=${emailsPerAccount}, accountIndex=${accountIndex}, using account ${accountIndex + 1}/${campaign.emailRotationIds.length} (${integration?.email})`);
       } else {
         // Use single email account
         integration = await storage.getEmailIntegration(campaign.emailIntegrationId);
+        console.log(`No rotation enabled, using primary account: ${integration?.email}`);
       }
       
       if (!integration) {
@@ -2451,14 +2455,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [campaignId, recipientId] = trackingId.split('_');
       
       if (campaignId && recipientId) {
-        // Update campaign stats for email open
-        const campaign = await storage.getCampaign(parseInt(campaignId));
-        if (campaign) {
-          const newOpenedCount = (campaign.openedCount || 0) + 1;
-          await storage.updateCampaignStats(parseInt(campaignId), { 
-            openedCount: newOpenedCount 
-          });
-        }
+        // Use proper tracking method that checks for duplicates
+        await storage.markCampaignEmailAsOpened(trackingId);
       }
       
       // Return 1x1 transparent pixel
@@ -2493,14 +2491,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [campaignId, recipientId] = trackingId.split('_');
       
       if (campaignId && recipientId) {
-        // Update campaign stats for email click
-        const campaign = await storage.getCampaign(parseInt(campaignId));
-        if (campaign) {
-          const newClickedCount = (campaign.clickedCount || 0) + 1;
-          await storage.updateCampaignStats(parseInt(campaignId), { 
-            clickedCount: newClickedCount 
-          });
-        }
+        // Use proper tracking method that checks for duplicates
+        await storage.markCampaignEmailAsClicked(trackingId);
       }
       
       // Redirect to the original URL
