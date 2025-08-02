@@ -97,9 +97,9 @@ export default function CreateCampaign() {
     dailyLimit: 50,
     timeWindowStart: '08:00',
     timeWindowEnd: '17:00',
-    rotateEmails: false,
+    rotateEmails: true, // Default to true for better deliverability
     emailIntegrationIds: [],
-    emailsPerAccount: 30, // Auto-optimized default
+    emailsPerAccount: 1, // Default to 1 for maximum rotation (rotate after each email)
     emailDelay: 5, // Auto-optimized default (5 minutes for best deliverability)
     followUpEnabled: false,
     followUpSubject: '',

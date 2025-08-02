@@ -142,6 +142,8 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
       
       // Email rotation logic - get the appropriate integration
       let integration;
+      console.log(`ROTATION DEBUG - Campaign ${campaignId}: emailRotationEnabled=${campaign.emailRotationEnabled}, emailRotationIds=${JSON.stringify(campaign.emailRotationIds)}, length=${campaign.emailRotationIds?.length}`);
+      
       if (campaign.emailRotationEnabled && campaign.emailRotationIds && campaign.emailRotationIds.length > 0) {
         // Calculate which email account to use - use the current loop index for proper rotation
         const emailsPerAccount = campaign.emailsPerAccount || 1; // Default to 1 for "rotate after each email"
@@ -152,11 +154,11 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
         const accountIndex = Math.floor(currentSendingIndex / emailsPerAccount) % campaign.emailRotationIds.length;
         const rotationIntegrationId = campaign.emailRotationIds[accountIndex];
         integration = await storage.getEmailIntegration(rotationIntegrationId);
-        console.log(`Email rotation DEBUG: currentSendingIndex=${currentSendingIndex}, emailsPerAccount=${emailsPerAccount}, accountIndex=${accountIndex}, using account ${accountIndex + 1}/${campaign.emailRotationIds.length} (${integration?.email})`);
+        console.log(`ROTATION ACTIVE - currentSendingIndex=${currentSendingIndex}, emailsPerAccount=${emailsPerAccount}, accountIndex=${accountIndex}, rotationIntegrationId=${rotationIntegrationId}, using account ${accountIndex + 1}/${campaign.emailRotationIds.length} (${integration?.email})`);
       } else {
         // Use single email account
         integration = await storage.getEmailIntegration(campaign.emailIntegrationId);
-        console.log(`No rotation enabled, using primary account: ${integration?.email}`);
+        console.log(`NO ROTATION - using primary account ID ${campaign.emailIntegrationId}: ${integration?.email}`);
       }
       
       if (!integration) {
