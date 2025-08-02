@@ -25,6 +25,7 @@ export default function Campaigns() {
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ["/api/campaigns"],
     retry: false,
+    refetchInterval: 10000, // Refresh campaigns every 10 seconds for real-time stats
   });
 
   // Get overall campaign stats

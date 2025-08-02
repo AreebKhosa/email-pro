@@ -839,6 +839,21 @@ export class DatabaseStorage implements IStorage {
     return email;
   }
 
+  async findWarmupEmailBySubject(integrationId: number, subject: string): Promise<WarmupEmail | undefined> {
+    const [email] = await db
+      .select()
+      .from(warmupEmails)
+      .where(
+        and(
+          eq(warmupEmails.fromIntegrationId, integrationId),
+          eq(warmupEmails.subject, subject)
+        )
+      )
+      .orderBy(sql`${warmupEmails.sentAt} DESC`)
+      .limit(1);
+    return email;
+  }
+
   // Usage tracking
   async getCurrentMonthUsage(userId: string): Promise<UsageTracking | undefined> {
     const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM

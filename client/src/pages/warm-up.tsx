@@ -166,7 +166,7 @@ export default function WarmUp() {
       queryClient.invalidateQueries({ queryKey: ["/api/warmup/stats"] });
       toast({
         title: "Success",
-        description: "Warmup emails sent successfully",
+        description: "Warmup process started - will auto-continue every 30 minutes",
       });
     },
     onError: (error) => {

@@ -5,6 +5,8 @@ import { eq, and, sql, desc, asc } from "drizzle-orm";
 import { personalizeEmailContent } from "./gemini";
 import { sendEmail } from "./email";
 
+// WarmupService class will be instantiated in routes.ts
+
 export interface WarmupConfig {
   dailyIncrease: number;
   maxDailyEmails: number;
@@ -177,10 +179,10 @@ export class WarmupService {
 
     try {
       const personalizedEmail = await personalizeEmailContent(mockRecipient, null, {
-        emailType: "professional_networking",
-        tone: "friendly",
-        maxCharacters: 200,
-        callToAction: "stay_connected",
+        emailType: "business_partnership",
+        tone: "professional",
+        maxCharacters: 300,
+        callToAction: "schedule_meeting",
       });
 
       // Extract subject and body from the personalized email
@@ -191,21 +193,26 @@ export class WarmupService {
       return { subject, body };
     } catch (error) {
       console.error("Error generating warmup content:", error);
-      // Fallback to simple templates
+      // Fallback to formal business templates
       const subjects = [
-        "Quick hello",
-        "Touching base",
-        "Hope you're doing well",
-        "Following up",
-        "Staying connected",
+        "Quarterly Business Review - Partnership Opportunities",
+        "Market Analysis Report - Industry Insights", 
+        "Strategic Partnership Discussion - Next Steps",
+        "Business Development Update - New Initiatives",
+        "Project Status Update - Implementation Progress",
+        "Collaboration Proposal - Growth Opportunities",
+        "Industry Trends Analysis - Market Positioning",
+        "Monthly Performance Review - Key Metrics",
+        "Strategic Planning Session - Future Roadmap",
+        "Business Intelligence Report - Competitive Analysis"
       ];
       
       const bodies = [
-        "Hope you're having a great day! Just wanted to touch base and see how things are going.",
-        "I hope this message finds you well. Just reaching out to stay connected.",
-        "Quick note to say hello and hope everything is going smoothly on your end.",
-        "Just wanted to check in and see how you've been doing lately.",
-        "Hope you're doing well! Let me know if there's anything I can help with.",
+        "Dear Business Partner,\n\nI hope this message finds you well. I wanted to reach out regarding our ongoing strategic partnership and discuss potential collaboration opportunities.\n\nBest regards",
+        "Dear Colleague,\n\nI trust this email finds you in good health. Following our recent discussions, I wanted to provide you with an update on our implementation progress.\n\nWarm regards",
+        "Dear Partner,\n\nI hope you are having a productive week. I am writing to share some insights from our latest industry analysis that may be of interest.\n\nBest wishes",
+        "Dear Business Contact,\n\nI trust everything is progressing well with your current projects. I wanted to touch base regarding our collaborative framework.\n\nSincerely",
+        "Dear Associate,\n\nI hope this communication reaches you at a convenient time. I am reaching out to provide an update on our operational initiatives.\n\nKind regards"
       ];
 
       return {
@@ -215,7 +222,7 @@ export class WarmupService {
     }
   }
 
-  // Send warmup emails between integrations
+  // Send warmup emails between integrations with auto-continue
   async sendWarmupEmails(userId: string) {
     const activeIntegrations = await db
       .select()
@@ -232,6 +239,9 @@ export class WarmupService {
       console.log("Need at least 2 active integrations for warmup");
       return;
     }
+
+    let emailsSent = 0;
+    let hasMoreToSend = false;
 
     for (const fromIntegration of activeIntegrations) {
       const progress = await this.getCurrentDayProgress(fromIntegration.id);
@@ -251,19 +261,30 @@ export class WarmupService {
         continue;
       }
 
+      // Send 1 email per call, not all remaining
+      const emailsToSend = Math.min(1, remainingEmails);
+      hasMoreToSend = hasMoreToSend || remainingEmails > emailsToSend;
+
       // Send emails to other integrations
       const otherIntegrations = activeIntegrations.filter(
         (int) => int.id !== fromIntegration.id
       );
 
-      for (let i = 0; i < Math.min(remainingEmails, otherIntegrations.length); i++) {
+      for (let i = 0; i < Math.min(emailsToSend, otherIntegrations.length); i++) {
         const toIntegration = otherIntegrations[i];
         await this.sendSingleWarmupEmail(fromIntegration, toIntegration);
-        
-        // Add random delay between emails
-        const delay = Math.random() * (this.config.maxInterval - this.config.minInterval) + this.config.minInterval;
-        await new Promise(resolve => setTimeout(resolve, delay * 60 * 1000));
+        emailsSent++;
       }
+    }
+
+    // Auto-continue: schedule next warmup cycle if there are more emails to send
+    if (hasMoreToSend || emailsSent > 0) {
+      console.log(`Sent ${emailsSent} warmup emails, scheduling next cycle in 30 minutes...`);
+      setTimeout(() => {
+        this.sendWarmupEmails(userId).catch(console.error);
+      }, 30 * 60 * 1000); // 30 minutes between cycles
+    } else {
+      console.log("All warmup targets completed for today");
     }
   }
 
@@ -504,5 +525,3 @@ export class WarmupService {
 
 
 }
-
-export const warmupService = new WarmupService();

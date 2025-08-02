@@ -7,7 +7,9 @@ import { validateEmailIntegration, sendEmail } from "./services/email";
 import { personalizeEmailContent, enhanceEmailContent, scrapeWebsiteContent } from "./services/gemini";
 import { createStripeCheckout, handleStripeWebhook } from "./services/stripe";
 import { emailValidationService, type EmailValidationResult } from "./services/emailValidation";
-import { warmupService } from "./services/warmup";
+import { WarmupService } from "./services/warmup";
+
+const warmupService = new WarmupService();
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
@@ -2355,11 +2357,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/warmup/send', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
-      await warmupService.sendWarmupEmails(userId);
-      res.json({ message: "Warmup emails sent successfully" });
+      
+      // Send warmup emails (this now auto-continues)
+      warmupService.sendWarmupEmails(userId).catch(console.error);
+      
+      // Also read existing warmup emails via IMAP
+      const { readWarmupEmailsForUser } = await import('./services/imap');
+      readWarmupEmailsForUser(userId).catch(console.error);
+      
+      res.json({ message: "Warmup process started successfully" });
     } catch (error) {
-      console.error("Error sending warmup emails:", error);
-      res.status(500).json({ message: "Failed to send warmup emails" });
+      console.error("Error starting warmup process:", error);
+      res.status(500).json({ message: "Failed to start warmup process" });
     }
   });
 

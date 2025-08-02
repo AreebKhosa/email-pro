@@ -36,11 +36,13 @@ export default function Dashboard() {
   const { data: dashboardData, isLoading: isDashboardLoading } = useQuery({
     queryKey: ["/api/dashboard/stats"],
     retry: false,
+    refetchInterval: 15000, // Refresh stats every 15 seconds
   });
 
   const { data: campaigns } = useQuery({
     queryKey: ["/api/campaigns"],
     retry: false,
+    refetchInterval: 15000, // Refresh campaigns every 15 seconds
   });
 
   const { data: emailIntegrations } = useQuery({
