@@ -22,7 +22,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { 
   User, 
-  Bell, 
   Shield, 
   CreditCard,
   AlertTriangle,
@@ -39,12 +38,7 @@ const profileSchema = z.object({
   email: z.string().email("Valid email is required"),
 });
 
-const notificationSchema = z.object({
-  campaignNotifications: z.boolean(),
-  deliverabilityAlerts: z.boolean(),
-  usageWarnings: z.boolean(),
-  marketingEmails: z.boolean(),
-});
+
 
 export default function Settings() {
   const { toast } = useToast();
@@ -228,7 +222,6 @@ export default function Settings() {
 
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
-    { id: "notifications", label: "Notifications", icon: Bell },
     { id: "security", label: "Security", icon: Shield },
     { id: "billing", label: "Billing", icon: CreditCard },
   ];
