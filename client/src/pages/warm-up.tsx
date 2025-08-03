@@ -179,7 +179,7 @@ export default function WarmUp() {
       queryClient.invalidateQueries({ queryKey: ["/api/email-integrations"] });
       toast({
         title: "Success",
-        description: "Warmup process started - will auto-continue every 30 minutes",
+        description: "Warmup process started - will auto-continue every 1-3 minutes for testing",
       });
     },
     onError: (error) => {
@@ -380,14 +380,29 @@ export default function WarmUp() {
 
               {/* Warmup Status Indicator */}
               {activeIntegrations.some((integration: EmailIntegration) => integration.lastWarmupAt) && (
-                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-green-800 dark:text-green-300 font-medium">
-                      Warmup process is running - auto-continues every 30 minutes
-                    </span>
+                <>
+                  <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-green-800 dark:text-green-300 font-medium">
+                        Warmup process is running - auto-continues every 1-3 minutes
+                      </span>
+                    </div>
                   </div>
-                </div>
+                  
+                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <Info className="w-4 h-4 text-blue-600 mt-0.5" />
+                      <div className="text-blue-800 dark:text-blue-300">
+                        <div className="font-medium mb-1">Testing Mode Active</div>
+                        <div className="text-sm">
+                          Email replies are automatically simulated for testing warmup progress. 
+                          These simulated replies won't appear in your actual inbox - this is normal behavior for the warmup system.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
 
               <div className="flex gap-4">
@@ -404,7 +419,7 @@ export default function WarmUp() {
                 ) : (
                   <Button
                     onClick={() => sendWarmupMutation.mutate()}
-                    disabled={sendWarmupMutation.isPending || activeIntegrations.length < 2}
+                    disabled={sendWarmupMutation.isPending || activeIntegrations.length < 1}
                     className="flex items-center gap-2"
                   >
                     <Play className="w-4 h-4" />
@@ -412,11 +427,11 @@ export default function WarmUp() {
                   </Button>
                 )}
 
-                {activeIntegrations.length < 2 && (
+                {activeIntegrations.length < 1 && (
                   <Alert className="flex-1">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      You need at least 2 active email accounts to start warmup.
+                      You need at least 1 verified email account to start warmup.
                     </AlertDescription>
                   </Alert>
                 )}
