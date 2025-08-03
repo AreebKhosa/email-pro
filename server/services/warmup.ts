@@ -367,7 +367,11 @@ export class WarmupService {
         
         console.log(`Warmup email sent from ${fromIntegration.email} to ${toIntegration.email} with tracking ${trackingId}`);
         
-        // Real warmup mode: No automatic simulation - replies tracked via IMAP monitoring
+        // Schedule AI-based automatic reply after 5 minutes
+        const replyDelay = 5 * 60 * 1000; // 5 minutes
+        setTimeout(async () => {
+          await this.generateAIReplyAndSend(fromIntegration, toIntegration, content.subject, trackingId);
+        }, replyDelay);
         
       } else {
         console.error(`Failed to send warmup email from ${fromIntegration.email} to ${toIntegration.email}`);
@@ -504,7 +508,11 @@ export class WarmupService {
         
         console.log(`Self-warmup email sent with tracking ${trackingId}`);
         
-        // Real warmup mode: No automatic simulation - replies tracked via IMAP monitoring
+        // Schedule AI-based automatic reply after 3 minutes for self-warmup
+        const replyDelay = 3 * 60 * 1000; // 3 minutes
+        setTimeout(async () => {
+          await this.generateAISelfReplyAndSend(integration, content.subject, trackingId);
+        }, replyDelay);
         
       } else {
         console.error(`Failed to send self-warmup email to ${integration.email}`);
@@ -514,8 +522,48 @@ export class WarmupService {
     }
   }
 
-  // Simulate automatic self-warmup replies (faster for testing)
-  private async simulateSelfWarmupReply(integration: any, originalSubject: string, trackingId: string) {
+  // Generate AI-based automatic reply using Gemini and send via SMTP
+  private async generateAIReplyAndSend(fromIntegration: any, toIntegration: any, originalSubject: string, trackingId: string) {
+    try {
+      const warmupEmail = await storage.findWarmupEmailByTrackingId(trackingId);
+      if (!warmupEmail) {
+        console.log(`Warmup email not found for tracking ID: ${trackingId}`);
+        return;
+      }
+
+      // 90% chance to open, 70% chance to reply if opened
+      const shouldOpen = Math.random() < 0.9;
+      if (shouldOpen) {
+        await this.processWarmupEmailAction(warmupEmail.id, 'open');
+        console.log(`AI warmup: Email opened via IMAP simulation`);
+      }
+
+      const shouldReply = Math.random() < 0.7;
+      if (shouldReply) {
+        // Generate AI reply using Gemini
+        const aiReply = await this.generateAIReplyContent(originalSubject, warmupEmail.body);
+        
+        // Send actual reply via SMTP
+        const replySubject = originalSubject.startsWith('Re:') ? originalSubject : `Re: ${originalSubject}`;
+        const success = await sendEmail(
+          toIntegration, // Reply comes from the recipient
+          fromIntegration.email, // Back to original sender
+          replySubject,
+          aiReply
+        );
+
+        if (success) {
+          await this.processWarmupEmailAction(warmupEmail.id, 'reply', aiReply);
+          console.log(`AI warmup: Generated and sent reply from ${toIntegration.email} to ${fromIntegration.email}`);
+        }
+      }
+    } catch (error) {
+      console.error("Error generating AI warmup reply:", error);
+    }
+  }
+
+  // Generate AI-based automatic self-reply
+  private async generateAISelfReplyAndSend(integration: any, originalSubject: string, trackingId: string) {
     try {
       const warmupEmail = await storage.findWarmupEmailByTrackingId(trackingId);
       if (!warmupEmail) {
@@ -523,28 +571,108 @@ export class WarmupService {
         return;
       }
 
-      // Higher engagement for self-warmup (80% open, 60% reply)
-      const shouldReply = Math.random() < 0.6;
-      
-      if (shouldReply) {
-        const replies = [
-          "Thank you for the update. This looks promising.",
-          "Received your message. I'll review the details.",
-          "Thanks for reaching out. Let's discuss this further.",
-          "This is exactly what we were looking for.",
-          "Great information. I'll share this with the team."
-        ];
-        const replyBody = replies[Math.floor(Math.random() * replies.length)];
-        
-        console.log(`Simulating self-warmup reply: "${replyBody}"`);
-        await this.processWarmupEmailAction(warmupEmail.id, 'reply', replyBody);
-      } else {
-        console.log(`Simulating self-warmup email open`);
+      // Higher engagement for self-warmup (95% open, 80% reply)
+      const shouldOpen = Math.random() < 0.95;
+      if (shouldOpen) {
         await this.processWarmupEmailAction(warmupEmail.id, 'open');
+        console.log(`AI self-warmup: Email opened`);
+      }
+
+      const shouldReply = Math.random() < 0.8;
+      if (shouldReply) {
+        // Generate AI reply for self-warmup
+        const aiReply = await this.generateAISelfReplyContent(originalSubject, warmupEmail.body);
+        
+        // Send actual self-reply via SMTP
+        const replySubject = originalSubject.startsWith('Re:') ? originalSubject : `Re: ${originalSubject}`;
+        const success = await sendEmail(
+          integration,
+          integration.email,
+          replySubject,
+          aiReply
+        );
+
+        if (success) {
+          await this.processWarmupEmailAction(warmupEmail.id, 'reply', aiReply);
+          console.log(`AI self-warmup: Generated and sent self-reply for ${integration.email}`);
+        }
       }
     } catch (error) {
-      console.error("Error simulating self-warmup reply:", error);
+      console.error("Error generating AI self-warmup reply:", error);
     }
+  }
+
+  // Generate AI reply content using Gemini
+  private async generateAIReplyContent(originalSubject: string, originalBody: string): Promise<string> {
+    try {
+      const { generatePersonalizedResponse } = await import('./gemini');
+      
+      const context = {
+        originalSubject,
+        originalBody: originalBody.replace(/<[^>]*>/g, ''), // Strip HTML
+        replyType: 'warmup_professional'
+      };
+
+      const aiReply = await generatePersonalizedResponse(
+        `Generate a professional, natural reply to this email for warmup purposes. 
+        The reply should be 2-3 sentences, sound human, and be appropriate for business communication.
+        Original subject: ${originalSubject}
+        Original content: ${context.originalBody}`
+      );
+
+      return aiReply || this.getFallbackReply();
+    } catch (error) {
+      console.error("Error generating AI reply:", error);
+      return this.getFallbackReply();
+    }
+  }
+
+  // Generate AI self-reply content
+  private async generateAISelfReplyContent(originalSubject: string, originalBody: string): Promise<string> {
+    try {
+      const { generatePersonalizedResponse } = await import('./gemini');
+      
+      const context = {
+        originalSubject,
+        originalBody: originalBody.replace(/<[^>]*>/g, ''),
+        replyType: 'warmup_self'
+      };
+
+      const aiReply = await generatePersonalizedResponse(
+        `Generate a brief acknowledgment reply to this email for self-warmup purposes. 
+        The reply should be 1-2 sentences, professional, and natural.
+        Original subject: ${originalSubject}
+        Original content: ${context.originalBody}`
+      );
+
+      return aiReply || this.getFallbackSelfReply();
+    } catch (error) {
+      console.error("Error generating AI self-reply:", error);
+      return this.getFallbackSelfReply();
+    }
+  }
+
+  // Fallback replies if AI generation fails
+  private getFallbackReply(): string {
+    const replies = [
+      "Thank you for your email. I'll review this and get back to you if needed.",
+      "Thanks for reaching out. I appreciate the information.",
+      "Received your message. I'll look into this further.",
+      "Thank you for sharing this. I'll give it some consideration.",
+      "Thanks for your email. This looks interesting."
+    ];
+    return replies[Math.floor(Math.random() * replies.length)];
+  }
+
+  private getFallbackSelfReply(): string {
+    const replies = [
+      "Noted. Thanks for the update.",
+      "Received. I'll review this.",
+      "Thanks for the information.",
+      "Acknowledged. Will follow up as needed.",
+      "Got it. Thanks."
+    ];
+    return replies[Math.floor(Math.random() * replies.length)];
   }
 
   // Enhanced inter-user warmup - find other users to send warmup emails to

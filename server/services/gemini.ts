@@ -358,6 +358,28 @@ Note: This is a demo email generated due to Gemini quota limits. Please add cred
   }
 }
 
+// Simple function for generating personalized responses (used by warmup system)
+export async function generatePersonalizedResponse(prompt: string): Promise<string> {
+  try {
+    const geminiInstance = await getGeminiInstance();
+    const response = await geminiInstance.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{
+        role: "user", 
+        parts: [{ text: prompt }]
+      }],
+      config: {
+        systemInstruction: "You are a professional business communication expert. Generate natural, human-like responses that are appropriate for business email conversations. Keep responses concise and authentic."
+      }
+    });
+
+    return response.text || "Thank you for your email. I'll review this and get back to you.";
+  } catch (error: any) {
+    console.error('Error generating personalized response:', error);
+    return "Thank you for your email. I'll review this and get back to you.";
+  }
+}
+
 export async function enhanceEmailContent(emailBody: string): Promise<string> {
   const prompt = `
     Enhance and improve the following email content:

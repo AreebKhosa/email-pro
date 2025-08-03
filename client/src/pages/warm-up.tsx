@@ -179,7 +179,7 @@ export default function WarmUp() {
       queryClient.invalidateQueries({ queryKey: ["/api/email-integrations"] });
       toast({
         title: "Success",
-        description: "Real warmup process started - will auto-continue every 30 minutes",
+        description: "AI-powered warmup started - emails with automatic AI replies every 30 minutes",
       });
     },
     onError: (error) => {
@@ -394,10 +394,10 @@ export default function WarmUp() {
                     <div className="flex items-start gap-2">
                       <Info className="w-4 h-4 text-blue-600 mt-0.5" />
                       <div className="text-blue-800 dark:text-blue-300">
-                        <div className="font-medium mb-1">Real Warmup Mode Active</div>
+                        <div className="font-medium mb-1">AI-Powered Warmup Mode Active</div>
                         <div className="text-sm">
-                          Warmup emails are being sent between your accounts. Replies and opens are tracked via IMAP monitoring. 
-                          You can manually reply to warmup emails to improve engagement rates and build authentic conversation history.
+                          Warmup emails are sent between your accounts. AI automatically generates and sends natural replies via SMTP after 5 minutes. 
+                          Opens and replies are tracked via IMAP. This creates authentic conversation patterns and email engagement.
                         </div>
                       </div>
                     </div>
