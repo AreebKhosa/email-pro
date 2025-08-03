@@ -16,7 +16,7 @@ export interface WarmupConfig {
 }
 
 const DEFAULT_WARMUP_CONFIG: WarmupConfig = {
-  dailyIncrease: 5,
+  dailyIncrease: 1, // Start with 1 email on day 1, increase by 1 each day
   maxDailyEmails: 100,
   warmupDays: 15,
   minInterval: 30, // 30 minutes between cycles
