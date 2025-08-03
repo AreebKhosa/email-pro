@@ -2656,6 +2656,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Debug endpoint to reset warmup progress  
+  app.post("/api/warmup/debug-reset", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+
+      // Find user's integrations
+      const integrations = await db
+        .select()
+        .from(emailIntegrations)
+        .where(eq(emailIntegrations.userId, userId));
+
+      // Reset progress for all integrations
+      for (const integration of integrations) {
+        await db
+          .delete(warmupProgress)
+          .where(eq(warmupProgress.emailIntegrationId, integration.id));
+        
+        await db
+          .delete(warmupStats)
+          .where(eq(warmupStats.emailIntegrationId, integration.id));
+        
+        // Reinitialize progress with correct formula
+        await warmupService.initializeWarmupProgress(integration.id);
+      }
+
+      res.json({ message: "Warmup progress reset and reinitialized successfully" });
+    } catch (error) {
+      console.error("Error resetting warmup progress:", error);
+      res.status(500).json({ error: "Failed to reset warmup progress" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

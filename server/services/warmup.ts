@@ -144,7 +144,7 @@ export class WarmupService {
     const progressData = [];
     for (let day = 1; day <= this.config.warmupDays; day++) {
       const targetEmails = Math.min(
-        this.config.dailyIncrease * day,
+        1 + (day - 1) * this.config.dailyIncrease,
         this.config.maxDailyEmails
       );
       
