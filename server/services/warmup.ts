@@ -235,8 +235,15 @@ export class WarmupService {
         )
       );
 
-    if (activeIntegrations.length < 2) {
-      console.log("Need at least 2 active integrations for warmup");
+    if (activeIntegrations.length === 0) {
+      console.log("No active integrations for warmup");
+      return;
+    }
+    
+    // For single integration, enable self-warmup mode
+    if (activeIntegrations.length === 1) {
+      console.log("Single integration detected - using self-warmup mode");
+      await this.sendSelfWarmupEmails(activeIntegrations[0]);
       return;
     }
 
@@ -386,6 +393,144 @@ export class WarmupService {
       }
     } catch (error) {
       console.error("Error simulating warmup reply:", error);
+    }
+  }
+
+  // Self-warmup system for single integration
+  private async sendSelfWarmupEmails(integration: any) {
+    try {
+      const progress = await this.getCurrentDayProgress(integration.id);
+      if (!progress || progress.isCompleted) {
+        console.log("Warmup progress completed for today");
+        return;
+      }
+
+      const todayStats = await this.getTodayStats(integration.id);
+      const remainingEmails = progress.targetEmailsPerDay - (todayStats.emailsSent || 0);
+
+      if (remainingEmails <= 0) {
+        // Mark day as completed
+        await db
+          .update(warmupProgress)
+          .set({ isCompleted: true })
+          .where(eq(warmupProgress.id, progress.id));
+        console.log("Daily warmup target completed");
+        return;
+      }
+
+      // Send 1 self-warmup email per cycle
+      const emailsToSend = Math.min(1, remainingEmails);
+      
+      for (let i = 0; i < emailsToSend; i++) {
+        await this.sendSelfWarmupEmail(integration);
+      }
+
+      // Schedule next cycle if more emails needed
+      if (remainingEmails > emailsToSend) {
+        const nextCycleMinutes = Math.floor(Math.random() * (this.config.maxInterval - this.config.minInterval + 1)) + this.config.minInterval;
+        console.log(`Sent ${emailsToSend} self-warmup emails, scheduling next cycle in ${nextCycleMinutes} minutes...`);
+        setTimeout(() => {
+          this.sendSelfWarmupEmails(integration).catch(console.error);
+        }, nextCycleMinutes * 60 * 1000);
+      } else {
+        console.log("All self-warmup targets completed for today");
+      }
+    } catch (error) {
+      console.error("Error in self-warmup process:", error);
+    }
+  }
+
+  // Send warmup email to the same integration (self-warmup)
+  private async sendSelfWarmupEmail(integration: any) {
+    try {
+      const content = await this.generateWarmupContent();
+      const trackingId = this.generateTrackingId();
+      const progress = await this.getCurrentDayProgress(integration.id);
+      const currentDay = progress?.day || 1;
+      
+      // Add tracking pixel to email body
+      const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+      const protocol = domain.includes('localhost') ? 'http://' : 'https://';
+      const trackingUrl = `${protocol}${domain}/api/track/warmup/open/${trackingId}`;
+      
+      const bodyWithTracking = `${content.body}
+
+<img src="${trackingUrl}" width="1" height="1" style="display: none;" />`;
+      
+      console.log(`Sending self-warmup email from ${integration.email} to ${integration.email}`);
+      
+      const success = await sendEmail(
+        integration,
+        integration.email,
+        `[Self-Warmup] ${content.subject}`,
+        bodyWithTracking
+      );
+
+      if (success) {
+        // Record the warmup email with tracking
+        await db.insert(warmupEmails).values({
+          fromIntegrationId: integration.id,
+          toIntegrationId: integration.id, // Same integration for self-warmup
+          subject: `[Self-Warmup] ${content.subject}`,
+          body: bodyWithTracking,
+          status: "sent",
+          trackingId,
+          warmupDay: currentDay,
+          deliveryLocation: 'unknown'
+        });
+
+        // Update statistics and progress
+        await this.updateWarmupStats(integration.id, { emailsSent: 1 });
+        
+        // Check if day is completed and advance to next day if needed
+        await this.checkAndAdvanceDay(integration.id);
+        
+        console.log(`Self-warmup email sent with tracking ${trackingId}`);
+        
+        // Schedule automatic reply simulation faster for self-warmup (10-30 seconds)
+        const replyDelay = Math.floor(Math.random() * 20 + 10) * 1000; // 10-30 seconds
+        setTimeout(async () => {
+          await this.simulateSelfWarmupReply(integration, content.subject, trackingId);
+        }, replyDelay);
+        
+      } else {
+        console.error(`Failed to send self-warmup email to ${integration.email}`);
+      }
+    } catch (error) {
+      console.error("Error sending self-warmup email:", error);
+    }
+  }
+
+  // Simulate automatic self-warmup replies (faster for testing)
+  private async simulateSelfWarmupReply(integration: any, originalSubject: string, trackingId: string) {
+    try {
+      const warmupEmail = await storage.findWarmupEmailByTrackingId(trackingId);
+      if (!warmupEmail) {
+        console.log(`Self-warmup email not found for tracking ID: ${trackingId}`);
+        return;
+      }
+
+      // Higher engagement for self-warmup (80% open, 60% reply)
+      const shouldReply = Math.random() < 0.6;
+      
+      if (shouldReply) {
+        const replies = [
+          "Thank you for the update. This looks promising.",
+          "Received your message. I'll review the details.",
+          "Thanks for reaching out. Let's discuss this further.",
+          "This is exactly what we were looking for.",
+          "Great information. I'll share this with the team."
+        ];
+        const replyBody = replies[Math.floor(Math.random() * replies.length)];
+        
+        console.log(`Simulating self-warmup reply: "${replyBody}"`);
+        await this.processWarmupEmailAction(warmupEmail.id, 'reply', replyBody);
+      } else {
+        console.log(`Simulating self-warmup email open`);
+        await this.processWarmupEmailAction(warmupEmail.id, 'open');
+      }
+    } catch (error) {
+      console.error("Error simulating self-warmup reply:", error);
     }
   }
 
