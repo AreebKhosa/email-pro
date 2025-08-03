@@ -2569,6 +2569,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Warmup email tracking endpoint
+  app.get('/api/track/warmup/open/:trackingId', async (req, res) => {
+    try {
+      const { trackingId } = req.params;
+      console.log(`Warmup email opened - tracking ID: ${trackingId}`);
+      
+      // Find warmup email by tracking ID and mark as opened
+      const warmupEmail = await storage.findWarmupEmailByTrackingId(trackingId);
+      if (warmupEmail) {
+        await warmupService.processWarmupEmailAction(warmupEmail.id, 'open');
+      }
+      
+      // Return 1x1 transparent pixel
+      const pixel = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+        'base64'
+      );
+      
+      res.set({
+        'Content-Type': 'image/png',
+        'Content-Length': pixel.length,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
+      res.send(pixel);
+    } catch (error) {
+      console.error('Error tracking warmup email open:', error);
+      res.status(200).send(''); // Don't break email display if tracking fails
+    }
+  });
+
   app.get('/api/track/click/:trackingId', async (req, res) => {
     try {
       const { trackingId } = req.params;

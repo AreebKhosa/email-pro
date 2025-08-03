@@ -130,6 +130,7 @@ export interface IStorage {
   getWarmupStats(integrationId: number): Promise<{ sent: number; received: number; opened: number; replied: number }>;
   getWarmupProgress(integrationId: number): Promise<WarmupProgress[]>;
   getTodayWarmupStats(integrationId: number): Promise<WarmupStats | undefined>;
+  findWarmupEmailByTrackingId(trackingId: string): Promise<WarmupEmail | undefined>;
   updateWarmupEmailTracking(trackingId: string, field: 'opened' | 'replied' | 'spam', value?: any): Promise<WarmupEmail | undefined>;
   markWarmupEmailAsOpened(trackingId: string): Promise<WarmupEmail | undefined>;
   markWarmupEmailAsReplied(trackingId: string, replyBody?: string): Promise<WarmupEmail | undefined>;
@@ -841,6 +842,14 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return stats;
+  }
+
+  async findWarmupEmailByTrackingId(trackingId: string): Promise<WarmupEmail | undefined> {
+    const [warmupEmail] = await db
+      .select()
+      .from(warmupEmails)
+      .where(eq(warmupEmails.trackingId, trackingId));
+    return warmupEmail;
   }
 
   async updateWarmupEmailTracking(trackingId: string, field: 'opened' | 'replied' | 'spam', value?: any): Promise<WarmupEmail | undefined> {

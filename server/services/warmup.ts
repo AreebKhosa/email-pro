@@ -19,8 +19,8 @@ const DEFAULT_WARMUP_CONFIG: WarmupConfig = {
   dailyIncrease: 5,
   maxDailyEmails: 100,
   warmupDays: 15,
-  minInterval: 15,
-  maxInterval: 30,
+  minInterval: 1, // 1 minute for testing
+  maxInterval: 3, // 3 minutes for testing
 };
 
 export class WarmupService {
@@ -279,10 +279,11 @@ export class WarmupService {
 
     // Auto-continue: schedule next warmup cycle if there are more emails to send
     if (hasMoreToSend || emailsSent > 0) {
-      console.log(`Sent ${emailsSent} warmup emails, scheduling next cycle in 30 minutes...`);
+      const nextCycleMinutes = Math.floor(Math.random() * (this.config.maxInterval - this.config.minInterval + 1)) + this.config.minInterval;
+      console.log(`Sent ${emailsSent} warmup emails, scheduling next cycle in ${nextCycleMinutes} minutes...`);
       setTimeout(() => {
         this.sendWarmupEmails(userId).catch(console.error);
-      }, 30 * 60 * 1000); // 30 minutes between cycles
+      }, nextCycleMinutes * 60 * 1000); // Use configured interval
     } else {
       console.log("All warmup targets completed for today");
     }
@@ -301,10 +302,14 @@ export class WarmupService {
       const progress = await this.getCurrentDayProgress(fromIntegration.id);
       const currentDay = progress?.day || 1;
       
-      // Add tracking pixel to email body
+      // Add tracking pixel to email body - use http for localhost, https for production
+      const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+      const protocol = domain.includes('localhost') ? 'http://' : 'https://';
+      const trackingUrl = `${protocol}${domain}/api/track/warmup/open/${trackingId}`;
+      
       const bodyWithTracking = `${content.body}
 
-<img src="${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost'}/api/track/warmup/open/${trackingId}" width="1" height="1" style="display: none;" />`;
+<img src="${trackingUrl}" width="1" height="1" style="display: none;" />`;
       
       const success = await sendEmail(
         fromIntegration,
@@ -333,11 +338,54 @@ export class WarmupService {
         await this.checkAndAdvanceDay(fromIntegration.id);
         
         console.log(`Warmup email sent from ${fromIntegration.email} to ${toIntegration.email} with tracking ${trackingId}`);
+        
+        // Schedule automatic reply for warmup simulation (random delay 30s to 2 minutes)
+        const replyDelay = Math.floor(Math.random() * 90 + 30) * 1000; // 30-120 seconds
+        setTimeout(async () => {
+          await this.simulateWarmupReply(fromIntegration, toIntegration, content.subject, trackingId);
+        }, replyDelay);
+        
       } else {
         console.error(`Failed to send warmup email from ${fromIntegration.email} to ${toIntegration.email}`);
       }
     } catch (error) {
       console.error("Error sending warmup email:", error);
+    }
+  }
+
+  // Simulate automatic warmup email replies for testing
+  private async simulateWarmupReply(fromIntegration: any, toIntegration: any, originalSubject: string, trackingId: string) {
+    try {
+      // Find the warmup email record
+      const warmupEmail = await storage.findWarmupEmailByTrackingId(trackingId);
+      if (!warmupEmail) {
+        console.log(`Warmup email not found for tracking ID: ${trackingId}`);
+        return;
+      }
+
+      // Simulate different reply behaviors (70% reply, 30% just mark as opened)
+      const shouldReply = Math.random() < 0.7;
+      
+      if (shouldReply) {
+        // Generate a simple reply
+        const replies = [
+          "Thank you for your email. I'll review this and get back to you.",
+          "Thanks for reaching out. This looks interesting.",
+          "Received your message. I'll look into this further.",
+          "Thank you for the information. I appreciate you sharing this.",
+          "Thanks for your email. I'll give this some thought."
+        ];
+        const replyBody = replies[Math.floor(Math.random() * replies.length)];
+        
+        console.log(`Simulating reply from ${toIntegration.email} to ${fromIntegration.email}: "${replyBody}"`);
+        await this.processWarmupEmailAction(warmupEmail.id, 'reply', replyBody);
+      } else {
+        // Just mark as opened
+        console.log(`Simulating email open from ${toIntegration.email} for email from ${fromIntegration.email}`);
+        await this.processWarmupEmailAction(warmupEmail.id, 'open');
+      }
+    } catch (error) {
+      console.error("Error simulating warmup reply:", error);
     }
   }
 
