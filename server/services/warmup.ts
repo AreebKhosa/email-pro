@@ -19,8 +19,8 @@ const DEFAULT_WARMUP_CONFIG: WarmupConfig = {
   dailyIncrease: 5,
   maxDailyEmails: 100,
   warmupDays: 15,
-  minInterval: 1, // 1 minute for testing
-  maxInterval: 3, // 3 minutes for testing
+  minInterval: 30, // 30 minutes between cycles
+  maxInterval: 60, // 60 minutes between cycles
 };
 
 export class WarmupService {
@@ -367,11 +367,7 @@ export class WarmupService {
         
         console.log(`Warmup email sent from ${fromIntegration.email} to ${toIntegration.email} with tracking ${trackingId}`);
         
-        // Schedule automatic reply for warmup simulation (random delay 30s to 2 minutes)
-        const replyDelay = Math.floor(Math.random() * 90 + 30) * 1000; // 30-120 seconds
-        setTimeout(async () => {
-          await this.simulateWarmupReply(fromIntegration, toIntegration, content.subject, trackingId);
-        }, replyDelay);
+        // Real warmup mode: No automatic simulation - replies tracked via IMAP monitoring
         
       } else {
         console.error(`Failed to send warmup email from ${fromIntegration.email} to ${toIntegration.email}`);
@@ -508,11 +504,7 @@ export class WarmupService {
         
         console.log(`Self-warmup email sent with tracking ${trackingId}`);
         
-        // Schedule automatic reply simulation faster for self-warmup (10-30 seconds)
-        const replyDelay = Math.floor(Math.random() * 20 + 10) * 1000; // 10-30 seconds
-        setTimeout(async () => {
-          await this.simulateSelfWarmupReply(integration, content.subject, trackingId);
-        }, replyDelay);
+        // Real warmup mode: No automatic simulation - replies tracked via IMAP monitoring
         
       } else {
         console.error(`Failed to send self-warmup email to ${integration.email}`);

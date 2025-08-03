@@ -179,7 +179,7 @@ export default function WarmUp() {
       queryClient.invalidateQueries({ queryKey: ["/api/email-integrations"] });
       toast({
         title: "Success",
-        description: "Warmup process started - will auto-continue every 1-3 minutes for testing",
+        description: "Real warmup process started - will auto-continue every 30 minutes",
       });
     },
     onError: (error) => {
@@ -385,7 +385,7 @@ export default function WarmUp() {
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                       <span className="text-green-800 dark:text-green-300 font-medium">
-                        Warmup process is running - auto-continues every 1-3 minutes
+                        Warmup process is running - auto-continues every 30-60 minutes
                       </span>
                     </div>
                   </div>
@@ -394,10 +394,10 @@ export default function WarmUp() {
                     <div className="flex items-start gap-2">
                       <Info className="w-4 h-4 text-blue-600 mt-0.5" />
                       <div className="text-blue-800 dark:text-blue-300">
-                        <div className="font-medium mb-1">Testing Mode Active</div>
+                        <div className="font-medium mb-1">Real Warmup Mode Active</div>
                         <div className="text-sm">
-                          Email replies are automatically simulated for testing warmup progress. 
-                          These simulated replies won't appear in your actual inbox - this is normal behavior for the warmup system.
+                          Warmup emails are being sent between your accounts. Replies and opens are tracked via IMAP monitoring. 
+                          You can manually reply to warmup emails to improve engagement rates and build authentic conversation history.
                         </div>
                       </div>
                     </div>
