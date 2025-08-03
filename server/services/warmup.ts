@@ -224,6 +224,8 @@ export class WarmupService {
 
   // Send warmup emails between integrations with auto-continue
   async sendWarmupEmails(userId: string) {
+    console.log(`Starting sendWarmupEmails for user ${userId}`);
+    
     const activeIntegrations = await db
       .select()
       .from(emailIntegrations)
@@ -234,6 +236,9 @@ export class WarmupService {
           eq(emailIntegrations.isVerified, true)
         )
       );
+
+    console.log(`Found ${activeIntegrations.length} active integrations for warmup:`);
+    activeIntegrations.forEach(int => console.log(`- Integration ${int.id}: ${int.email}`));
 
     if (activeIntegrations.length === 0) {
       console.log("No active integrations for warmup");
@@ -246,6 +251,8 @@ export class WarmupService {
       await this.sendSelfWarmupEmails(activeIntegrations[0]);
       return;
     }
+    
+    console.log("Multiple integrations detected - using cross-warmup mode");
 
     let emailsSent = 0;
     let hasMoreToSend = false;

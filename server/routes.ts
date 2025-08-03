@@ -2458,18 +2458,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/warmup/send', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; 
+      if (!userId) { return res.status(401).json({ message: "User ID not found" }); }
+      
+      console.log(`Starting warmup process for user ${userId}`);
+      
+      // Get user's email integrations
+      const integrations = await storage.getUserEmailIntegrations(userId);
+      const warmupIntegrations = integrations.filter(i => i.warmupEnabled && i.isVerified);
+      
+      console.log(`Found ${integrations.length} total integrations, ${warmupIntegrations.length} warmup-enabled and verified`);
+      console.log('Integrations:', integrations.map(i => ({ id: i.id, email: i.email, warmupEnabled: i.warmupEnabled, isVerified: i.isVerified })));
+      
+      if (warmupIntegrations.length === 0) {
+        return res.status(400).json({ message: "No verified email integrations enabled for warmup" });
+      }
+      
+      // Initialize warmup progress if needed
+      for (const integration of warmupIntegrations) {
+        await warmupService.initializeWarmupProgress(integration.id);
+        console.log(`Initialized warmup progress for integration ${integration.id} (${integration.email})`);
+      }
       
       // Mark warmup as active for user's integrations
-      const integrations = await storage.getUserEmailIntegrations(userId);
-      for (const integration of integrations.filter(i => i.warmupEnabled)) {
+      for (const integration of warmupIntegrations) {
         await storage.updateEmailIntegration(integration.id, { lastWarmupAt: new Date() });
       }
       
-      // Send warmup emails (this now auto-continues)
+      // Start the warmup process
+      console.log(`Calling warmupService.sendWarmupEmails for user ${userId} with ${warmupIntegrations.length} integrations`);
       warmupService.sendWarmupEmails(userId).catch(console.error);
       
-      res.json({ message: "Warmup process started successfully" });
+      res.json({ 
+        message: "Warmup process started successfully",
+        integrations: warmupIntegrations.length,
+        mode: warmupIntegrations.length === 1 ? "self-warmup" : "cross-warmup"
+      });
     } catch (error) {
       console.error("Error starting warmup process:", error);
       res.status(500).json({ message: "Failed to start warmup process" });
