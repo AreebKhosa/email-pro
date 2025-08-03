@@ -78,22 +78,14 @@ export default function Settings() {
 
   // Update form values when user data changes
   useEffect(() => {
-    if (user) {
-      profileForm.setValue("firstName", user.firstName || "");
-      profileForm.setValue("lastName", user.lastName || "");
-      profileForm.setValue("email", user.email || "");
+    if (user && typeof user === 'object') {
+      profileForm.setValue("firstName", (user as any).firstName || "");
+      profileForm.setValue("lastName", (user as any).lastName || "");
+      profileForm.setValue("email", (user as any).email || "");
     }
   }, [user, profileForm]);
 
-  const notificationForm = useForm({
-    resolver: zodResolver(notificationSchema),
-    defaultValues: {
-      campaignNotifications: true,
-      deliverabilityAlerts: true,
-      usageWarnings: true,
-      marketingEmails: false,
-    },
-  });
+
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -178,9 +170,7 @@ export default function Settings() {
     updateProfileMutation.mutate(data);
   };
 
-  const onUpdateNotifications = (data: any) => {
-    updateNotificationsMutation.mutate(data);
-  };
+
 
   const handleExportData = () => {
     exportDataMutation.mutate();
@@ -201,7 +191,7 @@ export default function Settings() {
   };
 
   const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful.length > 0) {
+    if (result.successful && result.successful.length > 0) {
       const uploadURL = result.successful[0].uploadURL;
       try {
         await apiRequest("PUT", "/api/profile/picture", { profileImageURL: uploadURL });
@@ -284,12 +274,12 @@ export default function Settings() {
                       <div className="flex items-center space-x-6">
                         <Avatar className="w-16 h-16">
                           <AvatarImage 
-                            src={user?.profileImageUrl || undefined} 
-                            alt={`${user?.firstName || 'User'} ${user?.lastName || ''}`}
+                            src={(user as any)?.profileImageUrl || undefined} 
+                            alt={`${(user as any)?.firstName || 'User'} ${(user as any)?.lastName || ''}`}
                           />
                           <AvatarFallback className="bg-primary/10">
-                            {user?.firstName ? user.firstName.charAt(0).toUpperCase() : 'U'}
-                            {user?.lastName ? user.lastName.charAt(0).toUpperCase() : ''}
+                            {(user as any)?.firstName ? (user as any).firstName.charAt(0).toUpperCase() : 'U'}
+                            {(user as any)?.lastName ? (user as any).lastName.charAt(0).toUpperCase() : ''}
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -571,10 +561,10 @@ export default function Settings() {
                     </div>
                     <div className="text-right">
                       <Badge className="bg-blue-100 text-blue-800 capitalize">
-                        {user?.plan || 'Demo'}
+                        {(user as any)?.plan || 'Demo'}
                       </Badge>
                       <p className="text-sm text-slate-600 mt-1">
-                        {user?.plan === 'demo' ? 'Free' : `$${user?.plan === 'starter' ? '14.99' : user?.plan === 'pro' ? '29.99' : '49.99'}/month`}
+                        {(user as any)?.plan === 'demo' ? 'Free' : `$${(user as any)?.plan === 'starter' ? '14.99' : (user as any)?.plan === 'pro' ? '29.99' : '49.99'}/month`}
                       </p>
                     </div>
                   </div>
@@ -586,9 +576,9 @@ export default function Settings() {
                     </div>
                     <div className="text-right">
                       <p className="font-medium text-slate-900">
-                        {user?.plan === 'demo' ? 'N/A' : (() => {
+                        {(user as any)?.plan === 'demo' ? 'N/A' : (() => {
                           // Calculate next billing date based on creation date (30 days later)
-                          const createdDate = new Date(user.createdAt);
+                          const createdDate = new Date((user as any).createdAt);
                           const nextBilling = new Date(createdDate);
                           nextBilling.setMonth(nextBilling.getMonth() + 1);
                           return nextBilling.toLocaleDateString('en-US', { 
@@ -608,7 +598,7 @@ export default function Settings() {
                     </div>
                     <div className="text-right">
                       <p className="font-medium text-slate-900">
-                        {user?.plan === 'demo' ? 'None' : '•••• •••• •••• 4242'}
+                        {(user as any)?.plan === 'demo' ? 'None' : '•••• •••• •••• 4242'}
                       </p>
                       <p className="text-sm text-slate-600">Expires 12/26</p>
                     </div>
