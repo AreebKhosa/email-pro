@@ -1013,8 +1013,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User ID not found" });
       }
 
-      console.log("Profile update request:", { userId, body: req.body });
-
       const { firstName, lastName, email } = req.body;
       const updateData: any = {};
       
@@ -1022,13 +1020,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (lastName !== undefined) updateData.lastName = lastName;
       if (email !== undefined) updateData.email = email;
 
-      console.log("Update data prepared:", updateData);
-
       await storage.updateUser(userId, updateData);
       
       // Return the updated user data
       const updatedUser = await storage.getUser(userId);
-      console.log("Updated user retrieved:", updatedUser);
       
       res.json(updatedUser);
     } catch (error) {
