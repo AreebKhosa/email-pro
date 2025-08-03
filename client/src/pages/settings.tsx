@@ -594,20 +594,15 @@ export default function Settings() {
                     <div className="text-right">
                       <p className="font-medium text-slate-900">
                         {user?.plan === 'demo' ? 'N/A' : (() => {
-                          if (user?.stripeSubscriptionId) {
-                            // Calculate next billing date based on creation date (30 days later)
-                            const createdDate = new Date(user.createdAt);
-                            const nextBilling = new Date(createdDate);
-                            nextBilling.setMonth(nextBilling.getMonth() + 1);
-                            return nextBilling.toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
-                            });
-                          } else {
-                            // For non-Stripe premium users (manually assigned)
-                            return 'Lifetime Access';
-                          }
+                          // Calculate next billing date based on creation date (30 days later)
+                          const createdDate = new Date(user.createdAt);
+                          const nextBilling = new Date(createdDate);
+                          nextBilling.setMonth(nextBilling.getMonth() + 1);
+                          return nextBilling.toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          });
                         })()}
                       </p>
                     </div>
