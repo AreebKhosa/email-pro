@@ -247,7 +247,7 @@ export default function Campaigns() {
                   <TableRow>
                     <TableHead>Campaign</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Sent</TableHead>
+                    <TableHead>Progress</TableHead>
                     <TableHead>Opens</TableHead>
                     <TableHead>Clicks</TableHead>
                     <TableHead>Scheduled</TableHead>
@@ -274,7 +274,21 @@ export default function Campaigns() {
                         {getStatusBadge(campaign.status)}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {campaign.sentCount || 0}
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium">
+                            {campaign.sentCount || 0}/{campaign.totalRecipients || 0}
+                          </span>
+                          {campaign.totalRecipients > 0 && (
+                            <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                              <div 
+                                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                                style={{ 
+                                  width: `${Math.min(100, ((campaign.sentCount || 0) / campaign.totalRecipients) * 100)}%` 
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm">
                         {campaign.openedCount || 0} 
