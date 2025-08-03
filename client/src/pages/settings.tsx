@@ -4,6 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from '@uppy/core';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -26,7 +29,8 @@ import {
   CheckCircle,
   ExternalLink,
   Trash2,
-  Download
+  Download,
+  Camera
 } from "lucide-react";
 
 const profileSchema = z.object({
@@ -180,6 +184,36 @@ export default function Settings() {
     window.location.href = "/api/logout";
   };
 
+  // Profile picture upload handlers
+  const handleGetUploadParameters = async () => {
+    const response = await apiRequest("POST", "/api/objects/upload");
+    const data = await response.json();
+    return {
+      method: 'PUT' as const,
+      url: data.uploadURL,
+    };
+  };
+
+  const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful.length > 0) {
+      const uploadURL = result.successful[0].uploadURL;
+      try {
+        await apiRequest("PUT", "/api/profile/picture", { profileImageURL: uploadURL });
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        toast({
+          title: "Success",
+          description: "Profile picture updated successfully",
+        });
+      } catch (error) {
+        toast({
+          title: "Error", 
+          description: "Failed to update profile picture",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
     { id: "notifications", label: "Notifications", icon: Bell },
@@ -243,17 +277,29 @@ export default function Settings() {
                   <Form {...profileForm}>
                     <form onSubmit={profileForm.handleSubmit(onUpdateProfile)} className="space-y-6">
                       <div className="flex items-center space-x-6">
-                        <img
-                          src={user?.profileImageUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"}
-                          alt="Profile"
-                          className="w-16 h-16 rounded-full object-cover"
-                        />
+                        <Avatar className="w-16 h-16">
+                          <AvatarImage 
+                            src={user?.profileImageUrl || undefined} 
+                            alt={`${user?.firstName || 'User'} ${user?.lastName || ''}`}
+                          />
+                          <AvatarFallback className="bg-primary/10">
+                            {user?.firstName ? user.firstName.charAt(0).toUpperCase() : 'U'}
+                            {user?.lastName ? user.lastName.charAt(0).toUpperCase() : ''}
+                          </AvatarFallback>
+                        </Avatar>
                         <div>
                           <h3 className="font-medium text-slate-900">Profile Picture</h3>
                           <p className="text-sm text-slate-600">Update your profile photo</p>
-                          <Button variant="outline" size="sm" className="mt-2">
+                          <ObjectUploader
+                            maxNumberOfFiles={1}
+                            maxFileSize={5242880} // 5MB
+                            onGetUploadParameters={handleGetUploadParameters}
+                            onComplete={handleUploadComplete}
+                            buttonClassName="mt-2"
+                          >
+                            <Camera className="h-4 w-4 mr-2" />
                             Change Photo
-                          </Button>
+                          </ObjectUploader>
                         </div>
                       </div>
 
@@ -561,18 +607,85 @@ export default function Settings() {
                       <span className="text-sm text-slate-600">Current month</span>
                     </div>
                     
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">Emails Sent</span>
-                        <span className="text-sm font-medium text-slate-900">
-                          {dashboardData?.usage?.emailsSent || 0} / {dashboardData?.planLimits?.emailsPerMonth === Infinity ? 'Unlimited' : dashboardData?.planLimits?.emailsPerMonth || 1000}
-                        </span>
+                    <div className="space-y-4">
+                      {/* Emails Sent */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-600">Emails Sent</span>
+                          <span className="text-sm font-medium text-slate-900">
+                            {dashboardData?.usage?.emailsSent || 0} / {dashboardData?.planLimits?.emailsPerMonth === Infinity ? 'Unlimited' : (dashboardData?.planLimits?.emailsPerMonth || 1000).toLocaleString()}
+                          </span>
+                        </div>
+                        {dashboardData?.planLimits?.emailsPerMonth !== Infinity && (
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full"
+                              style={{ 
+                                width: `${Math.min(100, ((dashboardData?.usage?.emailsSent || 0) / (dashboardData?.planLimits?.emailsPerMonth || 1)) * 100)}%` 
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">Recipients</span>
-                        <span className="text-sm font-medium text-slate-900">
-                          {dashboardData?.usage?.recipientsUploaded || 0} / {dashboardData?.planLimits?.recipientsPerMonth === Infinity ? 'Unlimited' : dashboardData?.planLimits?.recipientsPerMonth || 300}
-                        </span>
+
+                      {/* Recipients */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-600">Recipients</span>
+                          <span className="text-sm font-medium text-slate-900">
+                            {dashboardData?.usage?.recipientsUploaded || 0} / {dashboardData?.planLimits?.recipients === Infinity ? 'Unlimited' : (dashboardData?.planLimits?.recipients || 300).toLocaleString()}
+                          </span>
+                        </div>
+                        {dashboardData?.planLimits?.recipients !== Infinity && (
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-green-600 h-2 rounded-full"
+                              style={{ 
+                                width: `${Math.min(100, ((dashboardData?.usage?.recipientsUploaded || 0) / (dashboardData?.planLimits?.recipients || 1)) * 100)}%` 
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Email Integrations */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-600">Email Integrations</span>
+                          <span className="text-sm font-medium text-slate-900">
+                            {dashboardData?.usage?.emailIntegrations || 0} / {dashboardData?.planLimits?.emailIntegrations === Infinity ? 'Unlimited' : dashboardData?.planLimits?.emailIntegrations || 1}
+                          </span>
+                        </div>
+                        {dashboardData?.planLimits?.emailIntegrations !== Infinity && (
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-purple-600 h-2 rounded-full"
+                              style={{ 
+                                width: `${Math.min(100, ((dashboardData?.usage?.emailIntegrations || 0) / (dashboardData?.planLimits?.emailIntegrations || 1)) * 100)}%` 
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Deliverability Checks */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-600">Deliverability Checks</span>
+                          <span className="text-sm font-medium text-slate-900">
+                            {dashboardData?.usage?.deliverabilityChecks || 0} / {dashboardData?.planLimits?.deliverabilityChecks === Infinity ? 'Unlimited' : (dashboardData?.planLimits?.deliverabilityChecks || 100).toLocaleString()}
+                          </span>
+                        </div>
+                        {dashboardData?.planLimits?.deliverabilityChecks !== Infinity && (
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-yellow-600 h-2 rounded-full"
+                              style={{ 
+                                width: `${Math.min(100, ((dashboardData?.usage?.deliverabilityChecks || 0) / (dashboardData?.planLimits?.deliverabilityChecks || 1)) * 100)}%` 
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

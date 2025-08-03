@@ -35,9 +35,12 @@ Preferred communication style: Simple, everyday language.
 ### Key Features
 - **Authentication System**: Replit OAuth, secure manual user authentication with email verification and password reset, JWT-based admin authentication.
 - **Email Management**: Multi-account SMTP/IMAP integration, automated warm-up system, email tracking (open/click).
-- **Campaign System**: 4-step creation wizard, email rotation, automated follow-up sequences, scheduling, plan-based features.
+- **Campaign System**: 4-step creation wizard, email rotation, automated follow-up sequences, scheduling, plan-based features with progress tracking.
 - **AI Personalization**: Google Gemini integration for professional, research-based email content via website scraping and deep business analysis.
 - **Payment Integration**: Stripe for subscription management with various plan tiers and usage tracking.
+- **Profile Management**: Complete user profile system with profile picture upload using object storage, first/last name editing.
+- **Object Storage Integration**: Secure file upload system for profile pictures with ACL-based access control.
+- **Real-time Usage Tracking**: Accurate billing and usage metrics display based on actual user plan limits and consumption.
 - **Instruction Boxes System**: Persistent, localStorage-based dismissal of setup guides and specific instructions.
 - **Advanced Email Rotation System**: Configurable multi-account sending, timing controls, daily limits, and smart distribution.
 

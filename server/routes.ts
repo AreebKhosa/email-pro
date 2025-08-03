@@ -2,6 +2,11 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import {
+  ObjectStorageService,
+  ObjectNotFoundError,
+} from "./objectStorage";
+import { ObjectPermission } from "./objectAcl";
 import { setupGoogleAuth, getGmailAuthUrl } from "./services/googleAuth";
 import { validateEmailIntegration, sendEmail } from "./services/email";
 import { personalizeEmailContent, enhanceEmailContent, scrapeWebsiteContent } from "./services/gemini";
@@ -1023,6 +1028,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Object storage routes for profile pictures
+  app.get("/objects/:objectPath(*)", isAuthenticated, async (req, res) => {
+    const userId = req.user?.claims?.sub || req.session?.manualUser?.id;
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(
+        req.path,
+      );
+      const canAccess = await objectStorageService.canAccessObjectEntity({
+        objectFile,
+        userId: userId,
+        requestedPermission: ObjectPermission.READ,
+      });
+      if (!canAccess) {
+        return res.sendStatus(401);
+      }
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error checking object access:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
+  app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+    res.json({ uploadURL });
+  });
+
+  // Profile picture update endpoint
+  app.put("/api/profile/picture", isAuthenticated, async (req, res) => {
+    if (!req.body.profileImageURL) {
+      return res.status(400).json({ error: "profileImageURL is required" });
+    }
+
+    const userId = req.user?.claims?.sub || req.session?.manualUser?.id;
+
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        req.body.profileImageURL,
+        {
+          owner: userId,
+          visibility: "public", // Profile images should be public
+        },
+      );
+
+      // Update user's profile image in database
+      await storage.updateUser(userId, { profileImageUrl: objectPath });
+
+      res.status(200).json({
+        objectPath: objectPath,
+      });
+    } catch (error) {
+      console.error("Error setting profile image:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Google OAuth setup
   const setupGoogleOAuth = async () => {
     try {
@@ -1374,15 +1441,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stats = await storage.getDashboardStats(userId);
       const usage = await storage.getCurrentMonthUsage(userId);
       const user = await storage.getUser(userId);
+      const emailIntegrations = await storage.getUserEmailIntegrations(userId);
       
       res.json({
         ...stats,
-        usage: usage || {
-          emailsSent: 0,
-          recipientsUploaded: 0,
-          deliverabilityChecks: 0,
-          personalizedEmails: 0,
-          warmupEmails: 0,
+        usage: {
+          emailsSent: usage?.emailsSent || 0,
+          recipientsUploaded: usage?.recipientsUploaded || 0,
+          deliverabilityChecks: usage?.deliverabilityChecks || 0,
+          personalizedEmails: usage?.personalizedEmails || 0,
+          warmupEmails: usage?.warmupEmails || 0,
+          emailIntegrations: emailIntegrations.length,
         },
         planLimits: planLimits[user?.plan as keyof typeof planLimits] || planLimits.demo,
       });
