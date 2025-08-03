@@ -259,14 +259,25 @@ export class WarmupService {
 
     for (const fromIntegration of activeIntegrations) {
       const progress = await this.getCurrentDayProgress(fromIntegration.id);
-      if (!progress || progress.isCompleted) {
+      console.log(`Integration ${fromIntegration.id} progress:`, progress);
+      
+      if (!progress) {
+        console.log(`No progress found for integration ${fromIntegration.id}, skipping`);
+        continue;
+      }
+      
+      if (progress.isCompleted) {
+        console.log(`Progress already completed for integration ${fromIntegration.id}`);
         continue;
       }
 
       const todayStats = await this.getTodayStats(fromIntegration.id);
       const remainingEmails = progress.targetEmailsPerDay - (todayStats.emailsSent || 0);
+      
+      console.log(`Integration ${fromIntegration.id}: target=${progress.targetEmailsPerDay}, sent=${todayStats.emailsSent || 0}, remaining=${remainingEmails}`);
 
       if (remainingEmails <= 0) {
+        console.log(`No emails remaining for integration ${fromIntegration.id}, marking as completed`);
         // Mark day as completed
         await db
           .update(warmupProgress)
@@ -279,6 +290,8 @@ export class WarmupService {
       const emailsToSend = Math.min(1, remainingEmails);
       hasMoreToSend = hasMoreToSend || remainingEmails > emailsToSend;
 
+      console.log(`Will send ${emailsToSend} email(s) from integration ${fromIntegration.id}`);
+
       // Send emails to other integrations
       const otherIntegrations = activeIntegrations.filter(
         (int) => int.id !== fromIntegration.id
@@ -286,6 +299,7 @@ export class WarmupService {
 
       for (let i = 0; i < Math.min(emailsToSend, otherIntegrations.length); i++) {
         const toIntegration = otherIntegrations[i];
+        console.log(`Sending warmup email from ${fromIntegration.email} to ${toIntegration.email}`);
         await this.sendSingleWarmupEmail(fromIntegration, toIntegration);
         emailsSent++;
       }
@@ -822,6 +836,19 @@ Business Development`
         }
       }
     }
+  }
+
+  // Reset warmup progress completion status
+  async resetWarmupProgress(integrationId: number) {
+    console.log(`Resetting warmup progress completion status for integration ${integrationId}`);
+    
+    // Reset all completion flags for this integration
+    await db
+      .update(warmupProgress)
+      .set({ isCompleted: false })
+      .where(eq(warmupProgress.emailIntegrationId, integrationId));
+    
+    console.log(`Reset completed for integration ${integrationId}`);
   }
 
   // Process warmup email actions (open, reply, mark as spam)

@@ -2474,10 +2474,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No verified email integrations enabled for warmup" });
       }
       
-      // Initialize warmup progress if needed
+      // Initialize warmup progress if needed and reset completion status
       for (const integration of warmupIntegrations) {
         await warmupService.initializeWarmupProgress(integration.id);
-        console.log(`Initialized warmup progress for integration ${integration.id} (${integration.email})`);
+        await warmupService.resetWarmupProgress(integration.id);
+        console.log(`Initialized and reset warmup progress for integration ${integration.id} (${integration.email})`);
       }
       
       // Mark warmup as active for user's integrations
