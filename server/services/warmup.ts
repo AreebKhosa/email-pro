@@ -16,7 +16,7 @@ export interface WarmupConfig {
 }
 
 const DEFAULT_WARMUP_CONFIG: WarmupConfig = {
-  dailyIncrease: 1, // Start with 1 email on day 1, increase by 1 each day
+  dailyIncrease: 5, // Start with 5 emails on day 1, increase by 5 each day
   maxDailyEmails: 100,
   warmupDays: 15,
   minInterval: 30, // 30 minutes between cycles
@@ -144,7 +144,7 @@ export class WarmupService {
     const progressData = [];
     for (let day = 1; day <= this.config.warmupDays; day++) {
       const targetEmails = Math.min(
-        1 + (day - 1) * this.config.dailyIncrease,
+        this.config.dailyIncrease * day,
         this.config.maxDailyEmails
       );
       
@@ -931,7 +931,7 @@ Business Development`
       if (currentDay < this.config.warmupDays) {
         const nextDay = currentDay + 1;
         const nextDayTarget = Math.min(
-          1 + (nextDay - 1) * this.config.dailyIncrease, // Start with 1 email on day 1
+          this.config.dailyIncrease * nextDay, // Start with 5 emails on day 1
           this.config.maxDailyEmails
         );
 
