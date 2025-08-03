@@ -71,14 +71,25 @@ export default function Settings() {
     retry: false,
   });
 
+
+
   const profileForm = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      firstName: user?.firstName || "",
-      lastName: user?.lastName || "",
-      email: user?.email || "",
+      firstName: "",
+      lastName: "",
+      email: "",
     },
   });
+
+  // Update form values when user data changes
+  useEffect(() => {
+    if (user) {
+      profileForm.setValue("firstName", user.firstName || "");
+      profileForm.setValue("lastName", user.lastName || "");
+      profileForm.setValue("email", user.email || "");
+    }
+  }, [user, profileForm]);
 
   const notificationForm = useForm({
     resolver: zodResolver(notificationSchema),
@@ -92,7 +103,8 @@ export default function Settings() {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: any) => {
-      await apiRequest("PUT", "/api/profile", data);
+      const response = await apiRequest("PATCH", "/api/profile", data);
+      return response.json();
     },
     onSuccess: () => {
       toast({
