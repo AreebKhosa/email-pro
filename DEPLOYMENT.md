@@ -13,7 +13,23 @@
 ### Prerequisites
 - Node.js 18+ and npm
 - PostgreSQL database (local or remote)
-- Python 3.8+ (for email sending)
+- **Python 3.8+** (for email sending via SMTP)
+
+### Python Setup
+The application uses a Python script for reliable email sending. Ensure Python 3 is installed:
+
+```bash
+# Check if Python 3 is installed
+python3 --version
+
+# Install if missing (Ubuntu/Debian)
+sudo apt install python3 python3-pip
+
+# macOS
+brew install python3
+
+# The Python script requires no additional packages - only standard library
+```
 
 ### Step 1: Clone and Install Dependencies
 ```bash

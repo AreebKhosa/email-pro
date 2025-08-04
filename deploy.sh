@@ -40,6 +40,14 @@ if ! command -v npm &> /dev/null; then
     exit 1
 fi
 
+# Check if Python 3 is installed
+if ! command -v python3 &> /dev/null; then
+    print_error "Python 3 is not installed. Please install Python 3 first."
+    print_warning "On Ubuntu/Debian: sudo apt install python3"
+    print_warning "On macOS: brew install python3"
+    exit 1
+fi
+
 if [ "$MODE" == "local" ]; then
     echo "📦 Setting up local development environment..."
     
@@ -91,12 +99,25 @@ EOL
     print_status "Setting up database..."
     npm run db:push || print_warning "Database push failed. Make sure your DATABASE_URL is correct."
     
+    # Test Python email sender
+    print_status "Testing Python email sender..."
+    if python3 server/email_sender.py --help &> /dev/null; then
+        print_status "Python email sender is working correctly"
+    else
+        print_warning "Python email sender test failed. Check Python installation."
+    fi
+    
     print_status "Local development setup complete!"
     echo ""
     echo "To start the application:"
     echo "  npm run dev"
     echo ""
     echo "The app will be available at: http://localhost:5000"
+    echo ""
+    print_status "Requirements verified:"
+    echo "  ✓ Node.js $(node --version)"
+    echo "  ✓ npm $(npm --version)"
+    echo "  ✓ Python $(python3 --version)"
 
 elif [ "$MODE" == "production" ]; then
     echo "🏭 Setting up production environment..."

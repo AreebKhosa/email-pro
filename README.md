@@ -16,7 +16,14 @@ A comprehensive AI-powered email marketing platform with advanced personalizatio
 
 ### Running Locally
 
-1. **Clone and Install**
+1. **Prerequisites Check**
+```bash
+# Verify requirements
+node --version    # Should be 18+
+python3 --version # Should be 3.8+
+```
+
+2. **Clone and Install**
 ```bash
 git clone <your-repo-url>
 cd email-saas-app
