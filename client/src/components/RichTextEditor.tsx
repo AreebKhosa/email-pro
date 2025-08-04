@@ -231,11 +231,11 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
                   const start = textarea.selectionStart;
                   const end = textarea.selectionEnd;
                   const currentValue = textarea.value;
-                  const newValue = currentValue.substring(0, start) + '{{name}}' + currentValue.substring(end);
+                  const newValue = currentValue.substring(0, start) + '{personalize_email}' + currentValue.substring(end);
                   onChange(newValue);
                   setTimeout(() => {
                     textarea.focus();
-                    textarea.setSelectionRange(start + 8, start + 8);
+                    textarea.setSelectionRange(start + 19, start + 19);
                   }, 0);
                 }
               }}
@@ -245,13 +245,13 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
                   : 'bg-blue-100 text-blue-800 border-blue-200'
               }`}
             >
-              {personalizationStatus?.hasAllPersonalized && personalizationStatus.sampleData?.[0]?.name
-                ? personalizationStatus.sampleData[0].name
-                : `{{name}}`}
+              {personalizationStatus?.hasAllPersonalized 
+                ? 'Personalized Email ✓'
+                : `{personalize_email}`}
             </button>
             {personalizationStatus?.hasAllPersonalized && personalizationStatus.sampleData?.length > 0 && (
-              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-10 bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                Preview: {personalizationStatus.sampleData.slice(0, 3).map(s => s.name).join(', ')}
+              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-10 bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap max-w-xs">
+                Preview: All {personalizationStatus.sampleData.length} recipients have personalized emails ready
               </div>
             )}
           </div>
@@ -263,70 +263,17 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
                 const currentValue = textarea.value;
-                const newValue = currentValue.substring(0, start) + '{{lastName}}' + currentValue.substring(end);
+                const newValue = currentValue.substring(0, start) + '{{name}}' + currentValue.substring(end);
                 onChange(newValue);
                 setTimeout(() => {
                   textarea.focus();
-                  textarea.setSelectionRange(start + 12, start + 12);
+                  textarea.setSelectionRange(start + 8, start + 8);
                 }, 0);
               }
             }}
             className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
           >
-            {`{{lastName}}`}
-          </button>
-          <div className="relative group">
-            <button
-              type="button"
-              onClick={() => {
-                const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-                if (textarea) {
-                  const start = textarea.selectionStart;
-                  const end = textarea.selectionEnd;
-                  const currentValue = textarea.value;
-                  const newValue = currentValue.substring(0, start) + '{{companyName}}' + currentValue.substring(end);
-                  onChange(newValue);
-                  setTimeout(() => {
-                    textarea.focus();
-                    textarea.setSelectionRange(start + 15, start + 15);
-                  }, 0);
-                }
-              }}
-              className={`px-3 py-1 text-xs border rounded hover:bg-blue-200 font-mono ${
-                personalizationStatus?.hasAllPersonalized 
-                  ? 'bg-green-100 text-green-800 border-green-200' 
-                  : 'bg-blue-100 text-blue-800 border-blue-200'
-              }`}
-            >
-              {personalizationStatus?.hasAllPersonalized && personalizationStatus.sampleData?.[0]?.company
-                ? personalizationStatus.sampleData[0].company
-                : `{{companyName}}`}
-            </button>
-            {personalizationStatus?.hasAllPersonalized && personalizationStatus.sampleData?.some(s => s.company) && (
-              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-10 bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                Preview: {personalizationStatus.sampleData.filter(s => s.company).slice(0, 3).map(s => s.company).join(', ')}
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-              if (textarea) {
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const currentValue = textarea.value;
-                const newValue = currentValue.substring(0, start) + '{{position}}' + currentValue.substring(end);
-                onChange(newValue);
-                setTimeout(() => {
-                  textarea.focus();
-                  textarea.setSelectionRange(start + 12, start + 12);
-                }, 0);
-              }
-            }}
-            className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
-          >
-            {`{{position}}`}
+            {`{{name}}`}
           </button>
           <button
             type="button"
@@ -336,17 +283,17 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
                 const currentValue = textarea.value;
-                const newValue = currentValue.substring(0, start) + '{{email}}' + currentValue.substring(end);
+                const newValue = currentValue.substring(0, start) + '{{company}}' + currentValue.substring(end);
                 onChange(newValue);
                 setTimeout(() => {
                   textarea.focus();
-                  textarea.setSelectionRange(start + 9, start + 9);
+                  textarea.setSelectionRange(start + 11, start + 11);
                 }, 0);
               }
             }}
             className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
           >
-            {`{{email}}`}
+            {`{{company}}`}
           </button>
         </div>
       </div>

@@ -1631,7 +1631,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get recipients for this list  
-      const recipients = await storage.getRecipientsForList(listId);
+      const recipients = await storage.getListRecipients(listId);
       
       // Verify list belongs to user
       const recipientList = await storage.getRecipientList(listId);
