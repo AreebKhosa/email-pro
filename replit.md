@@ -44,6 +44,21 @@ Preferred communication style: Simple, everyday language.
 - **Instruction Boxes System**: Persistent, localStorage-based dismissal of setup guides and specific instructions.
 - **Advanced Email Rotation System**: Configurable multi-account sending, timing controls, daily limits, and smart distribution.
 
+## Deployment & Infrastructure
+
+### Deployment Options
+- **Local Development**: Direct npm run with hot reload
+- **VPS/Server**: PM2 + Nginx reverse proxy with SSL
+- **Docker**: Containerized deployment with docker-compose
+- **Automated**: Shell script for streamlined setup
+
+### Production Setup
+- **Process Management**: PM2 for Node.js process handling
+- **Reverse Proxy**: Nginx with SSL termination
+- **Database**: PostgreSQL with connection pooling
+- **Monitoring**: Health check endpoints and logging
+- **Security**: SSL certificates, session security, environment isolation
+
 ## External Dependencies
 
 ### Core Services

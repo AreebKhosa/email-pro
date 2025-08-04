@@ -445,6 +445,15 @@ const isAuthenticated = (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint for monitoring
+  app.get('/health', (req, res) => {
+    res.status(200).json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development'
+    });
+  });
+
   // Auth middleware setup
   await setupAuth(app);
 
