@@ -1617,6 +1617,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check personalization status for a recipient list
+  app.get('/api/recipient-lists/:id/personalization-status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found" });
+      }
+      
+      const listId = parseInt(req.params.id);
+      if (isNaN(listId)) {
+        return res.status(400).json({ message: 'Invalid list ID' });
+      }
+
+      // Get recipients for this list  
+      const recipients = await storage.getRecipientsForList(listId);
+      
+      // Verify list belongs to user
+      const recipientList = await storage.getRecipientList(listId);
+      if (!recipientList || recipientList.userId !== userId) {
+        return res.status(404).json({ message: 'List not found' });
+      }
+
+      // Check personalization status
+      const totalRecipients = recipients.length;
+      const personalizedRecipients = recipients.filter(r => r.personalizedEmail && r.personalizedEmail.trim() !== '').length;
+      const hasAllPersonalized = totalRecipients > 0 && personalizedRecipients === totalRecipients;
+      
+      // Get sample personalized data for preview (first 3 recipients)
+      const sampleData = recipients.slice(0, 3).map(recipient => ({
+        name: recipient.name || recipient.email.split('@')[0],
+        email: recipient.email,
+        company: recipient.companyName,
+        hasPersonalizedEmail: !!recipient.personalizedEmail,
+        personalizedEmailPreview: recipient.personalizedEmail ? recipient.personalizedEmail.substring(0, 150) + '...' : null
+      }));
+
+      res.json({
+        totalRecipients,
+        personalizedRecipients,
+        hasAllPersonalized,
+        personalizationPercentage: totalRecipients > 0 ? Math.round((personalizedRecipients / totalRecipients) * 100) : 0,
+        sampleData
+      });
+    } catch (error) {
+      console.error('Get personalization status error:', error);
+      res.status(500).json({ message: 'Failed to get personalization status' });
+    }
+  });
+
   app.post('/api/recipient-lists', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.manualUser?.id; if (!userId) { return res.status(401).json({ message: "User ID not found" }); }

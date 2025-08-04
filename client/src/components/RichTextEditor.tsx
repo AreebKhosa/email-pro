@@ -44,9 +44,18 @@ interface RichTextEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   minHeight?: string;
+  personalizationStatus?: {
+    hasAllPersonalized: boolean;
+    sampleData: Array<{
+      name: string;
+      email: string;
+      company?: string;
+      hasPersonalizedEmail: boolean;
+    }>;
+  };
 }
 
-export default function RichTextEditor({ value, onChange, placeholder, minHeight = "200px" }: RichTextEditorProps) {
+export default function RichTextEditor({ value, onChange, placeholder, minHeight = "200px", personalizationStatus }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [showDynamicFields, setShowDynamicFields] = useState(false);
 
@@ -203,28 +212,49 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
       
       {/* Dynamic Fields */}
       <div className="bg-gray-50 border-t border-gray-200 p-3">
-        <p className="text-sm font-medium text-gray-700 mb-2">Dynamic Fields:</p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-medium text-gray-700">Dynamic Fields:</p>
+          {personalizationStatus?.hasAllPersonalized && (
+            <div className="text-xs text-green-600 flex items-center gap-1">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              Showing personalized previews
+            </div>
+          )}
+        </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-              if (textarea) {
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const currentValue = textarea.value;
-                const newValue = currentValue.substring(0, start) + '{{name}}' + currentValue.substring(end);
-                onChange(newValue);
-                setTimeout(() => {
-                  textarea.focus();
-                  textarea.setSelectionRange(start + 8, start + 8);
-                }, 0);
-              }
-            }}
-            className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
-          >
-            {`{{name}}`}
-          </button>
+          <div className="relative group">
+            <button
+              type="button"
+              onClick={() => {
+                const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                if (textarea) {
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+                  const currentValue = textarea.value;
+                  const newValue = currentValue.substring(0, start) + '{{name}}' + currentValue.substring(end);
+                  onChange(newValue);
+                  setTimeout(() => {
+                    textarea.focus();
+                    textarea.setSelectionRange(start + 8, start + 8);
+                  }, 0);
+                }
+              }}
+              className={`px-3 py-1 text-xs border rounded hover:bg-blue-200 font-mono ${
+                personalizationStatus?.hasAllPersonalized 
+                  ? 'bg-green-100 text-green-800 border-green-200' 
+                  : 'bg-blue-100 text-blue-800 border-blue-200'
+              }`}
+            >
+              {personalizationStatus?.hasAllPersonalized && personalizationStatus.sampleData?.[0]?.name
+                ? personalizationStatus.sampleData[0].name
+                : `{{name}}`}
+            </button>
+            {personalizationStatus?.hasAllPersonalized && personalizationStatus.sampleData?.length > 0 && (
+              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-10 bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                Preview: {personalizationStatus.sampleData.slice(0, 3).map(s => s.name).join(', ')}
+              </div>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => {
@@ -245,26 +275,39 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
           >
             {`{{lastName}}`}
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-              if (textarea) {
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const currentValue = textarea.value;
-                const newValue = currentValue.substring(0, start) + '{{companyName}}' + currentValue.substring(end);
-                onChange(newValue);
-                setTimeout(() => {
-                  textarea.focus();
-                  textarea.setSelectionRange(start + 15, start + 15);
-                }, 0);
-              }
-            }}
-            className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
-          >
-            {`{{companyName}}`}
-          </button>
+          <div className="relative group">
+            <button
+              type="button"
+              onClick={() => {
+                const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                if (textarea) {
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+                  const currentValue = textarea.value;
+                  const newValue = currentValue.substring(0, start) + '{{companyName}}' + currentValue.substring(end);
+                  onChange(newValue);
+                  setTimeout(() => {
+                    textarea.focus();
+                    textarea.setSelectionRange(start + 15, start + 15);
+                  }, 0);
+                }
+              }}
+              className={`px-3 py-1 text-xs border rounded hover:bg-blue-200 font-mono ${
+                personalizationStatus?.hasAllPersonalized 
+                  ? 'bg-green-100 text-green-800 border-green-200' 
+                  : 'bg-blue-100 text-blue-800 border-blue-200'
+              }`}
+            >
+              {personalizationStatus?.hasAllPersonalized && personalizationStatus.sampleData?.[0]?.company
+                ? personalizationStatus.sampleData[0].company
+                : `{{companyName}}`}
+            </button>
+            {personalizationStatus?.hasAllPersonalized && personalizationStatus.sampleData?.some(s => s.company) && (
+              <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-10 bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                Preview: {personalizationStatus.sampleData.filter(s => s.company).slice(0, 3).map(s => s.company).join(', ')}
+              </div>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => {

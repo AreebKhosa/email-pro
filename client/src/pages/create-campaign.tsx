@@ -122,6 +122,13 @@ export default function CreateCampaign() {
     enabled: isAuthenticated,
   });
 
+  // Get personalization status for selected list
+  const { data: personalizationStatus } = useQuery({
+    queryKey: ["/api/recipient-lists", campaignData.recipientListId, "personalization-status"],
+    enabled: isAuthenticated && campaignData.recipientListId > 0,
+    retry: false,
+  });
+
   const enhanceEmailMutation = useMutation({
     mutationFn: async (emailBody: string) => {
       const response = await apiRequest("POST", "/api/ai/enhance-email", { body: emailBody });
@@ -449,13 +456,47 @@ export default function CreateCampaign() {
                       onChange={(value) => setCampaignData(prev => ({ ...prev, body: value }))}
                       placeholder="Write your email content here..."
                       minHeight="300px"
+                      personalizationStatus={personalizationStatus}
                     />
                     
                     
                     
-                    {/* Personalization Settings */}
+                    {/* Personalization Status & Settings */}
                     <div className="border-t pt-4 space-y-4">
                       <h4 className="font-medium">Email Personalization Settings</h4>
+                      
+                      {/* Personalization Status Display */}
+                      {personalizationStatus && campaignData.recipientListId > 0 && (
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                              Personalization Status
+                            </span>
+                            <Badge variant={personalizationStatus.hasAllPersonalized ? "default" : "secondary"}>
+                              {personalizationStatus.personalizationPercentage}% Complete
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-blue-800 dark:text-blue-200 mb-2">
+                            {personalizationStatus.personalizedRecipients} of {personalizationStatus.totalRecipients} recipients have personalized emails
+                          </div>
+                          {personalizationStatus.hasAllPersonalized && (
+                            <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                              <Check className="w-3 h-3" />
+                              All recipients have personalized content - dynamic fields will show personalized previews
+                            </div>
+                          )}
+                          {personalizationStatus.sampleData && personalizationStatus.sampleData.length > 0 && (
+                            <div className="mt-3 text-xs">
+                              <div className="font-medium text-blue-900 dark:text-blue-100 mb-2">Sample Recipients:</div>
+                              {personalizationStatus.sampleData.slice(0, 2).map((sample: any, idx: number) => (
+                                <div key={idx} className="text-blue-700 dark:text-blue-300">
+                                  • {sample.name} ({sample.email}) {sample.company && `- ${sample.company}`}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                       
                       <div className="space-y-3">
                         <div className="flex items-center space-x-2">
@@ -488,6 +529,11 @@ export default function CreateCampaign() {
                           <p>• When personalization is enabled, fields like {`{{name}}`} will be replaced with recipient data</p>
                           <p>• If fallback is disabled, emails without personalized content will be skipped</p>
                           <p>• If fallback is enabled, default content with field replacement will be used</p>
+                          {personalizationStatus?.hasAllPersonalized && (
+                            <p className="text-green-600 dark:text-green-400">
+                              • With all recipients personalized, {`{{name}}`} fields will show actual recipient names
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
