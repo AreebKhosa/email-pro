@@ -175,27 +175,30 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
       let emailBody;
       let personalizedBody;
       
-      // Check if personalization is enabled for this campaign
-      const hasPersonalizationFields = campaign.body.includes('{{') && campaign.body.includes('}}');
-      const personalizationEnabled = campaign.personalizationEnabled || hasPersonalizationFields;
+      // Check personalization logic based on field types
+      const hasPersonalizeEmailField = campaign.body.includes('{personalize_email}');
+      const hasTraditionalFields = campaign.body.includes('{name}') || campaign.body.includes('{lastName}') || campaign.body.includes('{position}') || campaign.body.includes('{company}');
       
-      if (personalizationEnabled) {
-        // Try to use personalized content first
+      // Determine email content based on new logic
+      if (hasPersonalizeEmailField) {
+        // If {personalize_email} field exists
         if (recipient.personalizedEmail && recipient.personalizedEmail.trim()) {
-          emailBody = recipient.personalizedEmail;
+          // Recipient has personalized email - use it to replace {personalize_email}
+          emailBody = campaign.body.replace(/{personalize_email}/g, recipient.personalizedEmail);
           console.log(`Using AI-personalized content for ${recipient.email}`);
-        } else if (campaign.fallbackToDefault !== false) {
-          // Fallback to default content with dynamic field replacement
-          emailBody = campaign.body;
-          console.log(`Using default content with field replacement for ${recipient.email}`);
+        } else if (campaign.fallbackToDefault) {
+          // No personalized email but fallback enabled - use user-written content with traditional fields
+          emailBody = campaign.body.replace(/{personalize_email}/g, ''); // Remove the field if no personalized content
+          console.log(`Using fallback content with traditional fields for ${recipient.email}`);
         } else {
-          console.log(`Skipping ${recipient.email} - no personalized content and fallback disabled`);
-          continue; // Skip this recipient if no personalized content and fallback is disabled
+          // No personalized email and fallback disabled - skip recipient
+          console.log(`Skipping recipient ${recipient.email} - no personalized content and fallback disabled`);
+          continue;
         }
       } else {
-        // Use default content without personalization
+        // No {personalize_email} field - use traditional field replacement
         emailBody = campaign.body;
-        console.log(`Using default content (no personalization) for ${recipient.email}`);
+        console.log(`Using traditional field replacement for ${recipient.email}`);
       }
       
       // Create tracking pixel ID for open tracking
@@ -204,7 +207,19 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
       // Replace dynamic personalization fields with recipient data
       personalizedBody = emailBody;
       
-      // Standard personalization fields
+      // New single-brace format fields
+      personalizedBody = personalizedBody.replace(/{name}/g, recipient.name || '');
+      personalizedBody = personalizedBody.replace(/{firstName}/g, recipient.name || '');
+      personalizedBody = personalizedBody.replace(/{lastName}/g, recipient.lastName || '');
+      personalizedBody = personalizedBody.replace(/{email}/g, recipient.email || '');
+      personalizedBody = personalizedBody.replace(/{company}/g, recipient.companyName || '');
+      personalizedBody = personalizedBody.replace(/{companyName}/g, recipient.companyName || '');
+      personalizedBody = personalizedBody.replace(/{website}/g, recipient.websiteLink || '');
+      personalizedBody = personalizedBody.replace(/{websiteLink}/g, recipient.websiteLink || '');
+      personalizedBody = personalizedBody.replace(/{position}/g, recipient.position || '');
+      personalizedBody = personalizedBody.replace(/{jobTitle}/g, recipient.position || '');
+      
+      // Legacy double-brace format fields (for backward compatibility)
       personalizedBody = personalizedBody.replace(/\{\{name\}\}/g, recipient.name || '');
       personalizedBody = personalizedBody.replace(/\{\{firstName\}\}/g, recipient.name || '');
       personalizedBody = personalizedBody.replace(/\{\{lastName\}\}/g, recipient.lastName || '');
@@ -219,10 +234,12 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
       // Handle any additional dynamic fields defined in the campaign
       if (campaign.dynamicFields && Array.isArray(campaign.dynamicFields)) {
         campaign.dynamicFields.forEach(field => {
-          const pattern = new RegExp(`\\{\\{${field}\\}\\}`, 'g');
-          // Try to map field to recipient data or leave empty
+          // Support both single and double brace formats
+          const singleBracePattern = new RegExp(`\\{${field}\\}`, 'g');
+          const doubleBracePattern = new RegExp(`\\{\\{${field}\\}\\}`, 'g');
           const value = (recipient as any)[field] || '';
-          personalizedBody = personalizedBody.replace(pattern, value);
+          personalizedBody = personalizedBody.replace(singleBracePattern, value);
+          personalizedBody = personalizedBody.replace(doubleBracePattern, value);
         });
       }
       

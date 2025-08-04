@@ -526,12 +526,13 @@ export default function CreateCampaign() {
                         </div>
                         
                         <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                          <p>• When personalization is enabled, {`{personalize_email}`} will be replaced with AI-personalized content</p>
-                          <p>• If fallback is disabled, emails without personalized content will be skipped</p>
-                          <p>• If fallback is enabled, default content will be used when personalization is unavailable</p>
-                          {personalizationStatus?.hasAllPersonalized && (
-                            <p className="text-green-600 dark:text-green-400">
-                              • All recipients have personalized emails - {`{personalize_email}`} will use AI-generated content
+                          <p>• Use {`{personalize_email}`} for recipients with AI-generated personalized content</p>
+                          <p>• Use {`{name}`}, {`{lastName}`}, {`{position}`}, {`{company}`} for traditional field replacement</p>
+                          <p>• If recipient has personalized email: {`{personalize_email}`} will be used</p>
+                          <p>• If recipient doesn't have personalized email: user-written content with {`{name}`}, {`{lastName}`} etc. will be used</p>
+                          {personalizationStatus && (
+                            <p className="text-blue-600 dark:text-blue-400">
+                              • {personalizationStatus.personalizedRecipients} recipients have personalized emails, {personalizationStatus.totalRecipients - personalizationStatus.personalizedRecipients} will use fallback content
                             </p>
                           )}
                         </div>

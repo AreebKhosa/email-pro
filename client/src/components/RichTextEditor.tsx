@@ -263,17 +263,17 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
                 const currentValue = textarea.value;
-                const newValue = currentValue.substring(0, start) + '{{name}}' + currentValue.substring(end);
+                const newValue = currentValue.substring(0, start) + '{name}' + currentValue.substring(end);
                 onChange(newValue);
                 setTimeout(() => {
                   textarea.focus();
-                  textarea.setSelectionRange(start + 8, start + 8);
+                  textarea.setSelectionRange(start + 6, start + 6);
                 }, 0);
               }
             }}
             className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
           >
-            {`{{name}}`}
+            {`{name}`}
           </button>
           <button
             type="button"
@@ -283,17 +283,57 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
                 const currentValue = textarea.value;
-                const newValue = currentValue.substring(0, start) + '{{company}}' + currentValue.substring(end);
+                const newValue = currentValue.substring(0, start) + '{lastName}' + currentValue.substring(end);
                 onChange(newValue);
                 setTimeout(() => {
                   textarea.focus();
-                  textarea.setSelectionRange(start + 11, start + 11);
+                  textarea.setSelectionRange(start + 10, start + 10);
                 }, 0);
               }
             }}
             className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
           >
-            {`{{company}}`}
+            {`{lastName}`}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+              if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const currentValue = textarea.value;
+                const newValue = currentValue.substring(0, start) + '{position}' + currentValue.substring(end);
+                onChange(newValue);
+                setTimeout(() => {
+                  textarea.focus();
+                  textarea.setSelectionRange(start + 10, start + 10);
+                }, 0);
+              }
+            }}
+            className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
+          >
+            {`{position}`}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+              if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const currentValue = textarea.value;
+                const newValue = currentValue.substring(0, start) + '{company}' + currentValue.substring(end);
+                onChange(newValue);
+                setTimeout(() => {
+                  textarea.focus();
+                  textarea.setSelectionRange(start + 9, start + 9);
+                }, 0);
+              }
+            }}
+            className="px-3 py-1 text-xs bg-blue-100 text-blue-800 border border-blue-200 rounded hover:bg-blue-200 font-mono"
+          >
+            {`{company}`}
           </button>
         </div>
       </div>
