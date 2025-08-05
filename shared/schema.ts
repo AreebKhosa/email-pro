@@ -10,6 +10,7 @@ import {
   boolean,
   real,
   primaryKey,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -62,7 +63,9 @@ export const trustedIps = pgTable("trusted_ips", {
   isActive: boolean("is_active").default(true),
   lastUsedAt: timestamp("last_used_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  userIpUnique: uniqueIndex("trusted_ips_user_ip_unique").on(table.userId, table.ipAddress),
+}));
 
 // Login verification codes for new IP addresses
 export const loginVerificationCodes = pgTable("login_verification_codes", {

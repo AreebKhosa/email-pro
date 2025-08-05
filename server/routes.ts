@@ -657,16 +657,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isTrustedIp) {
         // If verification code is provided, verify it
         if (verificationCode) {
+          console.log('Verification attempt:', { code: verificationCode, userId: user.id });
           const validCode = await storage.getLoginVerificationCode(verificationCode, user.id);
+          console.log('Code validation result:', validCode ? 'Valid' : 'Invalid/Expired');
+          
           if (!validCode) {
             return res.status(400).json({ message: 'Invalid or expired verification code' });
           }
 
           // Mark code as used
           await storage.markLoginVerificationCodeUsed(validCode.id);
+          console.log('Code marked as used:', validCode.id);
 
           // Add IP as trusted
-          await storage.addTrustedIp(user.id, ipAddress, userAgent);
+          try {
+            await storage.addTrustedIp(user.id, ipAddress, userAgent);
+            console.log('IP added as trusted:', ipAddress);
+          } catch (trustedIpError) {
+            console.error('Error adding trusted IP:', trustedIpError);
+            return res.status(500).json({ message: 'Failed to add trusted IP' });
+          }
         } else {
           // Generate and send verification code
           const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code
