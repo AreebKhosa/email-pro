@@ -308,6 +308,16 @@ sudo certbot --nginx -d yourdomain.com
 
 ## Production Considerations
 
+### ⚠️ Critical: Continuous Operation for Warmup
+The email warmup system **requires the server to run continuously** to work properly:
+
+- **Background Tasks**: Warmup emails are sent using `setTimeout` cycles every 20-60 minutes
+- **Automatic Scheduling**: Once started via the UI, warmup continues automatically
+- **Self-Recovery**: If server restarts, you need to re-start warmup from the Warm-up page
+- **Production**: Use PM2 or Docker to ensure server stays running 24/7
+
+**Important**: If the server stops, warmup emails stop being sent automatically.
+
 ### Security
 - Use strong passwords and API keys
 - Keep dependencies updated
