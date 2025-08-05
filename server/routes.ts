@@ -20,6 +20,28 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { spawn } from "child_process";
 import passport from "passport";
+
+// Helper function to send authentication emails
+async function sendAuthEmail(type: 'verification' | 'reset' | 'login_verification', config: any): Promise<boolean> {
+  return new Promise((resolve) => {
+    const configJson = JSON.stringify(config);
+    const child = spawn('python3', ['server/email_auth.py', type, configJson]);
+    
+    let output = '';
+    child.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    child.stderr.on('data', (data) => {
+      console.error('Email script error:', data.toString());
+    });
+    
+    child.on('close', (code) => {
+      console.log('Email send result:', output);
+      resolve(code === 0);
+    });
+  });
+}
 import { 
   insertEmailIntegrationSchema,
   insertRecipientListSchema,
@@ -342,28 +364,7 @@ async function checkPlanLimits(userId: string, resource: string, amount: number 
   }
 }
 
-// Utility function to send verification/reset emails
-async function sendAuthEmail(type: 'verification' | 'reset', emailConfig: any) {
-  return new Promise((resolve, reject) => {
-    const pythonScript = spawn('python3', ['server/email_auth.py', type, JSON.stringify(emailConfig)]);
-    
-    pythonScript.stdout.on('data', (data) => {
-      console.log(data.toString());
-    });
-    
-    pythonScript.stderr.on('data', (data) => {
-      console.error(data.toString());
-    });
-    
-    pythonScript.on('close', (code) => {
-      if (code === 0) {
-        resolve(true);
-      } else {
-        reject(new Error(`Email sending failed with code ${code}`));
-      }
-    });
-  });
-}
+
 
 // Send verification email using Python script
 async function sendVerificationEmail(config: {
@@ -623,7 +624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Manual login
   app.post('/api/auth/login', async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, verificationCode } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({ message: 'Email and password are required' });
@@ -644,6 +645,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ message: 'Invalid email or password' });
+      }
+
+      // Get user's IP address and user agent
+      const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.get('User-Agent') || '';
+
+      // Check if IP is trusted
+      const isTrustedIp = await storage.isIpTrusted(user.id, ipAddress);
+
+      if (!isTrustedIp) {
+        // If verification code is provided, verify it
+        if (verificationCode) {
+          const validCode = await storage.getLoginVerificationCode(verificationCode, user.id);
+          if (!validCode) {
+            return res.status(400).json({ message: 'Invalid or expired verification code' });
+          }
+
+          // Mark code as used
+          await storage.markLoginVerificationCodeUsed(validCode.id);
+
+          // Add IP as trusted
+          await storage.addTrustedIp(user.id, ipAddress, userAgent);
+        } else {
+          // Generate and send verification code
+          const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code
+          const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+          await storage.createLoginVerificationCode({
+            userId: user.id,
+            code,
+            ipAddress,
+            userAgent,
+            expiresAt,
+            isUsed: false,
+          });
+
+          // Try to send verification email
+          try {
+            const smtpHostConfig = await storage.getConfig('smtp_host');
+            const smtpPortConfig = await storage.getConfig('smtp_port');
+            const smtpUsernameConfig = await storage.getConfig('smtp_username');
+            const smtpPasswordConfig = await storage.getConfig('smtp_password');
+            const smtpFromEmailConfig = await storage.getConfig('smtp_from_email');
+
+            if (smtpHostConfig && smtpUsernameConfig && smtpPasswordConfig && smtpFromEmailConfig) {
+              const emailConfig = {
+                smtp_config: {
+                  smtp_host: smtpHostConfig.configValue,
+                  smtp_port: parseInt(smtpPortConfig?.configValue || '587'),
+                  smtp_username: smtpUsernameConfig.configValue,
+                  smtp_password: smtpPasswordConfig.configValue,
+                  from_email: smtpFromEmailConfig.configValue
+                },
+                to_email: user.email,
+                verification_code: code,
+                user_name: user.firstName || user.email,
+                ip_address: ipAddress,
+                location: 'Unknown' // You can integrate with IP geolocation service later
+              };
+
+              await sendAuthEmail('login_verification', emailConfig);
+              
+              return res.status(200).json({ 
+                requiresVerification: true,
+                message: 'New device detected. Please check your email for a verification code to complete login.'
+              });
+            } else {
+              // No SMTP configured, auto-trust the IP
+              await storage.addTrustedIp(user.id, ipAddress, userAgent);
+            }
+          } catch (emailError) {
+            console.error('Failed to send login verification email:', emailError);
+            // Auto-trust the IP if email fails
+            await storage.addTrustedIp(user.id, ipAddress, userAgent);
+          }
+        }
+      } else {
+        // Update last used time for trusted IP
+        await storage.updateTrustedIpLastUsed(user.id, ipAddress);
       }
 
       // Create session manually

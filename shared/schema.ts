@@ -52,6 +52,30 @@ export const emailVerificationTokens = pgTable("email_verification_tokens", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Trusted IP addresses for users
+export const trustedIps = pgTable("trusted_ips", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  ipAddress: varchar("ip_address").notNull(),
+  userAgent: text("user_agent"),
+  location: varchar("location"), // City, Country from IP lookup
+  isActive: boolean("is_active").default(true),
+  lastUsedAt: timestamp("last_used_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Login verification codes for new IP addresses
+export const loginVerificationCodes = pgTable("login_verification_codes", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  code: varchar("code", { length: 6 }).notNull(), // 6-digit code
+  ipAddress: varchar("ip_address").notNull(),
+  userAgent: text("user_agent"),
+  isUsed: boolean("is_used").default(false),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Password reset tokens
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: serial("id").primaryKey(),
@@ -256,6 +280,22 @@ export const usersRelations = relations(users, ({ many }) => ({
   recipientLists: many(recipientLists),
   campaigns: many(campaigns),
   usageTracking: many(usageTracking),
+  trustedIps: many(trustedIps),
+  loginVerificationCodes: many(loginVerificationCodes),
+}));
+
+export const trustedIpsRelations = relations(trustedIps, ({ one }) => ({
+  user: one(users, {
+    fields: [trustedIps.userId],
+    references: [users.id],
+  }),
+}));
+
+export const loginVerificationCodesRelations = relations(loginVerificationCodes, ({ one }) => ({
+  user: one(users, {
+    fields: [loginVerificationCodes.userId],
+    references: [users.id],
+  }),
 }));
 
 export const emailIntegrationsRelations = relations(emailIntegrations, ({ one, many }) => ({
@@ -470,3 +510,7 @@ export type InsertWarmupStats = z.infer<typeof insertWarmupStatsSchema>;
 export type WarmupProgress = typeof warmupProgress.$inferSelect;
 export type InsertWarmupProgress = z.infer<typeof insertWarmupProgressSchema>;
 export type UsageTracking = typeof usageTracking.$inferSelect;
+export type TrustedIp = typeof trustedIps.$inferSelect;
+export type InsertTrustedIp = typeof trustedIps.$inferInsert;
+export type LoginVerificationCode = typeof loginVerificationCodes.$inferSelect;
+export type InsertLoginVerificationCode = typeof loginVerificationCodes.$inferInsert;

@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Mail, Lock, User, Eye, EyeOff, Shield, Timer } from "lucide-react";
 import { FaGoogle } from "react-icons/fa";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,6 +21,12 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+const verificationSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+  verificationCode: z.string().length(6, "Verification code must be 6 digits"),
+});
+
 const registerSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
@@ -32,11 +39,14 @@ const registerSchema = z.object({
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
+type VerificationForm = z.infer<typeof verificationSchema>;
 type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [requiresVerification, setRequiresVerification] = useState(false);
+  const [pendingCredentials, setPendingCredentials] = useState<LoginForm | null>(null);
   const { toast } = useToast();
 
   const loginForm = useForm<LoginForm>({
@@ -44,6 +54,15 @@ export default function Login() {
     defaultValues: {
       email: "",
       password: "",
+    },
+  });
+
+  const verificationForm = useForm<VerificationForm>({
+    resolver: zodResolver(verificationSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      verificationCode: "",
     },
   });
 
@@ -59,7 +78,7 @@ export default function Login() {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (data: LoginForm) => {
+    mutationFn: async (data: LoginForm | VerificationForm) => {
       const response = await apiRequest("POST", "/api/auth/login", data);
       if (!response.ok) {
         const error = await response.json();
@@ -67,12 +86,23 @@ export default function Login() {
       }
       return response.json();
     },
-    onSuccess: () => {
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-      window.location.href = "/";
+    onSuccess: (data) => {
+      if (data.requiresVerification) {
+        setRequiresVerification(true);
+        setPendingCredentials({ email: loginForm.getValues("email"), password: loginForm.getValues("password") });
+        verificationForm.setValue("email", loginForm.getValues("email"));
+        verificationForm.setValue("password", loginForm.getValues("password"));
+        toast({
+          title: "Verification Required",
+          description: data.message,
+        });
+      } else {
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
+        window.location.href = "/";
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -124,8 +154,18 @@ export default function Login() {
     loginMutation.mutate(data);
   };
 
+  const onVerification = (data: VerificationForm) => {
+    loginMutation.mutate(data);
+  };
+
   const onRegister = (data: RegisterForm) => {
     registerMutation.mutate(data);
+  };
+
+  const backToLogin = () => {
+    setRequiresVerification(false);
+    setPendingCredentials(null);
+    verificationForm.reset();
   };
 
   return (
@@ -141,13 +181,14 @@ export default function Login() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Sign In</TabsTrigger>
-              <TabsTrigger value="register">Sign Up</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login" className="space-y-4">
+          {!requiresVerification ? (
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Sign In</TabsTrigger>
+                <TabsTrigger value="register">Sign Up</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="login" className="space-y-4">
               <Button
                 onClick={handleGoogleLogin}
                 variant="outline"
@@ -381,6 +422,94 @@ export default function Login() {
               </Form>
             </TabsContent>
           </Tabs>
+          ) : (
+            // Verification form when two-step verification is required
+            <div className="space-y-4">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="h-8 w-8 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold">Device Verification Required</h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  We've sent a 6-digit verification code to your email address.
+                </p>
+              </div>
+
+              <Alert>
+                <Timer className="h-4 w-4" />
+                <AlertDescription>
+                  Enter the verification code from your email to complete login. The code expires in 15 minutes.
+                </AlertDescription>
+              </Alert>
+
+              <Form {...verificationForm}>
+                <form onSubmit={verificationForm.handleSubmit(onVerification)} className="space-y-4">
+                  <FormField
+                    control={verificationForm.control}
+                    name="verificationCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Verification Code</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Shield className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="Enter 6-digit code"
+                              className="pl-10 text-center font-mono text-lg tracking-wider"
+                              maxLength={6}
+                              {...field}
+                              onChange={(e) => {
+                                // Only allow digits
+                                const value = e.target.value.replace(/\D/g, '');
+                                field.onChange(value);
+                              }}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={backToLogin}
+                    >
+                      Back to Login
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1"
+                      disabled={loginMutation.isPending}
+                    >
+                      {loginMutation.isPending ? "Verifying..." : "Verify Code"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">
+                  Didn't receive the code?{" "}
+                  <Button
+                    variant="link"
+                    className="p-0 h-auto font-normal"
+                    onClick={() => {
+                      if (pendingCredentials) {
+                        loginMutation.mutate(pendingCredentials);
+                      }
+                    }}
+                    disabled={loginMutation.isPending}
+                  >
+                    Resend verification code
+                  </Button>
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -39,6 +39,12 @@ import {
   type InsertEmailVerificationToken,
   type PasswordResetToken,
   type InsertPasswordResetToken,
+  type TrustedIp,
+  type InsertTrustedIp,
+  type LoginVerificationCode,
+  type InsertLoginVerificationCode,
+  trustedIps,
+  loginVerificationCodes,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sum, count, sql } from "drizzle-orm";
@@ -67,6 +73,18 @@ export interface IStorage {
   getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
   deletePasswordResetToken(token: string): Promise<void>;
   deleteExpiredPasswordResetTokens(): Promise<void>;
+
+  // IP-based login verification
+  isIpTrusted(userId: string, ipAddress: string): Promise<boolean>;
+  addTrustedIp(userId: string, ipAddress: string, userAgent?: string, location?: string): Promise<TrustedIp>;
+  updateTrustedIpLastUsed(userId: string, ipAddress: string): Promise<void>;
+  getUserTrustedIps(userId: string): Promise<TrustedIp[]>;
+  
+  // Login verification codes
+  createLoginVerificationCode(code: InsertLoginVerificationCode): Promise<LoginVerificationCode>;
+  getLoginVerificationCode(code: string, userId: string): Promise<LoginVerificationCode | undefined>;
+  markLoginVerificationCodeUsed(id: number): Promise<void>;
+  deleteExpiredLoginVerificationCodes(): Promise<void>;
 
   // Admin management
   createAdminUser(admin: InsertAdminUser): Promise<AdminUser>;
@@ -275,6 +293,99 @@ export class DatabaseStorage implements IStorage {
   async deleteExpiredPasswordResetTokens(): Promise<void> {
     await db
       .delete(passwordResetTokens)
+      .where(sql`expires_at < NOW()`);
+  }
+
+  // IP-based login verification methods
+  async isIpTrusted(userId: string, ipAddress: string): Promise<boolean> {
+    const [trustedIp] = await db
+      .select()
+      .from(trustedIps)
+      .where(and(
+        eq(trustedIps.userId, userId),
+        eq(trustedIps.ipAddress, ipAddress),
+        eq(trustedIps.isActive, true)
+      ));
+    return !!trustedIp;
+  }
+
+  async addTrustedIp(userId: string, ipAddress: string, userAgent?: string, location?: string): Promise<TrustedIp> {
+    const [trustedIp] = await db
+      .insert(trustedIps)
+      .values({
+        userId,
+        ipAddress,
+        userAgent,
+        location,
+        isActive: true,
+        lastUsedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [trustedIps.userId, trustedIps.ipAddress],
+        set: {
+          isActive: true,
+          lastUsedAt: new Date(),
+          userAgent,
+          location,
+        }
+      })
+      .returning();
+    return trustedIp;
+  }
+
+  async updateTrustedIpLastUsed(userId: string, ipAddress: string): Promise<void> {
+    await db
+      .update(trustedIps)
+      .set({ lastUsedAt: new Date() })
+      .where(and(
+        eq(trustedIps.userId, userId),
+        eq(trustedIps.ipAddress, ipAddress)
+      ));
+  }
+
+  async getUserTrustedIps(userId: string): Promise<TrustedIp[]> {
+    return await db
+      .select()
+      .from(trustedIps)
+      .where(and(
+        eq(trustedIps.userId, userId),
+        eq(trustedIps.isActive, true)
+      ))
+      .orderBy(desc(trustedIps.lastUsedAt));
+  }
+
+  // Login verification codes methods
+  async createLoginVerificationCode(code: InsertLoginVerificationCode): Promise<LoginVerificationCode> {
+    const [verificationCode] = await db
+      .insert(loginVerificationCodes)
+      .values(code)
+      .returning();
+    return verificationCode;
+  }
+
+  async getLoginVerificationCode(code: string, userId: string): Promise<LoginVerificationCode | undefined> {
+    const [verificationCode] = await db
+      .select()
+      .from(loginVerificationCodes)
+      .where(and(
+        eq(loginVerificationCodes.code, code),
+        eq(loginVerificationCodes.userId, userId),
+        eq(loginVerificationCodes.isUsed, false),
+        sql`expires_at > NOW()`
+      ));
+    return verificationCode;
+  }
+
+  async markLoginVerificationCodeUsed(id: number): Promise<void> {
+    await db
+      .update(loginVerificationCodes)
+      .set({ isUsed: true })
+      .where(eq(loginVerificationCodes.id, id));
+  }
+
+  async deleteExpiredLoginVerificationCodes(): Promise<void> {
+    await db
+      .delete(loginVerificationCodes)
       .where(sql`expires_at < NOW()`);
   }
 
