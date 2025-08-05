@@ -493,34 +493,7 @@ export default function Settings() {
                       </Badge>
                     </div>
 
-                    <Separator />
-
-                    <div className="space-y-4">
-                      <h3 className="font-medium text-slate-900">Recent Activity</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center space-x-2">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <span>Logged in from Chrome on Windows</span>
-                          </div>
-                          <span className="text-slate-500">2 hours ago</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center space-x-2">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <span>Email integration added</span>
-                          </div>
-                          <span className="text-slate-500">Yesterday</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center space-x-2">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <span>Campaign created</span>
-                          </div>
-                          <span className="text-slate-500">2 days ago</span>
-                        </div>
-                      </div>
-                    </div>
+                    
                   </CardContent>
                 </Card>
 
