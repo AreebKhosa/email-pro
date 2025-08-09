@@ -58,7 +58,7 @@ const planLimits = {
     recipients: 300,
     emailIntegrations: 1,
     deliverabilityChecks: 100,
-    personalizedEmails: 100,
+    personalizedEmails: 30,
     followUps: 0,
     campaigns: 3,
     warmupEmails: 1,
@@ -67,29 +67,16 @@ const planLimits = {
     emailRotation: false
   },
   starter: {
-    emailsPerMonth: 20000,
-    recipients: 6000,
-    emailIntegrations: 4,
-    deliverabilityChecks: 2000,
-    personalizedEmails: 1000,
-    followUps: 1,
-    campaigns: Infinity,
-    warmupEmails: 2500,
-    emailAccounts: 4,
-    dailyLimit: 667, // 20k/30 days
-    emailRotation: true
-  },
-  pro: {
-    emailsPerMonth: 75000,
+    emailsPerMonth: 50000,
     recipients: 25000,
-    emailIntegrations: 20,
+    emailIntegrations: 10,
     deliverabilityChecks: 10000,
-    personalizedEmails: 1000,
-    followUps: 1,
+    personalizedEmails: 5000,
+    followUps: Infinity,
     campaigns: Infinity,
     warmupEmails: Infinity,
-    emailAccounts: 20,
-    dailyLimit: 2500, // 75k/30 days
+    emailAccounts: 10,
+    dailyLimit: 1667, // 50k/30 days
     emailRotation: true
   },
   premium: {
@@ -97,8 +84,8 @@ const planLimits = {
     recipients: Infinity,
     emailIntegrations: Infinity,
     deliverabilityChecks: Infinity,
-    personalizedEmails: 1000,
-    followUps: 2,
+    personalizedEmails: Infinity,
+    followUps: Infinity,
     campaigns: Infinity,
     warmupEmails: Infinity,
     emailAccounts: Infinity,
@@ -657,9 +644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isTrustedIp) {
         // If verification code is provided, verify it
         if (verificationCode) {
-          console.log('Verification attempt:', { code: verificationCode, userId: user.id });
           const validCode = await storage.getLoginVerificationCode(verificationCode, user.id);
-          console.log('Code validation result:', validCode ? 'Valid' : 'Invalid/Expired');
           
           if (!validCode) {
             return res.status(400).json({ message: 'Invalid or expired verification code' });
@@ -667,16 +652,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Mark code as used
           await storage.markLoginVerificationCodeUsed(validCode.id);
-          console.log('Code marked as used:', validCode.id);
 
           // Add IP as trusted
-          try {
-            await storage.addTrustedIp(user.id, ipAddress, userAgent);
-            console.log('IP added as trusted:', ipAddress);
-          } catch (trustedIpError) {
-            console.error('Error adding trusted IP:', trustedIpError);
-            return res.status(500).json({ message: 'Failed to add trusted IP' });
-          }
+          await storage.addTrustedIp(user.id, ipAddress, userAgent);
         } else {
           // Generate and send verification code
           const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code

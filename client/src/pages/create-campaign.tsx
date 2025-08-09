@@ -70,9 +70,8 @@ interface CampaignData {
 
 const PLAN_LIMITS = {
   Demo: { emailAccounts: 1, followUps: false, dailyLimit: 50 },
-  Starter: { emailAccounts: 3, followUps: true, dailyLimit: 200 },
-  Pro: { emailAccounts: 10, followUps: true, dailyLimit: 1000 },
-  Premium: { emailAccounts: 20, followUps: true, dailyLimit: 5000 },
+  Starter: { emailAccounts: 10, followUps: true, dailyLimit: 1667 },
+  Premium: { emailAccounts: Infinity, followUps: true, dailyLimit: Infinity },
 };
 
 const STEPS = [

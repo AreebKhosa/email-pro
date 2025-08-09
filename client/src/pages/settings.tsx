@@ -537,7 +537,7 @@ export default function Settings() {
                         {(user as any)?.plan || 'Demo'}
                       </Badge>
                       <p className="text-sm text-slate-600 mt-1">
-                        {(user as any)?.plan === 'demo' ? 'Free' : `$${(user as any)?.plan === 'starter' ? '14.99' : (user as any)?.plan === 'pro' ? '29.99' : '49.99'}/month`}
+                        {(user as any)?.plan === 'demo' ? 'Free' : `$${(user as any)?.plan === 'starter' ? '14.99' : '29.99'}/month`}
                       </p>
                     </div>
                   </div>
