@@ -4,6 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import SharedHeader from "@/components/SharedHeader";
+import SharedFooter from "@/components/SharedFooter";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -187,23 +189,26 @@ export default function Upgrade() {
   }
 
   return (
-    <div className="space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-slate-900">Choose Your Plan</h1>
-          <p className="text-slate-600 mt-2">Upgrade to unlock more features and higher limits</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+      <SharedHeader />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-slate-900">Choose Your Plan</h1>
+            <p className="text-slate-600 mt-2">Upgrade to unlock more features and higher limits</p>
+          </div>
 
-        {/* Current Plan Status */}
-        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <span>Current Plan: {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}</span>
-            </CardTitle>
-            <CardDescription>Your current usage and limits</CardDescription>
-          </CardHeader>
-          <CardContent>
+          {/* Current Plan Status */}
+          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <span>Current Plan: {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}</span>
+              </CardTitle>
+              <CardDescription>Your current usage and limits</CardDescription>
+            </CardHeader>
+            <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -237,11 +242,11 @@ export default function Upgrade() {
                 <Progress value={calculateUsagePercentage(usage.personalizedEmails || 0, limits.personalizedEmails || 0)} className="h-2" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Plan Comparison */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Plan Comparison */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {plansWithCurrent.map((plan) => (
             <Card 
               key={plan.id}
@@ -332,10 +337,10 @@ export default function Upgrade() {
               </CardContent>
             </Card>
           ))}
-        </div>
+          </div>
 
-        {/* Payment Security */}
-        <Card className="bg-slate-50 border-slate-200">
+          {/* Payment Security */}
+          <Card className="bg-slate-50 border-slate-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-center space-x-8 text-slate-600">
               <div className="flex items-center space-x-2">
@@ -351,11 +356,11 @@ export default function Upgrade() {
                 <span className="text-sm">Cancel Anytime</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Feature Comparison */}
-        <Card>
+          {/* Feature Comparison */}
+          <Card>
           <CardHeader>
             <CardTitle>Feature Comparison</CardTitle>
             <CardDescription>Compare features across all plans</CardDescription>
@@ -447,11 +452,11 @@ export default function Upgrade() {
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* FAQ */}
-        <Card>
+          {/* FAQ */}
+          <Card>
           <CardHeader>
             <CardTitle>Frequently Asked Questions</CardTitle>
           </CardHeader>
@@ -475,9 +480,11 @@ export default function Upgrade() {
               <h3 className="font-medium text-slate-900 mb-2">Are there any setup fees?</h3>
               <p className="text-sm text-slate-600">No, there are no setup fees or hidden charges. You only pay the monthly subscription fee.</p>
             </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    
+      <SharedFooter />
+    </div>
   );
 }

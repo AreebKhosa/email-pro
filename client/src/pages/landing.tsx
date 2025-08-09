@@ -10,13 +10,14 @@ import {
   CheckCircle,
   ArrowRight,
   Star,
-  Clock,
   Target,
-  BarChart3,
   Globe,
+  Crown,
   Sparkles,
-  Crown
+  Clock
 } from "lucide-react";
+import SharedHeader from "@/components/SharedHeader";
+import SharedFooter from "@/components/SharedFooter";
 
 export default function Landing() {
   const handleLogin = () => {
@@ -153,31 +154,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Navigation */}
-      <nav className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <Mail className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <span className="text-xl font-bold text-gray-900">EmailReach</span>
-                <span className="text-sm text-blue-600 font-semibold ml-1">Pro</span>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" onClick={handleLogin} className="hidden sm:inline-flex">
-                Sign In
-              </Button>
-              <Button onClick={handleLogin} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
-                Get Started Free
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <SharedHeader />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 lg:py-32">
@@ -428,64 +405,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Mail className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <span className="text-xl font-bold text-white">EmailReach</span>
-                  <span className="text-sm text-blue-400 font-semibold ml-1">Pro</span>
-                </div>
-              </div>
-              <p className="text-gray-400 mb-4 max-w-md">
-                The most advanced email marketing platform for modern businesses. 
-                Scale your outreach with AI-powered personalization and smart automation.
-              </p>
-              <div className="flex space-x-4">
-                <Badge variant="secondary" className="bg-gray-800 text-gray-300">
-                  SOC 2 Compliant
-                </Badge>
-                <Badge variant="secondary" className="bg-gray-800 text-gray-300">
-                  GDPR Ready
-                </Badge>
-              </div>
-            </div>
-            <div>
-              <h3 className="font-semibold text-white mb-4">Product</h3>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">API</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-white mb-4">Company</h3>
-              <ul className="space-y-2 text-sm">
-                <li><a href="/about" className="hover:text-white transition-colors">About</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="/careers" className="hover:text-white transition-colors">Careers</a></li>
-                <li><a href="/contact" className="hover:text-white transition-colors">Contact</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-800">
-            <div className="flex space-x-6 text-sm mb-4 md:mb-0">
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-white transition-colors">Security</a>
-            </div>
-            <div className="text-sm text-gray-500">
-              © 2025 EmailReach Pro. All rights reserved.
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SharedFooter />
     </div>
   );
 }
