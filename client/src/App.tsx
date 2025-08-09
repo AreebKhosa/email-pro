@@ -24,6 +24,9 @@ import Personalization from "@/pages/personalization";
 import Settings from "@/pages/settings";
 import Upgrade from "@/pages/upgrade";
 import Profile from "@/pages/profile";
+import About from "@/pages/about";
+import Careers from "@/pages/careers";
+import Contact from "@/pages/contact";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -32,6 +35,9 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={Landing} />
+        <Route path="/about" component={About} />
+        <Route path="/careers" component={Careers} />
+        <Route path="/contact" component={Contact} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/admin-setup" component={AdminSetup} />

@@ -99,6 +99,7 @@ export default function Landing() {
         "100 deliverability checks",
         "30 personalized emails/month",
         "Max 3 campaigns",
+        "No follow-ups",
         "Email support"
       ],
       limitations: ["No follow-ups", "Limited campaigns"],
@@ -109,15 +110,16 @@ export default function Landing() {
       name: "Starter",
       price: "$14.99",
       priceUnit: "/month",
-      description: "Great for small teams",
+      description: "Great for growing businesses",
       features: [
-        "20,000 emails/month",
-        "6,000 recipients/month",
-        "4 email integrations",
-        "2,000 deliverability checks",
-        "2,000 personalized emails/month",
+        "50,000 emails/month",
+        "25,000 recipients/month",
+        "10 email integrations",
+        "10,000 deliverability checks",
+        "5,000 personalized emails/month",
         "Unlimited campaigns",
-        "1 follow-up allowed",
+        "Unlimited follow-ups",
+        "Unlimited warm-up emails",
         "Priority support"
       ],
       limitations: [],
@@ -125,29 +127,10 @@ export default function Landing() {
       cta: "Get Started"
     },
     {
-      name: "Pro",
+      name: "Premium",
       price: "$29.99",
       priceUnit: "/month",
-      description: "Scaling businesses",
-      features: [
-        "75,000 emails/month",
-        "25,000 recipients/month",
-        "20 email integrations",
-        "10,000 deliverability checks",
-        "5,000 personalized emails/month",
-        "Unlimited campaigns",
-        "1 follow-up allowed",
-        "24/7 priority support"
-      ],
-      limitations: [],
-      highlighted: false,
-      cta: "Upgrade Now"
-    },
-    {
-      name: "Premium",
-      price: "$49.99",
-      priceUnit: "/month",
-      description: "Enterprise ready",
+      description: "Unlimited everything",
       features: [
         "Unlimited emails",
         "Unlimited recipients",
@@ -155,8 +138,10 @@ export default function Landing() {
         "Unlimited deliverability checks",
         "Unlimited personalized emails",
         "Unlimited campaigns",
-        "2 follow-ups allowed",
+        "Unlimited follow-ups",
+        "Unlimited warm-up emails",
         "White-label options",
+        "24/7 priority support",
         "Dedicated account manager"
       ],
       limitations: [],
