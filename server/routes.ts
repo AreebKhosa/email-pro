@@ -72,9 +72,9 @@ const planLimits = {
     emailIntegrations: 10,
     deliverabilityChecks: 10000,
     personalizedEmails: 5000,
-    followUps: Infinity,
+    followUps: 1,
     campaigns: Infinity,
-    warmupEmails: Infinity,
+    warmupEmails: 10,
     emailAccounts: 10,
     dailyLimit: 1667, // 50k/30 days
     emailRotation: true
@@ -85,7 +85,7 @@ const planLimits = {
     emailIntegrations: Infinity,
     deliverabilityChecks: Infinity,
     personalizedEmails: Infinity,
-    followUps: Infinity,
+    followUps: 2,
     campaigns: Infinity,
     warmupEmails: Infinity,
     emailAccounts: Infinity,
