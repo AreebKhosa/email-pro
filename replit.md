@@ -43,6 +43,7 @@ Preferred communication style: Simple, everyday language.
 - **Real-time Usage Tracking**: Accurate billing and usage metrics display based on actual user plan limits and consumption.
 - **Instruction Boxes System**: Persistent, localStorage-based dismissal of setup guides and specific instructions.
 - **Advanced Email Rotation System**: Configurable multi-account sending, timing controls, daily limits, and smart distribution.
+- **Plan-Based Feature Limitations**: Starter plan limited to 1 follow-up sequence and 10 email warm-up; Premium plan allows 2 follow-up sequences.
 
 ## Deployment & Infrastructure
 

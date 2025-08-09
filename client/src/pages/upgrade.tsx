@@ -66,8 +66,8 @@ const plans = [
       "10,000 deliverability checks",
       "5,000 personalized emails/month", 
       "Unlimited campaigns",
-      "Unlimited follow-ups",
-      "Unlimited warm-up emails"
+      "1 follow-up sequence",
+      "10 warm-up emails"
     ],
     limitations: [],
     popular: true,
@@ -86,7 +86,7 @@ const plans = [
       "Unlimited deliverability checks",
       "Unlimited personalized emails",
       "Unlimited campaigns",
-      "Unlimited follow-ups",
+      "2 follow-up sequences",
       "Unlimited warm-up emails"
     ],
     limitations: [],
@@ -413,6 +413,17 @@ export default function Upgrade() {
                     <td className="text-center p-4">1</td>
                     <td className="text-center p-4">1</td>
                     <td className="text-center p-4">2</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-4 font-medium">Email Warm-up Limit</td>
+                    <td className="text-center p-4">1</td>
+                    <td className="text-center p-4">10</td>
+                    <td className="text-center p-4">
+                      <Check className="h-4 w-4 text-green-500 mx-auto" />
+                    </td>
+                    <td className="text-center p-4">
+                      <Check className="h-4 w-4 text-green-500 mx-auto" />
+                    </td>
                   </tr>
                   <tr className="border-b">
                     <td className="p-4 font-medium">AI Personalization</td>
