@@ -327,7 +327,7 @@ export default function Landing() {
               Choose the plan that fits your business needs. Start free, scale as you grow.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {plans.map((plan, index) => (
               <Card 
                 key={index} 
@@ -467,10 +467,10 @@ export default function Landing() {
             <div>
               <h3 className="font-semibold text-white mb-4">Company</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">About</a></li>
+                <li><a href="/about" className="hover:text-white transition-colors">About</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+                <li><a href="/careers" className="hover:text-white transition-colors">Careers</a></li>
+                <li><a href="/contact" className="hover:text-white transition-colors">Contact</a></li>
               </ul>
             </div>
           </div>
