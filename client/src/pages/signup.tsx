@@ -51,10 +51,16 @@ export default function Signup() {
     onSuccess: (data) => {
       setSuccessMessage(data.message);
       form.reset();
+      // Store email for verification page
+      localStorage.setItem('pendingVerificationEmail', formData.email);
+      
       toast({
         title: "Success",
         description: data.message,
       });
+      
+      // Redirect to verification page
+      setLocation('/verify-email');
     },
     onError: (error: any) => {
       const message = error.message || "Failed to create account";

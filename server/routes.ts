@@ -1382,6 +1382,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Resend verification email route
+  app.post('/api/auth/resend-verification', async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (user.emailVerified) {
+        return res.status(400).json({ message: "Email is already verified" });
+      }
+
+      // Delete any existing verification tokens for this user
+      await storage.deleteEmailVerificationTokensByUserId(user.id);
+
+      // Generate new verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      await storage.createEmailVerificationToken({
+        userId: user.id,
+        token: verificationToken,
+        expiresAt
+      });
+
+      console.log(`Resend verification token created: ${verificationToken}`);
+
+      // Send verification email
+      const emailSent = await sendVerificationEmail(
+        email,
+        `${user.firstName} ${user.lastName}`,
+        verificationToken
+      );
+
+      if (emailSent) {
+        res.status(200).json({ 
+          message: "Verification email sent successfully. Please check your inbox." 
+        });
+      } else {
+        res.status(500).json({ message: "Failed to send verification email" });
+      }
+
+    } catch (error) {
+      console.error("Error resending verification email:", error);
+      res.status(500).json({ message: "Failed to resend verification email" });
+    }
+  });
+
   // Email verification route
   app.get('/verify-email', async (req, res) => {
     try {

@@ -261,6 +261,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(emailVerificationTokens.token, token));
   }
 
+  async deleteEmailVerificationTokensByUserId(userId: string): Promise<void> {
+    await db
+      .delete(emailVerificationTokens)
+      .where(eq(emailVerificationTokens.userId, userId));
+  }
+
   async deleteExpiredEmailVerificationTokens(): Promise<void> {
     await db
       .delete(emailVerificationTokens)
