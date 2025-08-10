@@ -42,6 +42,29 @@ async function sendAuthEmail(type: 'verification' | 'reset' | 'login_verificatio
     });
   });
 }
+
+async function sendPasswordResetEmail(config: any): Promise<boolean> {
+  return new Promise((resolve) => {
+    const configJson = JSON.stringify(config);
+    const child = spawn('python3', ['server/email_auth.py', 'reset', configJson]);
+    
+    let output = '';
+    child.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    child.stderr.on('data', (data) => {
+      console.error('Password reset email script error:', data.toString());
+    });
+    
+    child.on('close', (code) => {
+      if (code !== 0) {
+        console.error('Password reset email failed:', output);
+      }
+      resolve(code === 0);
+    });
+  });
+}
 import { 
   insertEmailIntegrationSchema,
   insertRecipientListSchema,
@@ -903,6 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Find user
       const user = await storage.getUserByEmail(email);
+      
       if (!user) {
         // Don't reveal if user exists or not for security
         return res.json({ message: 'If an account with this email exists, a password reset link will be sent.' });
@@ -918,11 +942,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt
       });
 
+      // Try to send password reset email using environment variables
+      try {
+        // Use environment variables for SMTP configuration
+        const smtpHost = process.env.SMTP_HOST;
+        const smtpPort = process.env.SMTP_PORT;
+        const smtpUsername = process.env.SMTP_USER;
+        const smtpPassword = process.env.SMTP_PASS;
+        const smtpFromEmail = process.env.FROM_EMAIL;
+        
+        if (smtpHost && smtpUsername && smtpPassword && smtpFromEmail) {
+          const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
+
+          // Send password reset email
+          await sendPasswordResetEmail({
+            smtp_config: {
+              smtp_host: smtpHost,
+              smtp_port: parseInt(smtpPort || '587'),
+              smtp_username: smtpUsername,
+              smtp_password: smtpPassword,
+              from_email: smtpFromEmail,
+            },
+            to_email: email,
+            user_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'there',
+            reset_link: resetLink
+          });
+        }
+      } catch (emailError) {
+        console.error('Error sending password reset email:', emailError);
+      }
+
       res.json({ message: 'If an account with this email exists, a password reset link will be sent.' });
 
     } catch (error) {
       console.error('Forgot password error:', error);
       res.status(500).json({ message: 'Failed to process password reset request' });
+    }
+  });
+
+  // Reset password
+  app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const { token, password } = req.body;
+
+      if (!token || !password) {
+        return res.status(400).json({ message: 'Token and password are required' });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+      }
+
+      // Find valid reset token
+      const resetToken = await storage.getPasswordResetToken(token);
+      if (!resetToken) {
+        return res.status(400).json({ message: 'Invalid or expired reset token' });
+      }
+
+      // Check if token is expired
+      if (resetToken.expiresAt < new Date()) {
+        await storage.deletePasswordResetToken(token);
+        return res.status(400).json({ message: 'Reset token has expired' });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Update user password
+      await storage.updateUserPassword(resetToken.userId, hashedPassword);
+
+      // Delete used reset token
+      await storage.deletePasswordResetToken(token);
+
+      res.json({ message: 'Password has been reset successfully' });
+
+    } catch (error) {
+      console.error('Reset password error:', error);
+      res.status(500).json({ message: 'Failed to reset password' });
     }
   });
 

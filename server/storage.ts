@@ -61,6 +61,7 @@ export interface IStorage {
   updateUserGoogleId(userId: string, googleId: string): Promise<User>;
   updateUser(userId: string, userData: Partial<UpsertUser>): Promise<User>;
   updateUserEmailVerified(userId: string, verified: boolean): Promise<User>;
+  updateUserPassword(userId: string, hashedPassword: string): Promise<User>;
 
   // Email verification tokens
   createEmailVerificationToken(token: InsertEmailVerificationToken): Promise<EmailVerificationToken>;
@@ -479,6 +480,18 @@ export class DatabaseStorage implements IStorage {
       .set({ 
         stripeCustomerId: customerId,
         stripeSubscriptionId: subscriptionId,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async updateUserPassword(userId: string, hashedPassword: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        password: hashedPassword,
         updatedAt: new Date() 
       })
       .where(eq(users.id, userId))
