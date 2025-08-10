@@ -368,7 +368,7 @@ export default function Personalization() {
                 <span className="text-slate-600">Total: {quota === Infinity ? 'Unlimited' : quota}</span>
               </div>
               <Progress value={quotaPercentage} className="h-2" />
-              {remaining <= 10 && (
+              {quota !== Infinity && remaining <= 10 && (
                 <div className="flex items-center space-x-2 text-amber-700 bg-amber-50 p-3 rounded-lg">
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm">Low quota remaining. Consider upgrading your plan.</span>
