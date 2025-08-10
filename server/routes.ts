@@ -379,8 +379,26 @@ async function sendFollowUpEmail(originalEmail: any, campaign: any) {
     const recipient = await storage.getRecipient(originalEmail.recipientId);
     if (!recipient) return;
     
-    // Get email integration
-    const integration = await storage.getEmailIntegration(campaign.emailIntegrationId);
+    // Get email integration with rotation support
+    let integration;
+    if (campaign.emailRotationEnabled && campaign.emailRotationIds && campaign.emailRotationIds.length > 0) {
+      // Get count of follow-up emails already sent for this campaign to determine rotation
+      const allFollowUpEmails = await storage.getCampaignEmails(campaign.id);
+      const followUpCount = allFollowUpEmails.filter(email => email.followUpId).length;
+      
+      // Calculate which email account to use for follow-up rotation
+      const emailsPerAccount = campaign.emailsPerAccount || 1;
+      const accountIndex = Math.floor(followUpCount / emailsPerAccount) % campaign.emailRotationIds.length;
+      const rotationIntegrationId = campaign.emailRotationIds[accountIndex];
+      integration = await storage.getEmailIntegration(rotationIntegrationId);
+      
+      console.log(`FOLLOW-UP ROTATION - followUpCount=${followUpCount}, accountIndex=${accountIndex}, using account ${accountIndex + 1}/${campaign.emailRotationIds.length} (${integration?.email})`);
+    } else {
+      // Use single email account for follow-ups
+      integration = await storage.getEmailIntegration(campaign.emailIntegrationId);
+      console.log(`FOLLOW-UP NO ROTATION - using primary account: ${integration?.email}`);
+    }
+    
     if (!integration) return;
     
     // Create tracking pixel for follow-up
@@ -401,8 +419,8 @@ async function sendFollowUpEmail(originalEmail: any, campaign: any) {
     personalizedBody = personalizedBody.replace(/{email}/g, recipient.email || '');
     personalizedBody = personalizedBody.replace(/{position}/g, recipient.position || '');
     
-    // Add tracking pixel (using localhost for now)
-    personalizedBody += `\n\n<img src="http://localhost:5000/api/track/open/${trackingPixelId}" width="1" height="1" style="display: none;" />`;
+    // Add tracking pixel (using correct endpoint)
+    personalizedBody += `\n\n<img src="http://localhost:5000/api/track/pixel/${trackingPixelId}" width="1" height="1" style="display: none;" />`;
     
     // Send the follow-up email
     const emailSent = await sendEmail(
