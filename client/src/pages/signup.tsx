@@ -45,7 +45,7 @@ export default function Signup() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: Omit<SignupFormData, 'confirmPassword'>) => {
-      const response = await apiRequest("POST", "/api/auth/signup", data);
+      const response = await apiRequest("POST", "/api/auth/register", data);
       return response.json();
     },
     onSuccess: (data, variables) => {
@@ -60,9 +60,11 @@ export default function Signup() {
       // Check if email verification is enabled or user was auto-verified
       if (data.message.includes('check your email')) {
         // SMTP configured - redirect to verification instructions
-        setLocation('/verify-email');
+        setTimeout(() => {
+          setLocation('/verify-email');
+        }, 1500);
       } else {
-        // SMTP not configured - user was auto-verified, redirect to login
+        // SMTP not configured or failed - user was auto-verified, redirect to login
         setTimeout(() => {
           setLocation('/login');
         }, 1500);

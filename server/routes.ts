@@ -1515,15 +1515,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         } else {
           console.log('❌ SMTP configuration incomplete - cannot send verification email');
+          // Auto-verify user since SMTP is not configured
+          await storage.updateUserEmailVerified(user.id, true);
           res.json({ 
-            message: "User created successfully, but email verification is not configured.", 
+            message: "User created successfully. You can now log in. (Email verification disabled - no SMTP configured)", 
             userId: user.id 
           });
         }
       } catch (emailError) {
         console.error('❌ Error sending verification email:', emailError);
+        // Auto-verify user since email sending failed
+        await storage.updateUserEmailVerified(user.id, true);
         res.json({ 
-          message: "User created successfully, but verification email could not be sent. Please contact support.", 
+          message: "User created successfully. You can now log in. (Email verification failed)", 
           userId: user.id 
         });
       }
