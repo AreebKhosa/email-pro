@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -31,6 +31,7 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -48,19 +49,21 @@ export default function Signup() {
       const response = await apiRequest("POST", "/api/auth/signup", data);
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       setSuccessMessage(data.message);
       form.reset();
       // Store email for verification page
-      localStorage.setItem('pendingVerificationEmail', formData.email);
+      localStorage.setItem('pendingVerificationEmail', variables.email);
       
       toast({
         title: "Success",
         description: data.message,
       });
       
-      // Redirect to verification page
-      setLocation('/verify-email');
+      // Redirect to verification instructions page
+      setTimeout(() => {
+        setLocation('/verify-email');
+      }, 1000);
     },
     onError: (error: any) => {
       const message = error.message || "Failed to create account";
