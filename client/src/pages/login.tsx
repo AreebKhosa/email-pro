@@ -15,6 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -269,6 +270,14 @@ export default function Login() {
                   </Button>
                 </form>
               </Form>
+              
+              <div className="text-center">
+                <Link href="/forgot-password">
+                  <Button variant="link" className="text-sm text-muted-foreground hover:text-primary">
+                    Forgot your password?
+                  </Button>
+                </Link>
+              </div>
             </TabsContent>
             
             <TabsContent value="register" className="space-y-4">

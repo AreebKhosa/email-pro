@@ -29,6 +29,8 @@ import Careers from "@/pages/careers";
 import Contact from "@/pages/contact";
 import EmailVerification from "@/pages/email-verification";
 import VerifyEmail from "@/pages/verify-email";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -42,6 +44,8 @@ function Router() {
         <Route path="/contact" component={Contact} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
         <Route path="/verify-email" component={VerifyEmail} />
         <Route path="/email-verification" component={EmailVerification} />
         <Route path="/admin-setup" component={AdminSetup} />

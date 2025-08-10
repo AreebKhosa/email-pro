@@ -33,7 +33,7 @@ Preferred communication style: Simple, everyday language.
 - **Connection**: Neon Database serverless
 
 ### Key Features
-- **Authentication System**: Replit OAuth, secure manual user authentication with email verification and password reset, JWT-based admin authentication.
+- **Authentication System**: Replit OAuth, secure manual user authentication with email verification and password reset via SMTP emails, JWT-based admin authentication, complete forgot password flow.
 - **Email Management**: Multi-account SMTP/IMAP integration, automated warm-up system, email tracking (open/click).
 - **Campaign System**: 4-step creation wizard, email rotation, automated follow-up sequences, scheduling, plan-based features with progress tracking.
 - **AI Personalization**: Google Gemini integration for professional, research-based email content via website scraping and deep business analysis.
@@ -45,6 +45,7 @@ Preferred communication style: Simple, everyday language.
 - **Advanced Email Rotation System**: Configurable multi-account sending, timing controls, daily limits, and smart distribution.
 - **Plan-Based Feature Limitations**: Starter plan limited to 1 follow-up sequence and 10 email warm-up; Premium plan allows 2 follow-up sequences.
 - **Simplified Configuration**: All API keys and SMTP settings now use environment variables only for easier local development (updated January 10, 2025).
+- **Complete Password Reset Flow**: Forgot password functionality with email links, secure token validation, and password update screens (added January 10, 2025).
 
 ## Deployment & Infrastructure
 
