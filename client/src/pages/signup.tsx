@@ -29,7 +29,6 @@ type SignupFormData = z.infer<typeof signupSchema>;
 export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -50,8 +49,6 @@ export default function Signup() {
       return response.json();
     },
     onSuccess: (data, variables) => {
-      setSuccessMessage(data.message);
-      form.reset();
       // Store email for verification page
       localStorage.setItem('pendingVerificationEmail', variables.email);
       
@@ -60,10 +57,16 @@ export default function Signup() {
         description: data.message,
       });
       
-      // Redirect to verification instructions page
-      setTimeout(() => {
+      // Check if email verification is enabled or user was auto-verified
+      if (data.message.includes('check your email')) {
+        // SMTP configured - redirect to verification instructions
         setLocation('/verify-email');
-      }, 1000);
+      } else {
+        // SMTP not configured - user was auto-verified, redirect to login
+        setTimeout(() => {
+          setLocation('/login');
+        }, 1500);
+      }
     },
     onError: (error: any) => {
       const message = error.message || "Failed to create account";
@@ -80,30 +83,7 @@ export default function Signup() {
     signupMutation.mutate(signupData);
   };
 
-  if (successMessage) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl text-green-800">Account Created!</CardTitle>
-            <CardDescription className="text-green-600">
-              {successMessage}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/login">
-              <Button className="w-full" size="lg">
-                Continue to Login
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
