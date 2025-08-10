@@ -308,7 +308,8 @@ export default function Personalization() {
   const totalRecipients = recipients?.length || 0;
 
   // Calculate personalization quota from actual plan limits
-  const quota = userStats?.planLimits?.personalizedEmails || 100;
+  const quotaValue = userStats?.planLimits?.personalizedEmails || 100;
+  const quota = quotaValue === "Infinity" ? Infinity : quotaValue;
   const used = userStats?.personalizationsUsed || 0;
   const remaining = quota === Infinity ? 'Unlimited' : Math.max(0, quota - used);
   const quotaPercentage = quota === Infinity ? 0 : (used / quota) * 100;

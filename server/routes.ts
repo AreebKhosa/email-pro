@@ -1806,13 +1806,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const usage = await storage.getCurrentMonthUsage(userId);
       const user = await storage.getUser(userId);
       
+      const userPlanLimits = planLimits[user?.plan as keyof typeof planLimits] || planLimits.demo;
+      
+      // Ensure Infinity values are preserved in JSON
+      const serializedLimits = {
+        ...userPlanLimits,
+        emailsPerMonth: userPlanLimits.emailsPerMonth === Infinity ? "Infinity" : userPlanLimits.emailsPerMonth,
+        recipients: userPlanLimits.recipients === Infinity ? "Infinity" : userPlanLimits.recipients,
+        emailIntegrations: userPlanLimits.emailIntegrations === Infinity ? "Infinity" : userPlanLimits.emailIntegrations,
+        deliverabilityChecks: userPlanLimits.deliverabilityChecks === Infinity ? "Infinity" : userPlanLimits.deliverabilityChecks,
+        personalizedEmails: userPlanLimits.personalizedEmails === Infinity ? "Infinity" : userPlanLimits.personalizedEmails,
+        campaigns: userPlanLimits.campaigns === Infinity ? "Infinity" : userPlanLimits.campaigns,
+        warmupEmails: userPlanLimits.warmupEmails === Infinity ? "Infinity" : userPlanLimits.warmupEmails,
+        emailAccounts: userPlanLimits.emailAccounts === Infinity ? "Infinity" : userPlanLimits.emailAccounts,
+        dailyLimit: userPlanLimits.dailyLimit === Infinity ? "Infinity" : userPlanLimits.dailyLimit,
+      };
+      
       res.json({
         deliverabilityChecksUsed: usage?.deliverabilityChecks || 0,
         recipientCount: usage?.recipientsUploaded || 0,
         emailsSent: usage?.emailsSent || 0,
         personalizationsUsed: usage?.personalizedEmails || 0,
         warmupEmails: usage?.warmupEmails || 0,
-        planLimits: planLimits[user?.plan as keyof typeof planLimits] || planLimits.demo,
+        planLimits: serializedLimits,
       });
     } catch (error) {
       console.error("Error fetching user stats:", error);
