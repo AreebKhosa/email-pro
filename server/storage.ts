@@ -127,6 +127,7 @@ export interface IStorage {
   // Campaigns
   createCampaign(userId: string, campaign: InsertCampaign): Promise<Campaign>;
   getUserCampaigns(userId: string): Promise<Campaign[]>;
+  getAllCampaigns(): Promise<Campaign[]>;
   getCampaign(campaignId: number): Promise<Campaign | undefined>;
   updateCampaignStatus(campaignId: number, status: string): Promise<Campaign>;
   updateCampaign(campaignId: number, updateData: Partial<Campaign>): Promise<Campaign>;
@@ -751,6 +752,14 @@ export class DatabaseStorage implements IStorage {
         eq(campaigns.userId, userId),
         sql`status != 'deleted'`  // Exclude soft-deleted campaigns
       ))
+      .orderBy(desc(campaigns.createdAt));
+  }
+
+  async getAllCampaigns(): Promise<Campaign[]> {
+    return await db
+      .select()
+      .from(campaigns)
+      .where(sql`status != 'deleted'`)  // Exclude soft-deleted campaigns
       .orderBy(desc(campaigns.createdAt));
   }
 

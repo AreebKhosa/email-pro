@@ -315,6 +315,125 @@ async function sendCampaignEmails(campaignId: number, recipients: any[], limits:
   }
 }
 
+// Follow-up processing function
+async function processFollowUps() {
+  try {
+    console.log('Processing follow-ups...');
+    
+    // Get all campaigns with follow-up enabled and completed status
+    const campaigns = await storage.getAllCampaigns();
+    const followUpCampaigns = campaigns.filter(campaign => 
+      campaign.followUpEnabled && 
+      campaign.status === 'completed'
+    );
+    
+    for (const campaign of followUpCampaigns) {
+      // Get campaign emails that were sent but meet follow-up conditions
+      const campaignEmails = await storage.getCampaignEmails(campaign.id);
+      
+      for (const email of campaignEmails) {
+        // Check if this email meets follow-up conditions and hasn't had follow-up sent yet
+        if (email.followUpId) continue; // Already has follow-up
+        
+        const sentTime = new Date(email.sentAt!);
+        const now = new Date();
+        
+        // Convert followUpDays to minutes (since we modified the DB to use fraction of days)
+        const followUpMinutes = campaign.followUpDays * 24 * 60; // Convert days to minutes
+        const timeDiffMinutes = (now.getTime() - sentTime.getTime()) / (1000 * 60);
+        
+        console.log(`Email ${email.id}: sent ${timeDiffMinutes.toFixed(1)} minutes ago, needs ${followUpMinutes} minutes delay`);
+        
+        // If enough time has passed and conditions are met
+        if (timeDiffMinutes >= followUpMinutes) {
+          const shouldSendFollowUp = await checkFollowUpConditions(email, campaign);
+          
+          if (shouldSendFollowUp) {
+            console.log(`Sending follow-up for email ${email.id}`);
+            await sendFollowUpEmail(email, campaign);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error processing follow-ups:', error);
+  }
+}
+
+// Check if follow-up conditions are met
+async function checkFollowUpConditions(email: any, campaign: any): Promise<boolean> {
+  if (campaign.followUpCondition === 'not_opened') {
+    return !email.openedAt; // No open tracking recorded
+  }
+  if (campaign.followUpCondition === 'no_reply') {
+    // This would require reply tracking - for now just check not opened
+    return !email.openedAt;
+  }
+  return false;
+}
+
+// Send follow-up email
+async function sendFollowUpEmail(originalEmail: any, campaign: any) {
+  try {
+    // Get recipient details
+    const recipient = await storage.getRecipient(originalEmail.recipientId);
+    if (!recipient) return;
+    
+    // Get email integration
+    const integration = await storage.getEmailIntegration(campaign.emailIntegrationId);
+    if (!integration) return;
+    
+    // Create tracking pixel for follow-up
+    const trackingPixelId = `${campaign.id}_${recipient.id}_followup_${Date.now()}`;
+    
+    // Personalize follow-up content
+    let personalizedSubject = campaign.followUpSubject || 'Follow-up';
+    let personalizedBody = campaign.followUpBody || 'Follow-up message';
+    
+    // Apply personalization
+    personalizedSubject = personalizedSubject.replace(/{name}/g, recipient.name || '');
+    personalizedSubject = personalizedSubject.replace(/{lastName}/g, recipient.lastName || '');
+    personalizedSubject = personalizedSubject.replace(/{company}/g, recipient.companyName || '');
+    
+    personalizedBody = personalizedBody.replace(/{name}/g, recipient.name || '');
+    personalizedBody = personalizedBody.replace(/{lastName}/g, recipient.lastName || '');
+    personalizedBody = personalizedBody.replace(/{company}/g, recipient.companyName || '');
+    personalizedBody = personalizedBody.replace(/{email}/g, recipient.email || '');
+    personalizedBody = personalizedBody.replace(/{position}/g, recipient.position || '');
+    
+    // Add tracking pixel (using localhost for now)
+    personalizedBody += `\n\n<img src="http://localhost:5000/api/track/open/${trackingPixelId}" width="1" height="1" style="display: none;" />`;
+    
+    // Send the follow-up email
+    const emailSent = await sendEmail(
+      integration,
+      recipient.email,
+      personalizedSubject,
+      personalizedBody,
+      trackingPixelId
+    );
+    
+    if (emailSent) {
+      // Create follow-up email record
+      await storage.createCampaignEmail({
+        campaignId: campaign.id,
+        recipientId: recipient.id,
+        followUpId: originalEmail.id, // Link to original email
+        status: 'sent',
+        trackingPixelId: trackingPixelId,
+        sentAt: new Date(),
+      });
+      
+      console.log(`Follow-up sent successfully to ${recipient.email}`);
+    }
+  } catch (error) {
+    console.error('Error sending follow-up email:', error);
+  }
+}
+
+// Start follow-up processing interval (check every minute)
+setInterval(processFollowUps, 60 * 1000); // Run every minute
+
 // Plan validation function
 async function checkPlanLimits(userId: string, resource: string, amount: number = 1): Promise<boolean> {
   const user = await storage.getUser(userId);
