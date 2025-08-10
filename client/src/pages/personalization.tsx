@@ -312,17 +312,9 @@ export default function Personalization() {
   const remaining = Math.max(0, quota - used);
   const quotaPercentage = quota === Infinity ? 0 : (used / quota) * 100;
   
-  // Determine current plan based on limits
-  const determinePlan = (limits: any) => {
-    if (!limits) return 'demo';
-    if (limits.personalizedEmails === 100 && limits.emailsPerMonth === 1000) return 'demo';
-    if (limits.personalizedEmails === 2000 && limits.emailsPerMonth === 20000) return 'starter';
-    if (limits.personalizedEmails === 5000 && limits.emailsPerMonth === 75000) return 'pro';
-    if (limits.personalizedEmails === Infinity && limits.emailsPerMonth === Infinity) return 'premium';
-    return 'demo';
-  };
-  
-  const currentPlan = determinePlan(userStats?.planLimits);
+  // Get current plan directly from user data
+  const { user } = useAuth();
+  const currentPlan = user?.plan || 'demo';
 
   return (
     <div className="space-y-8">
