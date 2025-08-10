@@ -338,14 +338,14 @@ async function processFollowUps() {
         const sentTime = new Date(email.sentAt!);
         const now = new Date();
         
-        // Convert followUpDays to minutes (since we modified the DB to use fraction of days)
-        const followUpMinutes = campaign.followUpDays * 24 * 60; // Convert days to minutes
-        const timeDiffMinutes = (now.getTime() - sentTime.getTime()) / (1000 * 60);
+        // Use days for follow-up delay calculation
+        const followUpDays = campaign.followUpDays || 1;
+        const timeDiffDays = (now.getTime() - sentTime.getTime()) / (1000 * 60 * 60 * 24);
         
-        console.log(`Email ${email.id}: sent ${timeDiffMinutes.toFixed(1)} minutes ago, needs ${followUpMinutes} minutes delay`);
+        console.log(`Email ${email.id}: sent ${timeDiffDays.toFixed(1)} days ago, needs ${followUpDays} days delay`);
         
         // If enough time has passed and conditions are met
-        if (timeDiffMinutes >= followUpMinutes) {
+        if (timeDiffDays >= followUpDays) {
           const shouldSendFollowUp = await checkFollowUpConditions(email, campaign);
           
           if (shouldSendFollowUp) {
