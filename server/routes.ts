@@ -1470,25 +1470,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Verification token created:', verificationToken);
 
-      // Try to send verification email using admin SMTP settings
+      // Try to send verification email using admin SMTP settings or environment variables
       try {
         console.log('Starting email verification process...');
-        // Get admin SMTP configuration
+        
+        // Get admin SMTP configuration (database)
         const smtpHostConfig = await storage.getConfig('smtp_host');
         const smtpPortConfig = await storage.getConfig('smtp_port');
         const smtpUsernameConfig = await storage.getConfig('smtp_username');
         const smtpPasswordConfig = await storage.getConfig('smtp_password');
         const smtpFromEmailConfig = await storage.getConfig('smtp_from_email');
         
+        // Fallback to environment variables for local development
+        const smtpHost = smtpHostConfig?.configValue || process.env.SMTP_HOST;
+        const smtpPort = smtpPortConfig?.configValue || process.env.SMTP_PORT;
+        const smtpUsername = smtpUsernameConfig?.configValue || process.env.SMTP_USER;
+        const smtpPassword = smtpPasswordConfig?.configValue || process.env.SMTP_PASS;
+        const smtpFromEmail = smtpFromEmailConfig?.configValue || process.env.FROM_EMAIL;
+        
         console.log('Retrieved SMTP configs:', {
-          hasHost: !!smtpHostConfig,
-          hasPort: !!smtpPortConfig,
-          hasUsername: !!smtpUsernameConfig,
-          hasPassword: !!smtpPasswordConfig,
-          hasFromEmail: !!smtpFromEmailConfig
+          hasHost: !!smtpHost,
+          hasPort: !!smtpPort,
+          hasUsername: !!smtpUsername,
+          hasPassword: !!smtpPassword,
+          hasFromEmail: !!smtpFromEmail
         });
 
-        if (smtpHostConfig && smtpPortConfig && smtpUsernameConfig && smtpPasswordConfig && smtpFromEmailConfig) {
+        if (smtpHost && smtpUsername && smtpPassword && smtpFromEmail) {
           const verificationLink = `${req.protocol}://${req.get('host')}/verify-email?token=${verificationToken}`;
           
           console.log('Attempting to send verification email to:', email);
@@ -1496,11 +1504,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Send verification email
           await sendVerificationEmail({
-            smtp_host: smtpHostConfig.configValue || smtpHostConfig,
-            smtp_port: parseInt(smtpPortConfig.configValue || smtpPortConfig),
-            smtp_username: smtpUsernameConfig.configValue || smtpUsernameConfig,
-            smtp_password: smtpPasswordConfig.configValue || smtpPasswordConfig,
-            from_email: smtpFromEmailConfig.configValue || smtpFromEmailConfig,
+            smtp_host: smtpHost,
+            smtp_port: parseInt(smtpPort || '587'),
+            smtp_username: smtpUsername,
+            smtp_password: smtpPassword,
+            from_email: smtpFromEmail,
             to_email: email,
             user_name: `${firstName} ${lastName}`,
             verification_link: verificationLink
