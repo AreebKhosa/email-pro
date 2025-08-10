@@ -44,6 +44,7 @@ Preferred communication style: Simple, everyday language.
 - **Instruction Boxes System**: Persistent, localStorage-based dismissal of setup guides and specific instructions.
 - **Advanced Email Rotation System**: Configurable multi-account sending, timing controls, daily limits, and smart distribution.
 - **Plan-Based Feature Limitations**: Starter plan limited to 1 follow-up sequence and 10 email warm-up; Premium plan allows 2 follow-up sequences.
+- **Simplified Configuration**: All API keys and SMTP settings now use environment variables only for easier local development (updated January 10, 2025).
 
 ## Deployment & Infrastructure
 

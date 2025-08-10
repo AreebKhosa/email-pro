@@ -6,17 +6,13 @@ let gemini: GoogleGenAI;
 
 async function getGeminiInstance(): Promise<GoogleGenAI> {
   if (!gemini) {
-    // Try to get Gemini API key from admin config first
-    const geminiApiKeyConfig = await storage.getConfig('gemini_api_key');
-    const geminiApiKey = typeof geminiApiKeyConfig === 'string' ? geminiApiKeyConfig : geminiApiKeyConfig?.configValue;
+    // Use Gemini API key from environment variables
+    const geminiApiKey = process.env.GEMINI_API_KEY;
     
     if (geminiApiKey && geminiApiKey.trim() !== '') {
       gemini = new GoogleGenAI({ apiKey: geminiApiKey });
-    } else if (process.env.GEMINI_API_KEY) {
-      // Fallback to environment variable
-      gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     } else {
-      throw new Error('Gemini API Key not configured');
+      throw new Error('Gemini API Key not configured in environment variables');
     }
   }
   return gemini;

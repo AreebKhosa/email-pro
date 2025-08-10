@@ -15,27 +15,9 @@ export function resetOAuthClient() {
 
 async function getOAuth2Client() {
   if (!oauth2Client) {
-    // Try to get credentials from environment variables first
-    let googleClientId = process.env.GOOGLE_CLIENT_ID;
-    let googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    
-    // If not in env vars, get from admin config
-    if (!googleClientId || !googleClientSecret) {
-      try {
-        const clientIdConfig = await storage.getConfig('google_client_id');
-        const clientSecretConfig = await storage.getConfig('google_client_secret');
-        
-        googleClientId = googleClientId || (typeof clientIdConfig === 'string' ? clientIdConfig : clientIdConfig?.configValue);
-        googleClientSecret = googleClientSecret || (typeof clientSecretConfig === 'string' ? clientSecretConfig : clientSecretConfig?.configValue);
-        
-        console.log('Using Google OAuth credentials from admin panel:', {
-          clientId: googleClientId ? `${googleClientId.substring(0, 10)}...` : 'NOT_FOUND',
-          clientSecret: googleClientSecret ? 'CONFIGURED' : 'NOT_FOUND'
-        });
-      } catch (error) {
-        console.log('Google OAuth config not found in database:', error);
-      }
-    }
+    // Use credentials from environment variables only
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
     
     if (googleClientId && googleClientSecret) {
       oauth2Client = new google.auth.OAuth2(

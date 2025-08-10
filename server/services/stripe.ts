@@ -6,46 +6,27 @@ let stripe: Stripe;
 
 async function getStripeInstance(): Promise<Stripe> {
   if (!stripe) {
-    // Try to get Stripe secret key from admin config first
-    const stripeSecretKeyConfig = await storage.getConfig('stripe_secret_key');
-    const stripeSecretKey = typeof stripeSecretKeyConfig === 'string' ? stripeSecretKeyConfig : stripeSecretKeyConfig?.configValue;
+    // Use Stripe secret key from environment variables only
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     
     if (stripeSecretKey && stripeSecretKey.trim() !== '') {
       stripe = new Stripe(stripeSecretKey, {
         apiVersion: "2025-06-30.basil",
       });
-    } else if (process.env.STRIPE_SECRET_KEY) {
-      // Fallback to environment variable
-      stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-        apiVersion: "2025-06-30.basil",
-      });
     } else {
-      throw new Error('Stripe Secret Key not configured');
+      throw new Error('Stripe Secret Key not configured in environment variables');
     }
   }
   return stripe;
 }
 
 async function getPlanPrices() {
-  try {
-    // Try to get prices from admin config first
-    const starterPrice = await storage.getConfig('stripe_starter_price_id');
-    const proPrice = await storage.getConfig('stripe_pro_price_id');
-    const premiumPrice = await storage.getConfig('stripe_premium_price_id');
-    
-    return {
-      starter: typeof starterPrice === 'string' ? starterPrice : starterPrice?.configValue || null,
-      pro: typeof proPrice === 'string' ? proPrice : proPrice?.configValue || null,
-      premium: typeof premiumPrice === 'string' ? premiumPrice : premiumPrice?.configValue || null,
-    };
-  } catch (error) {
-    console.log('Stripe price IDs not configured in admin panel');
-    return {
-      starter: null,
-      pro: null,
-      premium: null,
-    };
-  }
+  // Use hardcoded price IDs for now or from environment variables
+  return {
+    starter: process.env.STRIPE_STARTER_PRICE_ID || null,
+    pro: process.env.STRIPE_PRO_PRICE_ID || null,
+    premium: process.env.STRIPE_PREMIUM_PRICE_ID || null,
+  };
 }
 
 export async function createStripeCheckout(
