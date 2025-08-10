@@ -373,6 +373,7 @@ export default function Upgrade() {
                     <th className="text-left p-4">Feature</th>
                     <th className="text-center p-4">Demo</th>
                     <th className="text-center p-4">Starter</th>
+                    <th className="text-center p-4">Pro</th>
                     <th className="text-center p-4">Premium</th>
                   </tr>
                 </thead>
@@ -380,7 +381,8 @@ export default function Upgrade() {
                   <tr className="border-b">
                     <td className="p-4 font-medium">Monthly Emails</td>
                     <td className="text-center p-4">1,000</td>
-                    <td className="text-center p-4">50,000</td>
+                    <td className="text-center p-4">20,000</td>
+                    <td className="text-center p-4">75,000</td>
                     <td className="text-center p-4">
                       <Infinity className="h-4 w-4 mx-auto" />
                     </td>
@@ -388,6 +390,7 @@ export default function Upgrade() {
                   <tr className="border-b">
                     <td className="p-4 font-medium">Recipients</td>
                     <td className="text-center p-4">300</td>
+                    <td className="text-center p-4">6,000</td>
                     <td className="text-center p-4">25,000</td>
                     <td className="text-center p-4">
                       <Infinity className="h-4 w-4 mx-auto" />
@@ -396,7 +399,8 @@ export default function Upgrade() {
                   <tr className="border-b">
                     <td className="p-4 font-medium">Email Integrations</td>
                     <td className="text-center p-4">1</td>
-                    <td className="text-center p-4">10</td>
+                    <td className="text-center p-4">4</td>
+                    <td className="text-center p-4">20</td>
                     <td className="text-center p-4">
                       <Infinity className="h-4 w-4 mx-auto" />
                     </td>
@@ -408,18 +412,21 @@ export default function Upgrade() {
                     </td>
                     <td className="text-center p-4">1</td>
                     <td className="text-center p-4">2</td>
+                    <td className="text-center p-4">2</td>
                   </tr>
                   <tr className="border-b">
                     <td className="p-4 font-medium">Email Warm-up Limit</td>
                     <td className="text-center p-4">1</td>
                     <td className="text-center p-4">10</td>
+                    <td className="text-center p-4">30</td>
                     <td className="text-center p-4">
                       <Check className="h-4 w-4 text-green-500 mx-auto" />
                     </td>
                   </tr>
                   <tr className="border-b">
                     <td className="p-4 font-medium">AI Personalization</td>
-                    <td className="text-center p-4">30/month</td>
+                    <td className="text-center p-4">100/month</td>
+                    <td className="text-center p-4">2,000/month</td>
                     <td className="text-center p-4">5,000/month</td>
                     <td className="text-center p-4">
                       <Infinity className="h-4 w-4 mx-auto" />
@@ -434,6 +441,9 @@ export default function Upgrade() {
                     <td className="text-center p-4">
                       <Check className="h-4 w-4 text-green-500 mx-auto" />
                     </td>
+                    <td className="text-center p-4">
+                      <Check className="h-4 w-4 text-green-500 mx-auto" />
+                    </td>
                   </tr>
                   <tr className="border-b">
                     <td className="p-4 font-medium">Priority Support</td>
@@ -442,6 +452,9 @@ export default function Upgrade() {
                     </td>
                     <td className="text-center p-4">
                       <X className="h-4 w-4 text-red-500 mx-auto" />
+                    </td>
+                    <td className="text-center p-4">
+                      <Check className="h-4 w-4 text-green-500 mx-auto" />
                     </td>
                     <td className="text-center p-4">
                       <Check className="h-4 w-4 text-green-500 mx-auto" />

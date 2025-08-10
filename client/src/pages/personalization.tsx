@@ -316,9 +316,9 @@ export default function Personalization() {
   const determinePlan = (limits: any) => {
     if (!limits) return 'demo';
     if (limits.personalizedEmails === 100 && limits.emailsPerMonth === 1000) return 'demo';
-    if (limits.personalizedEmails === 1000 && limits.emailsPerMonth === 20000) return 'starter';
-    if (limits.personalizedEmails === 1000 && limits.emailsPerMonth === 75000) return 'pro';
-    if (limits.personalizedEmails === 1000 && limits.emailsPerMonth === Infinity) return 'premium';
+    if (limits.personalizedEmails === 2000 && limits.emailsPerMonth === 20000) return 'starter';
+    if (limits.personalizedEmails === 5000 && limits.emailsPerMonth === 75000) return 'pro';
+    if (limits.personalizedEmails === Infinity && limits.emailsPerMonth === Infinity) return 'premium';
     return 'demo';
   };
   

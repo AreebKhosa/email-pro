@@ -57,8 +57,8 @@ const planLimits = {
     emailsPerMonth: 1000,
     recipients: 300,
     emailIntegrations: 1,
-    deliverabilityChecks: 100,
-    personalizedEmails: 30,
+    deliverabilityChecks: 150,
+    personalizedEmails: 100, // Fixed: was 30, should be 100
     followUps: 0,
     campaigns: 3,
     warmupEmails: 1,
@@ -67,16 +67,29 @@ const planLimits = {
     emailRotation: false
   },
   starter: {
-    emailsPerMonth: 50000,
+    emailsPerMonth: 20000, // Fixed: was 50000, should be 20000
+    recipients: 6000, // Fixed: was 25000, should be 6000
+    emailIntegrations: 4, // Fixed: was 10, should be 4
+    deliverabilityChecks: 2000, // Fixed: was 10000, should be 2000
+    personalizedEmails: 2000, // Fixed: was 5000, should be 2000
+    followUps: 1,
+    campaigns: Infinity,
+    warmupEmails: 2500, // Fixed: was 10, should be 2500
+    emailAccounts: 4, // Fixed: was 10, should be 4
+    dailyLimit: 667, // 20k/30 days
+    emailRotation: true
+  },
+  pro: {
+    emailsPerMonth: 75000,
     recipients: 25000,
-    emailIntegrations: 10,
+    emailIntegrations: 20,
     deliverabilityChecks: 10000,
     personalizedEmails: 5000,
     followUps: 1,
     campaigns: Infinity,
-    warmupEmails: 10,
-    emailAccounts: 10,
-    dailyLimit: 1667, // 50k/30 days
+    warmupEmails: 10000,
+    emailAccounts: 20,
+    dailyLimit: 2500, // 75k/30 days
     emailRotation: true
   },
   premium: {

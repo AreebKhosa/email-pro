@@ -321,7 +321,7 @@ export default function Recipients() {
                   const currentPlan = user?.plan || 'demo';
                   const planLimits = {
                     demo: { recipients: 300 },
-                    starter: { recipients: 5000 },
+                    starter: { recipients: 6000 },
                     pro: { recipients: 25000 },
                     premium: { recipients: Infinity }
                   };
@@ -336,7 +336,7 @@ export default function Recipients() {
                   const currentPlan = user?.plan || 'demo';
                   const planLimits = {
                     demo: { recipients: 300 },
-                    starter: { recipients: 5000 },
+                    starter: { recipients: 6000 },
                     pro: { recipients: 25000 },
                     premium: { recipients: Infinity }
                   };
