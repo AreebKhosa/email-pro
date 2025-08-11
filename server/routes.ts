@@ -843,22 +843,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isUsed: false,
           });
 
-          // Try to send verification email
+          // Try to send verification email using environment variables
           try {
-            const smtpHostConfig = await storage.getConfig('smtp_host');
-            const smtpPortConfig = await storage.getConfig('smtp_port');
-            const smtpUsernameConfig = await storage.getConfig('smtp_username');
-            const smtpPasswordConfig = await storage.getConfig('smtp_password');
-            const smtpFromEmailConfig = await storage.getConfig('smtp_from_email');
+            const smtpHost = process.env.SMTP_HOST;
+            const smtpPort = process.env.SMTP_PORT;
+            const smtpUsername = process.env.SMTP_USER;
+            const smtpPassword = process.env.SMTP_PASS;
+            const smtpFromEmail = process.env.SMTP_FROM_EMAIL;
 
-            if (smtpHostConfig && smtpUsernameConfig && smtpPasswordConfig && smtpFromEmailConfig) {
+            console.log('Login verification - SMTP config check:', {
+              hasHost: !!smtpHost,
+              hasPort: !!smtpPort,
+              hasUsername: !!smtpUsername,
+              hasPassword: !!smtpPassword,
+              hasFromEmail: !!smtpFromEmail
+            });
+
+            if (smtpHost && smtpUsername && smtpPassword && smtpFromEmail) {
               const emailConfig = {
                 smtp_config: {
-                  smtp_host: smtpHostConfig.configValue,
-                  smtp_port: parseInt(smtpPortConfig?.configValue || '587'),
-                  smtp_username: smtpUsernameConfig.configValue,
-                  smtp_password: smtpPasswordConfig.configValue,
-                  from_email: smtpFromEmailConfig.configValue
+                  smtp_host: smtpHost,
+                  smtp_port: parseInt(smtpPort || '587'),
+                  smtp_username: smtpUsername,
+                  smtp_password: smtpPassword,
+                  from_email: smtpFromEmail
                 },
                 to_email: user.email,
                 verification_code: code,
@@ -867,13 +875,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 location: 'Unknown' // You can integrate with IP geolocation service later
               };
 
+              console.log('Sending login verification email to:', user.email);
               await sendAuthEmail('login_verification', emailConfig);
+              console.log('Login verification email sent successfully');
               
               return res.status(200).json({ 
                 requiresVerification: true,
                 message: 'New device detected. Please check your email for a verification code to complete login.'
               });
             } else {
+              console.log('SMTP not configured - auto-trusting IP');
               // No SMTP configured, auto-trust the IP
               await storage.addTrustedIp(user.id, ipAddress, userAgent);
             }
