@@ -9,7 +9,8 @@ def send_verification_email(smtp_config, to_email, verification_link, user_name=
     try:
         # Create message
         msg = MIMEMultipart('alternative')
-        msg['From'] = smtp_config['from_email']
+        from_name = smtp_config.get('from_name', '')
+        msg['From'] = f'"{from_name}" <{smtp_config["from_email"]}>' if from_name else smtp_config['from_email']
         msg['To'] = to_email
         msg['Subject'] = "Verify Your Email Address"
         
@@ -86,7 +87,8 @@ def send_password_reset_email(smtp_config, to_email, reset_link, user_name=""):
     try:
         # Create message
         msg = MIMEMultipart('alternative')
-        msg['From'] = smtp_config['from_email']
+        from_name = smtp_config.get('from_name', '')
+        msg['From'] = f'"{from_name}" <{smtp_config["from_email"]}>' if from_name else smtp_config['from_email']
         msg['To'] = to_email
         msg['Subject'] = "Reset Your Password"
         
@@ -163,7 +165,8 @@ def send_login_verification_email(smtp_config, to_email, verification_code, user
     try:
         # Create message
         msg = MIMEMultipart('alternative')
-        msg['From'] = smtp_config['from_email']
+        from_name = smtp_config.get('from_name', '')
+        msg['From'] = f'"{from_name}" <{smtp_config["from_email"]}>' if from_name else smtp_config['from_email']
         msg['To'] = to_email
         msg['Subject'] = "New Device Login Verification"
         

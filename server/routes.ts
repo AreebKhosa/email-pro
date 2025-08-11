@@ -700,7 +700,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               smtp_port: parseInt(smtpPort || '587'),
               smtp_username: smtpUsername,
               smtp_password: smtpPassword,
-              from_email: smtpFromEmail
+              from_email: smtpFromEmail,
+              from_name: process.env.SMTP_FROM_NAME || 'Email SaaS'
             },
             to_email: email,
             verification_link: verificationLink,
@@ -850,13 +851,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const smtpUsername = process.env.SMTP_USER;
             const smtpPassword = process.env.SMTP_PASS;
             const smtpFromEmail = process.env.SMTP_FROM_EMAIL;
+            const smtpFromName = process.env.SMTP_FROM_NAME;
 
             console.log('Login verification - SMTP config check:', {
               hasHost: !!smtpHost,
               hasPort: !!smtpPort,
               hasUsername: !!smtpUsername,
               hasPassword: !!smtpPassword,
-              hasFromEmail: !!smtpFromEmail
+              hasFromEmail: !!smtpFromEmail,
+              hasFromName: !!smtpFromName
             });
 
             if (smtpHost && smtpUsername && smtpPassword && smtpFromEmail) {
@@ -866,7 +869,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   smtp_port: parseInt(smtpPort || '587'),
                   smtp_username: smtpUsername,
                   smtp_password: smtpPassword,
-                  from_email: smtpFromEmail
+                  from_email: smtpFromEmail,
+                  from_name: smtpFromName || 'Email SaaS'
                 },
                 to_email: user.email,
                 verification_code: code,
@@ -961,23 +965,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const smtpUsername = process.env.SMTP_USER;
         const smtpPassword = process.env.SMTP_PASS;
         const smtpFromEmail = process.env.SMTP_FROM_EMAIL;
+        const smtpFromName = process.env.SMTP_FROM_NAME;
+
+        console.log('Forgot password - SMTP config check:', {
+          hasHost: !!smtpHost,
+          hasPort: !!smtpPort,
+          hasUsername: !!smtpUsername,
+          hasPassword: !!smtpPassword,
+          hasFromEmail: !!smtpFromEmail,
+          hasFromName: !!smtpFromName
+        });
         
         if (smtpHost && smtpUsername && smtpPassword && smtpFromEmail) {
           const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
 
-          // Send password reset email
-          await sendPasswordResetEmail({
+          const emailConfig = {
             smtp_config: {
               smtp_host: smtpHost,
               smtp_port: parseInt(smtpPort || '587'),
               smtp_username: smtpUsername,
               smtp_password: smtpPassword,
               from_email: smtpFromEmail,
+              from_name: smtpFromName || 'Email SaaS'
             },
             to_email: email,
-            user_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'there',
+            user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'there',
             reset_link: resetLink
-          });
+          };
+
+          console.log('Sending password reset email to:', email);
+          await sendAuthEmail('password_reset', emailConfig);
+          console.log('Password reset email sent successfully');
         }
       } catch (emailError) {
         console.error('Error sending password reset email:', emailError);
