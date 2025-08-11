@@ -673,7 +673,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const smtpPort = process.env.SMTP_PORT;
         const smtpUsername = process.env.SMTP_USER;
         const smtpPassword = process.env.SMTP_PASS;
-        const smtpFromEmail = process.env.FROM_EMAIL;
+        const smtpFromEmail = process.env.SMTP_FROM_EMAIL;
         
         console.log('Retrieved SMTP configs:', {
           hasHost: !!smtpHost,
@@ -949,7 +949,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const smtpPort = process.env.SMTP_PORT;
         const smtpUsername = process.env.SMTP_USER;
         const smtpPassword = process.env.SMTP_PASS;
-        const smtpFromEmail = process.env.FROM_EMAIL;
+        const smtpFromEmail = process.env.SMTP_FROM_EMAIL;
         
         if (smtpHost && smtpUsername && smtpPassword && smtpFromEmail) {
           const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
@@ -1203,7 +1203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const smtpPort = process.env.SMTP_PORT;
       const smtpUsername = process.env.SMTP_USER;
       const smtpPassword = process.env.SMTP_PASS;
-      const smtpFromEmail = process.env.FROM_EMAIL;
+      const smtpFromEmail = process.env.SMTP_FROM_EMAIL;
       
       if (!smtpHost || !smtpUsername || !smtpPassword || !smtpFromEmail) {
         return res.status(400).json({ message: 'SMTP configuration incomplete in environment variables' });
@@ -1576,7 +1576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const smtpPort = process.env.SMTP_PORT;
         const smtpUsername = process.env.SMTP_USER;
         const smtpPassword = process.env.SMTP_PASS;
-        const smtpFromEmail = process.env.FROM_EMAIL;
+        const smtpFromEmail = process.env.SMTP_FROM_EMAIL;
         
         console.log('Retrieved SMTP configs:', {
           hasHost: !!smtpHost,
