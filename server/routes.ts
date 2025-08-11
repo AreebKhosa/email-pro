@@ -21,6 +21,24 @@ import jwt from "jsonwebtoken";
 import { spawn } from "child_process";
 import passport from "passport";
 
+// Helper function to get SMTP configuration from environment variables
+function getSmtpConfig() {
+  return {
+    smtp_host: process.env.SMTP_HOST,
+    smtp_port: parseInt(process.env.SMTP_PORT || '587'),
+    smtp_username: process.env.SMTP_USER,
+    smtp_password: process.env.SMTP_PASS,
+    from_email: process.env.FROM_EMAIL,
+    from_name: process.env.FROM_NAME || 'Email SaaS'
+  };
+}
+
+// Helper function to check if SMTP is properly configured
+function isSmtpConfigured(): boolean {
+  const config = getSmtpConfig();
+  return !!(config.smtp_host && config.smtp_username && config.smtp_password && config.from_email);
+}
+
 // Helper function to send authentication emails
 async function sendAuthEmail(type: 'verification' | 'reset' | 'login_verification', config: any): Promise<boolean> {
   return new Promise((resolve) => {
@@ -668,41 +686,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         console.log('Starting email verification process...');
         
-        // Use environment variables for SMTP configuration
-        const smtpHost = process.env.SMTP_HOST;
-        const smtpPort = process.env.SMTP_PORT;
-        const smtpUsername = process.env.SMTP_USER;
-        const smtpPassword = process.env.SMTP_PASS;
-        const smtpFromEmail = process.env.SMTP_FROM_EMAIL;
-        
-        console.log('Retrieved SMTP configs:', {
-          hasHost: !!smtpHost,
-          hasPort: !!smtpPort,
-          hasUsername: !!smtpUsername,
-          hasPassword: !!smtpPassword,
-          hasFromEmail: !!smtpFromEmail
-        });
-        
-        if (smtpHost && smtpUsername && smtpPassword && smtpFromEmail) {
-          console.log('Environment SMTP config found:', {
-            host: smtpHost,
-            port: smtpPort,
-            username: smtpUsername,
-            fromEmail: smtpFromEmail
-          });
+        if (isSmtpConfigured()) {
+          console.log('SMTP is properly configured, sending verification email...');
           
           // Send verification email
           const verificationLink = `${req.protocol}://${req.get('host')}/verify-email?token=${verificationToken}`;
           
           const emailConfig = {
-            smtp_config: {
-              smtp_host: smtpHost,
-              smtp_port: parseInt(smtpPort || '587'),
-              smtp_username: smtpUsername,
-              smtp_password: smtpPassword,
-              from_email: smtpFromEmail,
-              from_name: process.env.SMTP_FROM_NAME || 'Email SaaS'
-            },
+            smtp_config: getSmtpConfig(),
             to_email: email,
             verification_link: verificationLink,
             user_name: firstName
@@ -716,12 +707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userId: user.id 
           });
         } else {
-          console.log('Environment SMTP not configured. Missing configs:', {
-            host: !!smtpHost,
-            username: !!smtpUsername,
-            password: !!smtpPassword,
-            fromEmail: !!smtpFromEmail
-          });
+          console.log('SMTP not fully configured - auto-verifying user');
           // No SMTP configured, auto-verify for now
           await storage.updateUserEmailVerified(user.id, true);
           res.json({ 
@@ -846,32 +832,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Try to send verification email using environment variables
           try {
-            const smtpHost = process.env.SMTP_HOST;
-            const smtpPort = process.env.SMTP_PORT;
-            const smtpUsername = process.env.SMTP_USER;
-            const smtpPassword = process.env.SMTP_PASS;
-            const smtpFromEmail = process.env.SMTP_FROM_EMAIL;
-            const smtpFromName = process.env.SMTP_FROM_NAME;
-
-            console.log('Login verification - SMTP config check:', {
-              hasHost: !!smtpHost,
-              hasPort: !!smtpPort,
-              hasUsername: !!smtpUsername,
-              hasPassword: !!smtpPassword,
-              hasFromEmail: !!smtpFromEmail,
-              hasFromName: !!smtpFromName
-            });
-
-            if (smtpHost && smtpUsername && smtpPassword && smtpFromEmail) {
+            if (isSmtpConfigured()) {
               const emailConfig = {
-                smtp_config: {
-                  smtp_host: smtpHost,
-                  smtp_port: parseInt(smtpPort || '587'),
-                  smtp_username: smtpUsername,
-                  smtp_password: smtpPassword,
-                  from_email: smtpFromEmail,
-                  from_name: smtpFromName || 'Email SaaS'
-                },
+                smtp_config: getSmtpConfig(),
                 to_email: user.email,
                 verification_code: code,
                 user_name: user.firstName || user.email,
@@ -959,42 +922,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Try to send password reset email using environment variables
       try {
-        // Use environment variables for SMTP configuration
-        const smtpHost = process.env.SMTP_HOST;
-        const smtpPort = process.env.SMTP_PORT;
-        const smtpUsername = process.env.SMTP_USER;
-        const smtpPassword = process.env.SMTP_PASS;
-        const smtpFromEmail = process.env.SMTP_FROM_EMAIL;
-        const smtpFromName = process.env.SMTP_FROM_NAME;
-
-        console.log('Forgot password - SMTP config check:', {
-          hasHost: !!smtpHost,
-          hasPort: !!smtpPort,
-          hasUsername: !!smtpUsername,
-          hasPassword: !!smtpPassword,
-          hasFromEmail: !!smtpFromEmail,
-          hasFromName: !!smtpFromName
-        });
-        
-        if (smtpHost && smtpUsername && smtpPassword && smtpFromEmail) {
+        if (isSmtpConfigured()) {
           const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
 
           const emailConfig = {
-            smtp_config: {
-              smtp_host: smtpHost,
-              smtp_port: parseInt(smtpPort || '587'),
-              smtp_username: smtpUsername,
-              smtp_password: smtpPassword,
-              from_email: smtpFromEmail,
-              from_name: smtpFromName || 'Email SaaS'
-            },
+            smtp_config: getSmtpConfig(),
             to_email: email,
             user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'there',
             reset_link: resetLink
           };
 
           console.log('Sending password reset email to:', email);
-          await sendAuthEmail('password_reset', emailConfig);
+          await sendAuthEmail('reset', emailConfig);
           console.log('Password reset email sent successfully');
         }
       } catch (emailError) {
