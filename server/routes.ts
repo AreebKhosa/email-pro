@@ -551,6 +551,7 @@ async function sendVerificationEmail(config: {
   smtp_username: string;
   smtp_password: string;
   from_email: string;
+  from_name?: string;
   to_email: string;
   user_name: string;
   verification_link: string;
@@ -561,6 +562,7 @@ async function sendVerificationEmail(config: {
     smtp_username: config.smtp_username,
     smtp_password: '[HIDDEN]',
     from_email: config.from_email,
+    from_name: config.from_name,
     to_email: config.to_email,
     user_name: config.user_name,
     verification_link: config.verification_link
@@ -573,7 +575,8 @@ async function sendVerificationEmail(config: {
       smtp_port: config.smtp_port,
       smtp_username: config.smtp_username,
       smtp_password: config.smtp_password,
-      from_email: config.from_email
+      from_email: config.from_email,
+      from_name: config.from_name || 'Email SaaS'
     },
     to_email: config.to_email,
     user_name: config.user_name,
@@ -1568,6 +1571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             smtp_username: smtpUsername,
             smtp_password: smtpPassword,
             from_email: smtpFromEmail,
+            from_name: process.env.FROM_NAME || 'Email SaaS',
             to_email: email,
             user_name: `${firstName} ${lastName}`,
             verification_link: verificationLink

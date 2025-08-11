@@ -21,6 +21,7 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Password Reset**: Fixed forgot password email sending with proper SMTP configuration
 - ✅ **SMTP Helper Functions**: Created `getSmtpConfig()` and `isSmtpConfigured()` for centralized email configuration
 - ✅ **Environment Variable Fix**: Fixed all references from `SMTP_FROM_EMAIL` to `FROM_EMAIL` for proper email sending
+- ✅ **From Name Support**: Added FROM_NAME environment variable support for personalized email sender names in signup verification emails
 
 ## System Architecture
 
