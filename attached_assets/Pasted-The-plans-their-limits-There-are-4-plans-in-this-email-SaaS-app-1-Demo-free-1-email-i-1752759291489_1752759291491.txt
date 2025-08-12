@@ -1,0 +1,194 @@
+The plans & their limits
+There are 4 plans in this email SaaS app:
+
+1️⃣ Demo (free):
+
+1 email integration (SMTP + IMAP)
+
+Can send 1,000 emails per month
+
+Can upload 300 recipients per month
+
+Can check deliverability for 150 emails per month
+
+Can create 100 personalized emails per month (by scraping websites)
+
+Max 3 campaigns allowed
+
+No follow-ups
+
+Only 1 integrated email can be added
+
+only 1 integrated email can warm-up
+
+2️⃣ Starter ($14.99):/monthly
+
+20,000 emails send limit / month
+
+6,000 recipients upload / month
+
+4 email integrations / those 5 integrated email can warm-up
+
+2,500 warm-up emails / month
+
+2,000 deliverability checks/month
+
+2,000 personalized emails (by scraping websites) /month
+
+1 follow up allowed
+
+3️⃣ Pro ($29.99):/monthly
+
+75,000 emails send / month
+
+25,000 recipients upload / month
+
+20 email integrations / those 20 email warm up
+
+10,000 deliverability checks / month
+
+5,000 personalized emails writing / month
+
+1 follow up allowed
+
+4️⃣ Premium ($49.99):/monthly
+
+Everything is unlimited
+
+Allows 2 follow-ups per campaign
+
+📝 Step by step flow of the app
+
+1️⃣ Sign up & login
+
+User signs up, then must verify their email.
+
+If email is not verified, they cannot log in.
+
+Also option for Google login.
+
+By default, all new users get the Demo plan.
+
+➕ If user logs in from a new IP address, the system sends a verification code to their email. User must enter this code before they can continue.
+
+2️⃣ Plan upgrade
+
+User can upgrade their plan by paying through Stripe.
+
+When payment is successful, their plan updates immediately.
+
+3️⃣ Email integration
+
+User can connect their SMTP + IMAP accounts.
+
+The system must check if both connections are working.
+
+User can only add integrations according to their plan limit.
+
+4️⃣ Recipient lists
+
+User can create lists of recipients.
+
+They can add recipients one by one, or upload a CSV file.
+
+The CSV file format must be told to user:
+
+scss
+Copy
+Edit
+name, last_name, company_name(optional), position(optional), email, website_link(optional)
+User can see all their recipient lists, and see recipients inside each list.
+
+All of this is restricted by their plan’s upload limit.
+
+5️⃣ Deliverability check
+
+User selects a list to check.
+
+System checks emails to see how many are valid, risky or invalid.
+
+Shows stats to the user.
+
+Gives option to clean the list (remove bad emails).
+
+This also counts towards their plan’s deliverability quota.
+
+6️⃣ Personalize emails
+
+User selects a list or a single recipient.
+
+System scrapes the website link (if present) to get content.
+
+Then uses AI (like ChatGPT or local LLM) to write a personalized email.
+
+Before starting, system will ask user:
+
+Type of email (marketing, outreach etc)
+
+Tone (professional, friendly etc)
+
+Max characters
+
+What kind of call to actions
+
+Then it creates personalized emails for all recipients in that list.
+
+It updates the list with a new column personalized_email.
+
+If website is missing, it leaves that blank.
+
+Also user can download the updated list as Excel.
+
+This stops when user’s monthly personalization limit is reached.
+
+7️⃣ Warm-up
+
+When user enables warm-up, their email is added to a private warm-up pool.
+
+The system sends warm-up emails from their account to other users in the pool, and receives warm-up emails from them.
+
+Also automatically replies to keep emails out of spam.
+
+Shows stats:
+
+How many sent daily
+
+How many received
+
+How many going to spam
+
+How many recovered from spam
+
+This is also limited by their plan’s warm-up quota.
+
+8️⃣ Campaign creation
+
+User creates a campaign by:
+
+Giving it a name
+
+Selecting a recipient list
+
+Writing subject + body OR asking AI to generate it (same style as personalization)
+
+Using placeholders like {name}, {company_name} in the email
+
+Scheduling the campaign
+
+Follow-ups:
+
+Not allowed on Demo
+
+Allowed 1 on Starter & Pro
+ 
+Allowed 2 on Premium
+
+Before sending, system checks:
+
+If user has enough remaining email quota.
+
+If campaign is too big for their limit, it will block and suggest to upgrade.
+
+➕ System tracks campaign analytics like how many emails delivered, opened, clicked, bounced or marked as spam, and shows these stats to the user.
+
+✅ Done.
